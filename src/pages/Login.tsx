@@ -23,7 +23,7 @@ const Login = ({  }: LoginProps) => {
   // Replace with your translation logic if needed
   const t = (key: string) => key;
 
-  const handleFinish = async (values: any) => {
+  const handleFinish = async () => {
     setIsLoading(true);
     try {
       // Replace with your login API call
@@ -82,25 +82,25 @@ const Login = ({  }: LoginProps) => {
               </Form.Item>
               <Form.Item
                 name="email"
-                label={t("common.emailAddress")}
+                label="Email Address"
                 rules={[{ required: true, message: t("Please input your email!") }, { type: "email", message: t("Invalid email!") }]}
               >
                 <Input prefix={<MailOutlined />} placeholder="john@example.com" autoComplete="email" />
               </Form.Item>
               <Form.Item
                 name="password"
-                label={t("common.password")}
+                label="Password"
                 rules={[{ required: true, message: t("Please input your password!") }]}
               >
                 <Input.Password
                   prefix={<LockOutlined />}
                   iconRender={visible => visible ? <EyeTwoTone /> : <EyeInvisibleOutlined />}
-                  placeholder={t("common.enterYourPassword")}
+                  placeholder="Please enter your Password"
                   autoComplete="current-password"
                 />
               </Form.Item>
               <div style={{ textAlign: "right", marginBottom: 16 }}>
-                <Link to="/forgot-password">{t("common.forgotYourPassword")}</Link>
+                <Link to="/forgot-password">ForgotYourPassword</Link>
               </div>
               <Form.Item>
                 <Button type="primary" htmlType="submit" block loading={isLoading} style={{ fontWeight: 600 }}>

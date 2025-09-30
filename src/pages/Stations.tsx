@@ -1,8 +1,7 @@
-import { Card, Col, Row, Typography, Button, Tag, Space, Divider, Tooltip } from 'antd';
+import { Card, Col, Row, Typography, Button, Tag, Space, Divider } from 'antd';
 import { Link } from 'react-router-dom';
 import {
   EnvironmentOutlined,
-  ClockCircleOutlined,
   ThunderboltFilled,
   CarOutlined,
   CheckCircleOutlined,

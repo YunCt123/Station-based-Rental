@@ -6,6 +6,8 @@ import LoginPage from './pages/auth/LoginPage';
 import VehiclesPage from './pages/shared/VehiclesPage';
 import HomePage from './pages/shared/HomePage';
 import DetailsPage from './pages/shared/DetailsPage';
+import HowItWorks from './pages/HowItWorks';
+import Stations from './pages/Stations';
 
 function App() {
   return (
@@ -18,8 +20,8 @@ function App() {
             <Route path="/vehicles" element={<VehiclesPage />} />
             <Route path="/vehicle/:id" element={<DetailsPage />} />
             <Route path="/login" element={<LoginPage />} />
-            <Route path="/stations" element={<ComingSoonPage title="Stations" />} />
-            <Route path="/how-it-works" element={<ComingSoonPage title="How It Works" />} />
+            <Route path="/stations" element={<Stations />} />
+            <Route path="/how-it-works" element={<HowItWorks />} />
             <Route path="/register" element={<ComingSoonPage title="Register" />} />
             <Route path="*" element={<NotFoundPage />} />
           </Routes>

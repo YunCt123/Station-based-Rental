@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { 
   ChevronLeftIcon, 
   ChevronRightIcon, 
@@ -100,9 +100,9 @@ const DetailsPage: React.FC = () => {
               
               {/* Breadcrumb */}
               <nav className="flex items-center space-x-2 text-sm text-gray-500">
-                <a href="/" className="hover:text-blue-600 transition-colors">Home</a>
+                <Link to="/" className="hover:text-blue-600 transition-colors">Home</Link>
                 <ChevronRightIcon className="w-4 h-4" />
-                <a href="/vehicles" className="hover:text-blue-600 transition-colors">Vehicles</a>
+                <Link to="/vehicles" className="hover:text-blue-600 transition-colors">Vehicles</Link>
                 <ChevronRightIcon className="w-4 h-4 stroke-current" />
                 <span className="text-gray-900 font-medium">{vehicle.name}</span>
               </nav>

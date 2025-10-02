@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { UserGroupIcon, LockClosedIcon } from '@heroicons/react/24/outline';
 
 const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -18,9 +19,7 @@ const LoginPage: React.FC = () => {
         <div>
           <div className="flex justify-center">
             <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-green-400 rounded-lg flex items-center justify-center">
-              <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z"/>
-              </svg>
+              <UserGroupIcon className="w-8 h-8 text-white" />
             </div>
           </div>
           <h2 className="mt-6 text-center text-3xl font-bold text-gray-900">
@@ -98,9 +97,7 @@ const LoginPage: React.FC = () => {
               className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-gradient-to-r from-blue-600 to-green-500 hover:from-blue-700 hover:to-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200"
             >
               <span className="absolute left-0 inset-y-0 flex items-center pl-3">
-                <svg className="h-5 w-5 text-blue-300 group-hover:text-blue-200" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                  <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-                </svg>
+                <LockClosedIcon className="h-5 w-5 text-blue-300 group-hover:text-blue-200" />
               </span>
               Sign in
             </button>

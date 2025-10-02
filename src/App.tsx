@@ -2,9 +2,10 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Header from './layout/Header';
 import Footer from './layout/Footer';
-import HomePage from './pages/HomePage';
-import VehiclesPage from './pages/VehiclesPage';
-import LoginPage from './pages/LoginPage';
+import LoginPage from './pages/auth/LoginPage';
+import VehiclesPage from './pages/shared/VehiclesPage';
+import HomePage from './pages/shared/HomePage';
+import DetailsPage from './pages/shared/DetailsPage';
 
 function App() {
   return (
@@ -15,6 +16,7 @@ function App() {
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/vehicles" element={<VehiclesPage />} />
+            <Route path="/vehicle/:id" element={<DetailsPage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/stations" element={<ComingSoonPage title="Stations" />} />
             <Route path="/how-it-works" element={<ComingSoonPage title="How It Works" />} />

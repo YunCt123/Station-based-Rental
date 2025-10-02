@@ -1,4 +1,5 @@
 import React from 'react';
+import { UserGroupIcon, PhoneIcon, EnvelopeIcon } from '@heroicons/react/24/outline';
 
 const Footer: React.FC = () => {
   return (
@@ -9,9 +10,7 @@ const Footer: React.FC = () => {
           <div className="col-span-1 md:col-span-1">
             <div className="flex items-center mb-4">
               <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
-                <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z"/>
-                </svg>
+                <UserGroupIcon className="w-5 h-5 text-white" />
               </div>
               <span className="ml-2 text-xl font-bold">EVRentals</span>
             </div>
@@ -127,15 +126,11 @@ const Footer: React.FC = () => {
           <div className="flex flex-col md:flex-row items-center justify-between">
             <div className="flex items-center space-x-6 mb-4 md:mb-0">
               <div className="flex items-center text-gray-300 text-sm">
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                </svg>
+                <PhoneIcon className="w-4 h-4 mr-2" />
                 +84 (0) 123 456 789
               </div>
               <div className="flex items-center text-gray-300 text-sm">
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                </svg>
+                <EnvelopeIcon className="w-4 h-4 mr-2" />
                 support@evrentals.com
               </div>
             </div>

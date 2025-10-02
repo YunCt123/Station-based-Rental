@@ -1,7 +1,6 @@
 import React from 'react';
-import Banner from '../layout/Banner';
-import Content from '../layout/Content';
-
+import Banner from '../../layout/Banner';
+import Content from '../../layout/Content';
 const HomePage: React.FC = () => {
   return (
     <div className="bg-white">

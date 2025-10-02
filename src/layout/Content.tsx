@@ -1,118 +1,10 @@
 import React from 'react';
-import VehicleCard, { type VehicleData } from '../components/VehicleCard';
+import VehicleCard from '../components/VehicleCard';
+import { SAMPLE_VEHICLES } from '../data/vehicles';
 
 const Content: React.FC = () => {
-  // Sample vehicle data based on the images provided
-  const vehicles: VehicleData[] = [
-    {
-      id: '1',
-      name: 'VinFast VF8',
-      brand: 'VinFast',
-      year: 2023,
-      type: 'SUV',
-      rating: 4.8,
-      reviewCount: 124,
-      batteryLevel: 90,
-      range: 420,
-      seats: 5,
-      location: 'District 1 Station',
-      hourlyRate: 15,
-      dailyRate: 120,
-      status: 'Available',
-      condition: 'Excellent',
-      image: 'https://icar.vn/wp-content/uploads/2024/01/top-5-xe-o-to-dien-co-muc-gia-tot-nhat-2023-800x417.jpg'
-    },
-    {
-      id: '2',
-      name: 'Tesla Model 3',
-      brand: 'Tesla',
-      year: 2022,
-      type: 'Sedan',
-      rating: 4.9,
-      reviewCount: 256,
-      batteryLevel: 85,
-      range: 358,
-      seats: 5,
-      location: 'District 7 Station',
-      hourlyRate: 18,
-      dailyRate: 150,
-      status: 'Available',
-      condition: 'Good',
-      image: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTpSQ8KpTVl9htCScZSyM2DFaRNT6xJa-ztcw&s'
-    },
-    {
-      id: '3',
-      name: 'Hyundai Kona Electric',
-      brand: 'Hyundai',
-      year: 2023,
-      type: 'Crossover',
-      rating: 4.6,
-      reviewCount: 89,
-      batteryLevel: 78,
-      range: 305,
-      seats: 5,
-      location: 'Binh Thanh Station',
-      hourlyRate: 12,
-      dailyRate: 90,
-      status: 'Available',
-      condition: 'Good',
-      image: 'https://hips.hearstapps.com/hmg-prod/images/2025-tesla-model-s-1-672d42e172407.jpg?crop=0.465xw:0.466xh;0.285xw,0.361xh&resize=1200:*'
-    },
-    {
-      id: '4',
-      name: 'BMW iX3',
-      brand: 'BMW',
-      year: 2023,
-      type: 'SUV',
-      rating: 4.7,
-      reviewCount: 156,
-      batteryLevel: 92,
-      range: 460,
-      seats: 5,
-      location: 'District 3 Station',
-      hourlyRate: 22,
-      dailyRate: 180,
-      status: 'Available',
-      condition: 'Excellent',
-      image: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTNyrp3zcrC6guFk7dOha9hw1pv__nylrwM3Q&s'
-    },
-    {
-      id: '5',
-      name: 'Audi e-tron GT',
-      brand: 'Audi',
-      year: 2023,
-      type: 'Sedan',
-      rating: 4.9,
-      reviewCount: 203,
-      batteryLevel: 65,
-      range: 488,
-      seats: 4,
-      location: 'Airport Station',
-      hourlyRate: 35,
-      dailyRate: 280,
-      status: 'Maintenance Due',
-      condition: 'Excellent',
-      image: '/api/placeholder/400/300'
-    },
-    {
-      id: '6',
-      name: 'Nissan Leaf',
-      brand: 'Nissan',
-      year: 2022,
-      type: 'Hatchback',
-      rating: 4.4,
-      reviewCount: 97,
-      batteryLevel: 88,
-      range: 270,
-      seats: 5,
-      location: 'District 1 Station',
-      hourlyRate: 10,
-      dailyRate: 75,
-      status: 'Available',
-      condition: 'Good',
-      image: '/api/placeholder/400/300'
-    }
-  ];
+  // Use first 6 vehicles for homepage display
+  const vehicles = SAMPLE_VEHICLES.slice(0, 6);
 
   return (
     <div className="bg-gray-50 py-16">
@@ -197,8 +89,8 @@ const Content: React.FC = () => {
               <div className="text-gray-600">Customer Support</div>
             </div>
             <div>
-              <div className="text-3xl font-bold text-orange-600 mb-2">4.9</div>
-              <div className="text-gray-600">Average Rating</div>
+              <div className="text-3xl font-bold text-amber-600 mb-2">95%</div>
+              <div className="text-gray-600">Customer Satisfaction</div>
             </div>
           </div>
         </div>

@@ -11,7 +11,8 @@ import {
   CheckCircleFilled,
   CloseCircleFilled,
 } from '@ant-design/icons';
-import { stations } from '../data/stations';
+import { stations } from '../../data/stations';
+
 
 const { Title, Text, Paragraph } = Typography;
 

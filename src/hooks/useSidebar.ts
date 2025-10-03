@@ -65,15 +65,25 @@ export const useSidebar = ({
   };
 };
 
-// Hook to get user role from context/storage
+// Hook to get user role from context/storage and URL
 export const useUserRole = (): UserRole => {
-  // This would typically come from your authentication context
-  // For now, returning a default role
-  const [userRole] = useState<UserRole>(() => {
-    // Try to get from localStorage or context
+  const location = useLocation();
+  
+  // Determine role dynamically based on current URL path
+  const getUserRoleFromPath = (pathname: string): UserRole => {
+    if (pathname.startsWith('/admin/')) {
+      return 'admin';
+    } else if (pathname.startsWith('/staff/')) {
+      return 'station_staff';
+    }
+    
+    // If not determinable from URL, check localStorage
     const savedRole = localStorage.getItem('userRole') as UserRole;
     return savedRole || 'station_staff'; // Default role
-  });
+  };
+
+  // Use useMemo to avoid unnecessary recalculations
+  const userRole = useMemo(() => getUserRoleFromPath(location.pathname), [location.pathname]);
 
   return userRole;
 };

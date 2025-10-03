@@ -13,6 +13,7 @@ export default {
         // Primary EV Colors - Blue to Green theme
         primary: {
           DEFAULT: "#3b82f6", // Blue-500
+          25: "#f8faff",
           50: "#eff6ff",
           100: "#dbeafe", 
           200: "#bfdbfe",

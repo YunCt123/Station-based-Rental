@@ -19,7 +19,8 @@ export const SidebarWrapper: React.FC<SidebarWrapperProps> = ({
   const navigate = useNavigate();
   const [isCollapsed, setIsCollapsed] = React.useState(false);
 
-  const menuSections = getMenuSections();
+  // Get menu sections dynamically based on current role
+  const menuSections = React.useMemo(() => getMenuSections(), [currentRole]);
 
   // Map role to display text
   const getRoleDisplayText = (role: string) => {
@@ -35,11 +36,32 @@ export const SidebarWrapper: React.FC<SidebarWrapperProps> = ({
     }
   };
 
-  const userDisplayInfo = userInfo ? {
-    name: userInfo.name || 'Người dùng',
-    role: getRoleDisplayText(currentRole),
-    avatar: userInfo.avatar
-  } : undefined;
+  // Get user info based on current role from URL, fallback to localStorage
+  const userDisplayInfo = React.useMemo(() => {
+    const storedUserInfo = userInfo || (() => {
+      try {
+        const stored = localStorage.getItem('userInfo');
+        return stored ? JSON.parse(stored) : null;
+      } catch {
+        return null;
+      }
+    })();
+    
+    if (storedUserInfo) {
+      return {
+        name: storedUserInfo.name || 'Người dùng',
+        role: getRoleDisplayText(currentRole),
+        avatar: storedUserInfo.avatar
+      };
+    }
+    
+    // Default user info based on current role
+    return {
+      name: currentRole === 'admin' ? 'Admin User' : 'Staff User',
+      role: getRoleDisplayText(currentRole),
+      avatar: null
+    };
+  }, [userInfo, currentRole]);
 
   const handleToggleCollapse = () => {
     setIsCollapsed(!isCollapsed);

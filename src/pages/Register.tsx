@@ -17,7 +17,7 @@ const Register: React.FC = () => {
         padding: 16,
       }}
     >
-      <div style={{ width: "100%", maxWidth: 400 }}>
+      <div >
         {/* Logo */}
         <div style={{ textAlign: "center", marginBottom: 32 }}>
           <CarOutlined style={{ fontSize: 40, color: "#1677ff", background: "#fff", borderRadius: 16, padding: 12, boxShadow: "0 2px 8px #0001" }} />

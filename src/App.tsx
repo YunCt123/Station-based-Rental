@@ -14,6 +14,7 @@ import { AdminDashboard } from "./pages/dashboard/admin/AdminDashboard";
 import { StaffDashboard } from "./pages/dashboard/staff/StaffDashboard";
 import Stations from "./pages/shared/Stations";
 import NotFoundPage from "./pages/shared/NotFoundPage";
+import StationDetailPage from "./pages/shared/StationDetailPage";
 
 
 function App() {
@@ -63,6 +64,15 @@ function App() {
               <Header />
               <main className="min-h-screen">
                 <Stations />
+              </main>
+              <Footer />
+            </>
+          } />
+          <Route path="/stations/:stationId" element={
+            <>
+              <Header />
+              <main className="min-h-screen">
+                <StationDetailPage />
               </main>
               <Footer />
             </>

@@ -12,7 +12,7 @@ const StationsPage: React.FC = () => {
   // State cho các bộ lọc
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCity, setSelectedCity] = useState('All');
-  const [selectedStatus, setSelectedStatus] = useState('All');
+  const [selectedStatus] = useState('All');
   const [sortBy, setSortBy] = useState('name');
 
   // Load dữ liệu ban đầu
@@ -47,7 +47,7 @@ const StationsPage: React.FC = () => {
   }, [allStations, searchTerm, selectedCity, selectedStatus, sortBy]);
 
   const cities = ['All', ...Array.from(new Set(allStations.map(s => s.city)))];
-  const statuses = ['All', 'active', 'inactive'];
+  // const statuses = ['All', 'active', 'inactive'];
 
   return (
     <div className="min-h-screen bg-gray-50 pt-20">

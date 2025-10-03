@@ -8,7 +8,6 @@ import {
     ClockIcon,
     BoltIcon,
     CheckCircleIcon,
-    XCircleIcon,
     ChevronRightIcon,
     PhoneIcon,
     ShareIcon

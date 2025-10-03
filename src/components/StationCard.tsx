@@ -1,5 +1,5 @@
-import { Card, Badge, Button } from "flowbite-react";
-import { FaMapMarkerAlt, FaClock, FaBolt, FaCar } from "react-icons/fa";
+import { Card, Badge } from "flowbite-react";
+import { FaMapMarkerAlt, FaClock, FaCar } from "react-icons/fa";
 import { Link } from "react-router-dom";
 import type { Station } from "../data/stations";
 

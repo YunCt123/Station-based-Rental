@@ -33,21 +33,51 @@ const Login = () => {
   };
 
   return (
-    <div style={{ position: "fixed", inset: 0, minHeight: "100vh", minWidth: "100vw", height: "100vh", width: "100vw", background: "linear-gradient(135deg, #36a2f5 0%, #7ee8a5 100%)", display: "flex", alignItems: "center", justifyContent: "center", margin: 0, padding: 0, zIndex: 9999 }}>
+    <div style={{ position: "fixed", inset: 0, minHeight: "100vh", minWidth: "100vw", height: "100vh", width: "100vw", background: "linear-gradient(135deg, #36a2f5 0%, #7ee8a5 100%)", display: "flex", alignItems: "center", justifyContent: "center", margin: 0, padding: 0, zIndex: 9999,  overflow: "hidden", }}>
       <div style={{ width: "100%", maxWidth: 480 }}>
-        {/* Logo */}
-        <div style={{ textAlign: "center", marginBottom: 32 }}>
-          <Link to="/" style={{ display: "inline-flex", alignItems: "center", gap: 8, textDecoration: "none" }}>
-            <div style={{ padding: 12, background: "#fff", borderRadius: 16, boxShadow: "0 2px 8px rgba(0,0,0,0.08)", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
-              <CarOutlined style={{ fontSize: 32, color: "#1677ff" }} />
-            </div>
-            <span style={{ fontSize: 24, fontWeight: 700, color: "#fff" }}>EVRentals</span>
-          </Link>
-        </div>
+       
         <Card style={{ boxShadow: "0 4px 24px rgba(0,0,0,0.12)" }}>
+
+          {/* Logo + Tên brand */}
+            <div style={{ textAlign: "center", marginBottom: 16 }}>
+              <Link
+              to="/"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 8,
+                textDecoration: "none",
+              }}
+            >
+              <div
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
+                }}
+              >
+                <div
+                  style={{
+                    padding: 12,
+                    background: "#f5f9ff",
+                    borderRadius: 16,
+                    boxShadow: "0 2px 6px rgba(0,0,0,0.08)",
+                  }}
+                >
+                  <CarOutlined style={{ fontSize: 32, color: "#1677ff" }} />
+                </div>
+                <span style={{ fontSize: 22, fontWeight: 700, color: "#1677ff" }}>
+                  EV Rentals
+                </span>
+              </div>
+              </Link>
+            </div>
+
           <Card.Meta
-            title={<Typography.Title level={3} style={{ textAlign: "center", marginBottom: 0 }}>welcomeBack</Typography.Title>}
-            description={<div style={{ textAlign: "center", marginBottom: 16 }}>signInToAccount</div>}
+            title={<Typography.Title level={3} style={{ textAlign: "center", marginBottom: 0 }}>Welcome Back</Typography.Title>}
+            description={<div style={{ textAlign: "center", marginBottom: 16 }}>Sign In To Account</div>}
           />
           <Divider style={{ margin: 0 }} />
           <div style={{ padding: 24 }}>
@@ -63,9 +93,9 @@ const Login = () => {
                 rules={[{ required: true, message: t("Please select a role") }]}
               >
                 <Select>
-                  <Select.Option value="user">customer</Select.Option>
-                  <Select.Option value="staff">stationStaff</Select.Option>
-                  <Select.Option value="admin">administrator</Select.Option>
+                  <Select.Option value="user">Customer</Select.Option>
+                  <Select.Option value="staff">Station Staff</Select.Option>
+                  <Select.Option value="admin">Administrator</Select.Option>
                 </Select>
               </Form.Item>
               <Form.Item
@@ -88,11 +118,12 @@ const Login = () => {
                 />
               </Form.Item>
               <div style={{ textAlign: "right", marginBottom: 16 }}>
-                <Link to="/forgot-password">ForgotYourPassword?</Link>
+                <Link to="/forgot-password">Forgot Your Password?</Link>
               </div>
               <Form.Item>
                 <Button type="primary" htmlType="submit" block loading={isLoading} style={{ fontWeight: 600 }}>
-                  {isLoading ? t("common.signingIn") : t("common.signIn")}
+                {isLoading ? "Signing in..." : "Sign in"}
+
                 </Button>
               </Form.Item>
             </Form>
@@ -104,14 +135,12 @@ const Login = () => {
               Continue With Facebook
             </Button>
             <div style={{ textAlign: "center", marginTop: 16 }}>
-              <span style={{ color: "#888" }}>dontHaveAnAccount </span>
-              <Link to="/register" style={{ color: "#1677ff", fontWeight: 500 }}>{t("common.signUpNow")}</Link>
+              <span style={{ color: "#888" }}>Don't Have An Account? </span>
+              <Link to="/register" style={{ color: "#1677ff", fontWeight: 500 }}>Sign Up Now</Link>
             </div>
           </div>
         </Card>
-        <div style={{ marginTop: 24, textAlign: "center" }}>
-          <Typography.Text style={{ color: "#fff", opacity: 0.8, fontSize: 14 }}>demoNote</Typography.Text>
-        </div>
+        
       </div>
     </div>
   );

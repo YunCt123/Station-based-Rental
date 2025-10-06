@@ -179,7 +179,7 @@ export default function VehicleAvailable() {
     ];
 
     return (
-        <Card title="Available Vehicles">
+        <Card title="Danh sách xe có sẵn">
             {/* Modal xác nhận giao xe */}
             <Modal
                 title="Xác nhận giao xe"

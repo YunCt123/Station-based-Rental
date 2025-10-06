@@ -16,6 +16,7 @@ import Stations from "./pages/shared/Stations";
 import NotFoundPage from "./pages/shared/NotFoundPage";
 import StationDetailPage from "./pages/shared/StationDetailPage";
 import VehicleAvailable from "./pages/dashboard/staff/VehicleAvailable";
+import VehicleRented from "./pages/dashboard/staff/VehicleRented";
 
 
 function App() {
@@ -122,6 +123,12 @@ function App() {
           <Route path="/staff/vehicles/available" element={
             <DashboardLayout>
               <VehicleAvailable />
+            </DashboardLayout>
+          } />
+
+          <Route path="/staff/vehicles/rented" element={
+            <DashboardLayout>
+              <VehicleRented />
             </DashboardLayout>
           } />
 

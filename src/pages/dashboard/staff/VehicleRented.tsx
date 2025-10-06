@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Table, Tag, Card, Space } from 'antd';
 
 // Dữ liệu mẫu

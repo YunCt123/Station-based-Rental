@@ -15,6 +15,7 @@ import { StaffDashboard } from "./pages/dashboard/staff/StaffDashboard";
 import Stations from "./pages/shared/Stations";
 import NotFoundPage from "./pages/shared/NotFoundPage";
 import StationDetailPage from "./pages/shared/StationDetailPage";
+import VehicleAvailable from "./pages/dashboard/staff/VehicleAvailable";
 
 
 function App() {
@@ -115,6 +116,12 @@ function App() {
           <Route path="/staff/dashboard" element={
             <DashboardLayout>
               <StaffDashboard />
+            </DashboardLayout>
+          } />
+
+          <Route path="/staff/vehicles/available" element={
+            <DashboardLayout>
+              <VehicleAvailable />
             </DashboardLayout>
           } />
 

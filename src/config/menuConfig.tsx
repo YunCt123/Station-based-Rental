@@ -72,21 +72,21 @@ export const getMenuSections = (): SidebarSection[] => [
             id: 'vehicle-inspection',
             title: 'Kiểm tra xe',
             icon: <WrenchScrewdriverIcon className="w-4 h-4" />,
-            path: '/staff/procedures/inspection',
+            path: '/staff/customer-verification',
             roles: [UserRole.STATION_STAFF]
           },
           {
             id: 'photo-capture',
             title: 'Chụp ảnh',
             icon: <DocumentTextIcon className="w-4 h-4" />,
-            path: '/staff/procedures/photos',
+            path: '/staff/verification/license',
             roles: [UserRole.STATION_STAFF]
           },
           {
             id: 'status-update',
             title: 'Cập nhật tình trạng',
             icon: <ClipboardDocumentListIcon className="w-4 h-4" />,
-            path: '/staff/procedures/status',
+            path: '/staff/verification/identity',
             roles: [UserRole.STATION_STAFF]
           }
         ]

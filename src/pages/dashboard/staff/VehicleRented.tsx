@@ -36,7 +36,7 @@ type Vehicle = {
   estimatedCost: string;
 };
 
-export default function VehicleRented() {
+export const VehicleRented = () => {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
 
   useEffect(() => {

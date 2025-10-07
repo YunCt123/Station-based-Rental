@@ -15,8 +15,10 @@ import { StaffDashboard } from "./pages/dashboard/staff/StaffDashboard";
 import Stations from "./pages/shared/Stations";
 import NotFoundPage from "./pages/shared/NotFoundPage";
 import StationDetailPage from "./pages/shared/StationDetailPage";
-import VehicleAvailable from "./pages/dashboard/staff/VehicleAvailable";
-import VehicleRented from "./pages/dashboard/staff/VehicleRented";
+import { CustomerVerification } from "./pages/dashboard/staff/CustomerVerification";
+import { LicenseVerification } from "./pages/dashboard/staff/LicenseVerification";
+import { IdentityVerification } from "./pages/dashboard/staff/IdentityVerification";
+import { VehicleAvailable, VehicleRented } from "./pages/dashboard/staff";
 
 
 function App() {
@@ -129,6 +131,25 @@ function App() {
           <Route path="/staff/vehicles/rented" element={
             <DashboardLayout>
               <VehicleRented />
+            </DashboardLayout>
+          } />
+
+          {/* Staff Verification Routes */}
+          <Route path="/staff/customer-verification" element={
+            <DashboardLayout>
+              <CustomerVerification />
+            </DashboardLayout>
+          } />
+          
+          <Route path="/staff/verification/license" element={
+            <DashboardLayout>
+              <LicenseVerification />
+            </DashboardLayout>
+          } />
+          
+          <Route path="/staff/verification/identity" element={
+            <DashboardLayout>
+              <IdentityVerification />
             </DashboardLayout>
           } />
 

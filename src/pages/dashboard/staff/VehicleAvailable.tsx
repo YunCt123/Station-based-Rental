@@ -48,7 +48,7 @@ const mockVehicles = [
     },
 ];
 
-export default function VehicleAvailable() {
+export const VehicleAvailable = () => {
     const [vehicles, setVehicles] = useState(mockVehicles);
     const [loading, setLoading] = useState(false);
     const [searchText, setSearchText] = useState('');

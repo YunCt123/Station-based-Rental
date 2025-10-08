@@ -1,5 +1,5 @@
 import React from "react";
-import { MapPinIcon, TruckIcon } from "@heroicons/react/24/outline";
+import { MapPinIcon } from "@heroicons/react/24/outline";
 
 interface StationMapViewProps {
   stations: Array<{

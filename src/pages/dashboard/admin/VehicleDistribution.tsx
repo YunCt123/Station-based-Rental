@@ -8,7 +8,6 @@ import {
   ClockIcon,
   AdjustmentsHorizontalIcon,
   PlusIcon,
-  MinusIcon,
   ArrowsRightLeftIcon,
 } from "@heroicons/react/24/outline";
 import {
@@ -219,9 +218,6 @@ export const VehicleDistribution: React.FC = () => {
     return ((station.currentVehicles / station.capacity) * 100).toFixed(1);
   };
 
-  const getOccupancyRate = (station: StationData) => {
-    return ((station.rented / station.currentVehicles) * 100).toFixed(1);
-  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -274,9 +270,6 @@ export const VehicleDistribution: React.FC = () => {
   ).length;
   const lowUtilizationStations = stationsData.filter(
     (s) => s.currentVehicles / s.capacity < 0.6
-  ).length;
-  const overCapacityStations = stationsData.filter(
-    (s) => s.currentVehicles / s.capacity > 0.9
   ).length;
 
   return (
@@ -383,7 +376,6 @@ export const VehicleDistribution: React.FC = () => {
                   const utilizationRate = parseFloat(
                     getUtilizationRate(station)
                   );
-                  const occupancyRate = parseFloat(getOccupancyRate(station));
 
                   return (
                     <tr

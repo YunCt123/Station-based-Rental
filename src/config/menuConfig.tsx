@@ -76,13 +76,19 @@ export const getMenuSections = (): SidebarSection[] => [
         roles: [UserRole.STATION_STAFF],
         children: [
           {
-            id: 'license-check',
-            title: 'Kiểm tra giấy phép lái xe',
-            icon: <DocumentTextIcon className="w-4 h-4" />,
-            path: '/staff/verification/license',
+            id: 'online-verification',
+            title: 'Xác thực tài khoản online',
+            icon: <UserIcon className="w-4 h-4" />,
+            path: '/staff/verification/online',
             roles: [UserRole.STATION_STAFF]
           },
-          
+          {
+            id: 'offline-verification',
+            title: 'Xác thực trực tiếp',
+            icon: <DocumentTextIcon className="w-4 h-4" />,
+            path: '/staff/verification/offline',
+            roles: [UserRole.STATION_STAFF]
+          },
         ]
       }
     ]

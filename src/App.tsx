@@ -19,6 +19,8 @@ import NotFoundPage from "./pages/shared/NotFoundPage";
 import StationDetailPage from "./pages/shared/StationDetailPage";
 import { DeliveryProcedures } from "./pages/dashboard/staff/DeliveryProcedures";
 import { CustomerVerification, VehicleAvailable, VehicleRented, IdentityVerification, VehicleInspection } from "./pages/dashboard/staff";
+import { OnlineVerification } from "./pages/dashboard/staff/OnlineVerification";
+import { OfflineVerification } from "./pages/dashboard/staff/OfflineVerification";
 
 function App() {
   return (
@@ -190,6 +192,18 @@ function App() {
           } />
 
           {/* Staff Verification Routes */}
+          <Route path="/staff/verification/online" element={
+            <DashboardLayout>
+              <OnlineVerification />
+            </DashboardLayout>
+          } />
+
+          <Route path="/staff/verification/offline" element={
+            <DashboardLayout>
+              <OfflineVerification />
+            </DashboardLayout>
+          } />
+
           <Route path="/staff/verification/license" element={
             <DashboardLayout>
               <CustomerVerification />

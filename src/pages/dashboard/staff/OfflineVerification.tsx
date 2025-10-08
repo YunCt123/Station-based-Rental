@@ -6,7 +6,6 @@ import {
   XCircleIcon,
   ExclamationTriangleIcon,
   ArrowPathIcon,
-  ShieldCheckIcon,
   ClockIcon,
   UserIcon
 } from '@heroicons/react/24/outline';
@@ -32,10 +31,7 @@ interface LicenseValidation {
   restrictions: string[];
 }
 
-export const LicenseVerification: React.FC = () => {
-  const [verificationMode, setVerificationMode] = useState<'online' | 'offline'>('offline');
-  const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
-  
+export const OfflineVerification: React.FC = () => {
   const [licenseInfo, setLicenseInfo] = useState<LicenseInfo>({
     licenseNumber: '',
     fullName: '',
@@ -54,59 +50,6 @@ export const LicenseVerification: React.FC = () => {
   const [validation, setValidation] = useState<LicenseValidation | null>(null);
   const [showDetails, setShowDetails] = useState(false);
 
-  // Mock data for pending customers
-  const pendingCustomers = [
-    {
-      id: 'CUST001',
-      fullName: 'Nguyễn Văn An',
-      email: 'nguyen.van.an@email.com',
-      phone: '0987654321',
-      registeredDate: '2024-10-01',
-      status: 'pending_verification',
-      cccdUploaded: true,
-      gplxUploaded: true,
-      documents: {
-        cccd: {
-          front: '/api/placeholder/400/250',
-          back: '/api/placeholder/400/250',
-          number: '001234567890',
-          fullName: 'Nguyễn Văn An',
-          dateOfBirth: '15/05/1990',
-          address: 'Số 123, Đường ABC, Quận 1, TP.HCM'
-        },
-        gplx: {
-          front: '/api/placeholder/400/250',
-          back: '/api/placeholder/400/250',
-          number: '012345678912',
-          fullName: 'NGUYỄN VĂN AN',
-          dateOfBirth: '15/05/1990',
-          licenseClass: 'B1, B2',
-          expiryDate: '20/01/2031'
-        }
-      }
-    },
-    {
-      id: 'CUST002',
-      fullName: 'Trần Thị Bích',
-      email: 'tran.thi.bich@email.com',
-      phone: '0976543210',
-      registeredDate: '2024-10-03',
-      status: 'pending_verification',
-      cccdUploaded: true,
-      gplxUploaded: false,
-      documents: {
-        cccd: {
-          front: '/api/placeholder/400/250',
-          back: '/api/placeholder/400/250',
-          number: '001987654321',
-          fullName: 'Trần Thị Bích',
-          dateOfBirth: '22/08/1992',
-          address: 'Số 456, Đường XYZ, Quận 3, TP.HCM'
-        }
-      }
-    }
-  ];
-
   const simulateLicenseScan = () => {
     setScanStatus('scanning');
     
@@ -120,20 +63,29 @@ export const LicenseVerification: React.FC = () => {
         expiryDate: '20/01/2031',
         licenseClass: 'B1, B2',
         issuePlace: 'Cục CSGT - Bộ Công an',
-        restrictions: 'Đeo kính lúc lái xe'
+        restrictions: 'Đeo kính khi lái xe'
       };
-
+      
       setLicenseInfo(mockLicenseData);
       setScanStatus('success');
       
-      // Simulate license validation
+      // Validate license
+      const today = new Date();
+      const expiryDate = new Date('2031-01-20');
+      const daysUntilExpiry = Math.ceil((expiryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+      const isExpired = expiryDate < today;
+      
       const mockValidation: LicenseValidation = {
         isValid: true,
-        isExpired: false,
-        daysUntilExpiry: 2555,
-        validationStatus: 'valid',
-        message: 'Giấy phép lái xe hợp lệ và đủ điều kiện thuê xe',
-        restrictions: ['Phải đeo kính lúc lái xe']
+        isExpired,
+        daysUntilExpiry,
+        validationStatus: isExpired ? 'expired' : (daysUntilExpiry < 30 ? 'restricted' : 'valid'),
+        message: isExpired 
+          ? 'GPLX đã hết hạn. Không thể thực hiện thuê xe.'
+          : daysUntilExpiry < 30
+          ? 'GPLX sắp hết hạn. Vui lòng gia hạn trước khi thuê xe.'
+          : 'GPLX hợp lệ và có thể sử dụng để thuê xe.',
+        restrictions: mockLicenseData.restrictions ? [mockLicenseData.restrictions] : []
       };
       
       setValidation(mockValidation);
@@ -141,269 +93,72 @@ export const LicenseVerification: React.FC = () => {
   };
 
   const handleFrontPhotoCapture = () => {
-    setCapturedImage('/api/placeholder/400/250');
+    // Simulate photo capture
+    setCapturedImage('https://via.placeholder.com/400x250');
   };
 
   const handleBackPhotoCapture = () => {
-    setBackImage('/api/placeholder/400/250');
-  };
-
-  const getValidationColor = (status: string) => {
-    switch (status) {
-      case 'valid':
-        return 'text-green-600 bg-green-50 border-green-200';
-      case 'expired':
-        return 'text-red-600 bg-red-50 border-red-200';
-      case 'restricted':
-        return 'text-yellow-600 bg-yellow-50 border-yellow-200';
-      default:
-        return 'text-gray-600 bg-gray-50 border-gray-200';
-    }
+    // Simulate photo capture
+    setBackImage('https://via.placeholder.com/400x250');
   };
 
   const getValidationIcon = (status: string) => {
     switch (status) {
       case 'valid':
-        return <CheckCircleIcon className="w-6 h-6 text-green-600" />;
+        return <CheckCircleIcon className="w-8 h-8 text-green-500 flex-shrink-0" />;
       case 'expired':
-        return <XCircleIcon className="w-6 h-6 text-red-600" />;
+      case 'invalid':
+        return <XCircleIcon className="w-8 h-8 text-red-500 flex-shrink-0" />;
       case 'restricted':
-        return <ExclamationTriangleIcon className="w-6 h-6 text-yellow-600" />;
+        return <ExclamationTriangleIcon className="w-8 h-8 text-yellow-500 flex-shrink-0" />;
       default:
-        return <ShieldCheckIcon className="w-6 h-6 text-gray-600" />;
+        return null;
     }
   };
 
+  const getValidationColor = (status: string) => {
+    switch (status) {
+      case 'valid':
+        return 'border-green-200 bg-green-50 text-green-800';
+      case 'expired':
+      case 'invalid':
+        return 'border-red-200 bg-red-50 text-red-800';
+      case 'restricted':
+        return 'border-yellow-200 bg-yellow-50 text-yellow-800';
+      default:
+        return 'border-gray-200 bg-gray-50 text-gray-800';
+    }
+  };
+
+  const handleReset = () => {
+    setCapturedImage(null);
+    setBackImage(null);
+    setScanStatus('idle');
+    setValidation(null);
+    setShowDetails(false);
+    setLicenseInfo({
+      licenseNumber: '',
+      fullName: '',
+      dateOfBirth: '',
+      address: '',
+      issueDate: '',
+      expiryDate: '',
+      licenseClass: '',
+      issuePlace: '',
+      restrictions: ''
+    });
+  };
+
   return (
-    <div className="p-6 max-w-6xl mx-auto">
-      {/* Header */}
-      <div className="mb-8">
-        <div className="flex items-center space-x-3 mb-4">
-          <DocumentTextIcon className="w-8 h-8 text-blue-600" />
-          <h1 className="text-3xl font-bold text-gray-900">Xác thực khách hàng</h1>
-        </div>
-        <p className="text-gray-600">
-          Xác thực giấy tờ và tài khoản khách hàng - Luồng Online và Offline
+    <div className="p-6">
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-800">Xác thực GPLX trực tiếp</h1>
+        <p className="text-gray-600 mt-2">
+          Quét và xác thực giấy phép lái xe cho khách hàng tại quầy
         </p>
       </div>
 
-      {/* Mode Selection */}
-      <div className="mb-8 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">Chọn phương thức xác thực</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <button
-            onClick={() => setVerificationMode('online')}
-            className={`p-6 text-left border-2 rounded-lg transition-colors ${
-              verificationMode === 'online' 
-                ? 'border-blue-500 bg-blue-50' 
-                : 'border-gray-200 hover:border-gray-300'
-            }`}
-          >
-            <div className="flex items-start space-x-4">
-              <div className={`p-3 rounded-full ${
-                verificationMode === 'online' ? 'bg-blue-100' : 'bg-gray-100'
-              }`}>
-                <UserIcon className={`w-6 h-6 ${
-                  verificationMode === 'online' ? 'text-blue-600' : 'text-gray-600'
-                }`} />
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Online - Tài khoản đã đăng ký</h3>
-                <p className="text-sm text-gray-600 mb-2">
-                  Xác thực tài khoản khách hàng đã upload CCCD và GPLX online
-                </p>
-                <ul className="text-xs text-gray-500 space-y-1">
-                  <li>• Khách hàng đã tạo tài khoản trước</li>
-                  <li>• Đã upload CCCD và GPLX qua app/web</li>
-                  <li>• Chỉ cần xác thực và phê duyệt</li>
-                </ul>
-              </div>
-            </div>
-          </button>
-
-          <button
-            onClick={() => setVerificationMode('offline')}
-            className={`p-6 text-left border-2 rounded-lg transition-colors ${
-              verificationMode === 'offline' 
-                ? 'border-green-500 bg-green-50' 
-                : 'border-gray-200 hover:border-gray-300'
-            }`}
-          >
-            <div className="flex items-start space-x-4">
-              <div className={`p-3 rounded-full ${
-                verificationMode === 'offline' ? 'bg-green-100' : 'bg-gray-100'
-              }`}>
-                <CameraIcon className={`w-6 h-6 ${
-                  verificationMode === 'offline' ? 'text-green-600' : 'text-gray-600'
-                }`} />
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Offline - Tại trạm</h3>
-                <p className="text-sm text-gray-600 mb-2">
-                  Quét và xác thực giấy tờ khách hàng trực tiếp tại trạm
-                </p>
-                <ul className="text-xs text-gray-500 space-y-1">
-                  <li>• Khách hàng đến trực tiếp tại trạm</li>
-                  <li>• Chụp ảnh CCCD và GPLX tại chỗ</li>
-                  <li>• Xác thực ngay lập tức</li>
-                </ul>
-              </div>
-            </div>
-          </button>
-        </div>
-      </div>
-
-      {/* Online Mode - Customer Account Verification */}
-      {verificationMode === 'online' && (
-        <div className="space-y-6">
-          {/* Pending Customers List */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Tài khoản chờ xác thực</h2>
-            <div className="space-y-4">
-              {pendingCustomers.map((customer) => (
-                <div
-                  key={customer.id}
-                  onClick={() => setSelectedCustomer(customer)}
-                  className={`p-4 border rounded-lg cursor-pointer transition-colors ${
-                    selectedCustomer?.id === customer.id
-                      ? 'border-blue-500 bg-blue-50'
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
-                      <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
-                        <UserIcon className="w-6 h-6 text-gray-600" />
-                      </div>
-                      <div>
-                        <h3 className="font-semibold text-gray-900">{customer.fullName}</h3>
-                        <p className="text-sm text-gray-600">{customer.email}</p>
-                        <p className="text-xs text-gray-500">Đăng ký: {customer.registeredDate}</p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="flex items-center space-x-2 mb-2">
-                        <span className={`px-2 py-1 text-xs rounded ${
-                          customer.cccdUploaded ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                        }`}>
-                          {customer.cccdUploaded ? '✓ CCCD' : '✗ CCCD'}
-                        </span>
-                        <span className={`px-2 py-1 text-xs rounded ${
-                          customer.gplxUploaded ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                        }`}>
-                          {customer.gplxUploaded ? '✓ GPLX' : '✗ GPLX'}
-                        </span>
-                      </div>
-                      <span className="px-2 py-1 text-xs bg-yellow-100 text-yellow-800 rounded">
-                        Chờ xác thực
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Customer Document Review */}
-          {selectedCustomer && (
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                Xem xét hồ sơ: {selectedCustomer.fullName}
-              </h2>
-              
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* CCCD Documents */}
-                {selectedCustomer.documents.cccd && (
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-medium text-gray-900">Căn cước công dân</h3>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <p className="text-sm text-gray-600 mb-2">Mặt trước</p>
-                        <img 
-                          src={selectedCustomer.documents.cccd.front} 
-                          alt="CCCD front" 
-                          className="w-full rounded border"
-                        />
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-600 mb-2">Mặt sau</p>
-                        <img 
-                          src={selectedCustomer.documents.cccd.back} 
-                          alt="CCCD back" 
-                          className="w-full rounded border"
-                        />
-                      </div>
-                    </div>
-                    <div className="bg-gray-50 p-4 rounded">
-                      <div className="space-y-2 text-sm">
-                        <div><span className="font-medium">Số CCCD:</span> {selectedCustomer.documents.cccd.number}</div>
-                        <div><span className="font-medium">Họ tên:</span> {selectedCustomer.documents.cccd.fullName}</div>
-                        <div><span className="font-medium">Ngày sinh:</span> {selectedCustomer.documents.cccd.dateOfBirth}</div>
-                        <div><span className="font-medium">Địa chỉ:</span> {selectedCustomer.documents.cccd.address}</div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* GPLX Documents */}
-                {selectedCustomer.documents.gplx && (
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-medium text-gray-900">Giấy phép lái xe</h3>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <p className="text-sm text-gray-600 mb-2">Mặt trước</p>
-                        <img 
-                          src={selectedCustomer.documents.gplx.front} 
-                          alt="GPLX front" 
-                          className="w-full rounded border"
-                        />
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-600 mb-2">Mặt sau</p>
-                        <img 
-                          src={selectedCustomer.documents.gplx.back} 
-                          alt="GPLX back" 
-                          className="w-full rounded border"
-                        />
-                      </div>
-                    </div>
-                    <div className="bg-gray-50 p-4 rounded">
-                      <div className="space-y-2 text-sm">
-                        <div><span className="font-medium">Số GPLX:</span> {selectedCustomer.documents.gplx.number}</div>
-                        <div><span className="font-medium">Họ tên:</span> {selectedCustomer.documents.gplx.fullName}</div>
-                        <div><span className="font-medium">Ngày sinh:</span> {selectedCustomer.documents.gplx.dateOfBirth}</div>
-                        <div><span className="font-medium">Hạng:</span> {selectedCustomer.documents.gplx.licenseClass}</div>
-                        <div><span className="font-medium">Hết hạn:</span> {selectedCustomer.documents.gplx.expiryDate}</div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Verification Actions */}
-              <div className="mt-6 flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                <div>
-                  <h4 className="font-medium text-gray-900">Quyết định xác thực</h4>
-                  <p className="text-sm text-gray-600">Kiểm tra thông tin và quyết định phê duyệt tài khoản</p>
-                </div>
-                <div className="flex space-x-3">
-                  <button className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
-                    Từ chối
-                  </button>
-                  <button className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
-                    Phê duyệt
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Offline Mode - Original Scanning */}
-      {verificationMode === 'offline' && (
-        <div>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* License Scanning Section */}
         <div className="space-y-6">
           {/* Front Side Scan */}
@@ -674,7 +429,10 @@ export const LicenseVerification: React.FC = () => {
                       Chấp nhận và tiếp tục
                     </button>
                   )}
-                  <button className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700">
+                  <button 
+                    onClick={handleReset}
+                    className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+                  >
                     Quét lại GPLX
                   </button>
                 </div>
@@ -713,8 +471,8 @@ export const LicenseVerification: React.FC = () => {
           </div>
         </div>
       )}
-        </div>
-      )}
     </div>
   );
 };
+
+export default OfflineVerification;

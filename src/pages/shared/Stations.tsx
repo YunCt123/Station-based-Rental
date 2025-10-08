@@ -1,115 +1,139 @@
-import { Card, Col, Row, Typography, Button, Tag, Space, Divider } from 'antd';
-import { Link } from 'react-router-dom';
-import {
-  EnvironmentOutlined,
-  ThunderboltFilled,
-  CarOutlined,
-  CheckCircleOutlined,
-  WifiOutlined,
-  CoffeeOutlined,
-  StarFilled,
-  CheckCircleFilled,
-  CloseCircleFilled,
-} from '@ant-design/icons';
-import { stations } from '../../data/stations';
+// src/pages/shared/Stations.tsx
 
+import React, { useState, useEffect } from 'react';
+import { MagnifyingGlassIcon, ComputerDesktopIcon } from '@heroicons/react/24/outline';
+import { stations, type Station } from '../../data/stations';
+import StationCard from '../../components/StationCard';
 
-const { Title, Text, Paragraph } = Typography;
+const StationsPage: React.FC = () => {
+  const [allStations, setAllStations] = useState<Station[]>([]);
+  const [filteredStations, setFilteredStations] = useState<Station[]>([]);
+  
+  // State cho các bộ lọc
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCity, setSelectedCity] = useState('All');
+  const [selectedStatus] = useState('All');
+  const [sortBy, setSortBy] = useState('name');
 
-const amenityIcons: { [key: string]: React.ReactNode } = {
-  'Hỗ trợ sạc nhanh': <ThunderboltFilled />,
-  'Quán cà phê': <CoffeeOutlined />,
-  'WiFi': <WifiOutlined />,
-  'Nhà vệ sinh': <CheckCircleOutlined />,
-  'Bãi đậu xe': <CarOutlined />,
-};
+  // Load dữ liệu ban đầu
+  useEffect(() => {
+    setAllStations(stations);
+  }, []);
 
-const Stations = () => {
+  // Áp dụng bộ lọc và sắp xếp
+  useEffect(() => {
+    let result = allStations.filter(station => {
+      const matchesSearch = station.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                            station.address.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesCity = selectedCity === 'All' || station.city === selectedCity;
+      const matchesStatus = selectedStatus === 'All' || station.status === selectedStatus;
+      
+      return matchesSearch && matchesCity && matchesStatus;
+    });
+
+    // Sắp xếp
+    result.sort((a, b) => {
+      switch (sortBy) {
+        case 'availability':
+          return b.availableVehicles - a.availableVehicles;
+        case 'rating':
+          return b.rating - a.rating;
+        default: // 'name'
+          return a.name.localeCompare(b.name);
+      }
+    });
+
+    setFilteredStations(result);
+  }, [allStations, searchTerm, selectedCity, selectedStatus, sortBy]);
+
+  const cities = ['All', ...Array.from(new Set(allStations.map(s => s.city)))];
+  // const statuses = ['All', 'active', 'inactive'];
+
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#f0f2f5' }}>
+    <div className="min-h-screen bg-gray-50 pt-20">
       {/* Header */}
-      <div style={{
-        padding: '64px 0',
-        background: 'linear-gradient(135deg, #1890ff, #26aA45)',
-        textAlign: 'center'
-      }}>
-        <Title level={1} style={{ color: 'white', marginBottom: 16 }}>
-          Tìm Trạm Thuê Xe Điện
-        </Title>
-        <Paragraph style={{ color: 'rgba(255, 255, 255, 0.9)', fontSize: 18, maxWidth: 600, margin: '0 auto' }}>
-          Chọn một điểm thuê xe gần bạn để bắt đầu hành trình.
-        </Paragraph>
+      <div className="bg-gradient-to-r from-blue-600 to-green-500 text-white py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center">
+            <h1 className="text-4xl md:text-5xl font-bold mb-4">
+              Our Station Network
+            </h1>
+            <p className="text-xl opacity-90 max-w-3xl mx-auto">
+              Find a convenient rental station near you.
+            </p>
+          </div>
+        </div>
       </div>
 
-      {/* Station List */}
-      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '48px 24px' }}>
-        <Row gutter={[32, 32]}>
-          {stations.map((station) => (
-            <Col key={station.id} xs={24} sm={12} lg={8}>
-              <Card
-                hoverable
-                style={{ position: 'relative', display: 'flex', flexDirection: 'column', height: '100%' }}
-                cover={<img alt={station.name} src={station.image} style={{ height: 200, objectFit: 'cover' }} />}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        {/* Search and Filters Bar */}
+        <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Search */}
+            <div className="lg:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Search Stations</label>
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Search by name or address..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent pl-10"
+                />
+                <MagnifyingGlassIcon className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+              </div>
+            </div>
+
+            {/* City Filter */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">City</label>
+              <select
+                value={selectedCity}
+                onChange={(e) => setSelectedCity(e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
-                {/* Trạng thái hoạt động */}
-                <Tag
-                  icon={station.status === 'active' ? <CheckCircleFilled /> : <CloseCircleFilled />}
-                  color={station.status === 'active' ? 'success' : 'error'}
-                  style={{ position: 'absolute', top: 16, right: -8, fontSize: 14, padding: '4px 8px' }}
-                >
-                  {station.status === 'active' ? 'Hoạt động' : 'Tạm ngưng'}
-                </Tag>
-                
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '24px' }}>
-                  <Title level={4} style={{ marginBottom: 4, flexShrink: 0 }}>{station.name}</Title>
-                  <Text type="secondary" style={{ marginBottom: 16, flexShrink: 0 }}><EnvironmentOutlined style={{ marginRight: 8 }} />{station.address}</Text>
+                {cities.map(city => <option key={city} value={city}>{city}</option>)}
+              </select>
+            </div>
 
-                  <Row justify="space-around" align="middle" style={{ margin: '16px 0' }}>
-                    <Col span={12} style={{ textAlign: 'center' }}>
-                      <Title level={2} style={{ color: station.availableVehicles > 0 ? '#1890ff' : '#f5222d', marginBottom: 4 }}>
-                        {station.availableVehicles}
-                        <Text style={{ fontSize: 16, color: '#8c8c8c' }}> / {station.totalSlots}</Text>
-                      </Title>
-                      <Text>Xe có sẵn</Text>
-                    </Col>
-                    <Col span={12} style={{ textAlign: 'center' }}>
-                      <Title level={3} style={{ marginBottom: 4 }}>
-                         <StarFilled style={{color: '#faad14'}} /> {station.rating}
-                      </Title>
-                      <Text>Đánh giá</Text>
-                    </Col>
-                  </Row>
+            {/* Sort By */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Sort By</label>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="name">Name</option>
+                <option value="availability">Availability: High to Low</option>
+                <option value="rating">Rating: High to Low</option>
+              </select>
+            </div>
+          </div>
+        </div>
 
-                  <Divider style={{ margin: '16px 0', flexShrink: 0 }} />
-                  
-                  <div style={{ flex: 1 }}>
-                    <Text strong>Tiện ích tại trạm:</Text>
-                    <div style={{ marginTop: 8 }}>
-                      <Space size={[8, 8]} wrap>
-                        {station.amenities.map(amenity => (
-                          <Tag key={amenity} icon={amenityIcons[amenity] || <CheckCircleOutlined />}>
-                            {amenity}
-                          </Tag>
-                        ))}
-                      </Space>
-                    </div>
-                  </div>
+        {/* Results Count */}
+        <p className="text-sm text-gray-600 mb-6">
+          Showing {filteredStations.length} of {allStations.length} stations
+        </p>
 
-                  <Divider style={{ margin: '16px 0', flexShrink: 0 }} />
-
-                  <Link to={`/stations/${station.id}`} style={{ marginTop: 'auto' }}>
-                    <Button type="primary" block disabled={station.status === 'inactive'}>
-                      {station.status === 'active' ? (station.availableVehicles > 0 ? 'Chọn xe & đặt ngay' : 'Xem chi tiết trạm') : 'Trạm đang tạm ngưng'}
-                    </Button>
-                  </Link>
-                </div>
-              </Card>
-            </Col>
-          ))}
-        </Row>
+        {/* Station Grid */}
+        {filteredStations.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {filteredStations.map((station) => (
+              <StationCard key={station.id} station={station} />
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-12">
+            <ComputerDesktopIcon className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No stations found</h3>
+            <p className="text-gray-600">Try adjusting your search or filter criteria.</p>
+          </div>
+        )}
       </div>
     </div>
   );
 };
 
-export default Stations;
+export default StationsPage;

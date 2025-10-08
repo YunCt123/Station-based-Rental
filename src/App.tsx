@@ -12,15 +12,15 @@ import Register from "./pages/auth/Register";
 import { RoleSwitcher } from "./pages/dashboard/RoleSwitcher";
 import { AdminDashboard } from "./pages/dashboard/admin/AdminDashboard";
 import { StaffDashboard } from "./pages/dashboard/staff/StaffDashboard";
+import { FleetOverview } from "./pages/dashboard/admin/FleetOverview";
+import { VehicleDistribution } from "./pages/dashboard/admin/VehicleDistribution";
 import Stations from "./pages/shared/Stations";
 import NotFoundPage from "./pages/shared/NotFoundPage";
-import { CustomerManagement } from "./pages/dashboard/admin/CustomerManagement";
-import RentalHistory from "./pages/dashboard/admin/RentalHistory";
-import ComplaintHandling from "./pages/dashboard/admin/ComplaintHandling";
-import RiskList from "./pages/dashboard/admin/RiskList";
-import NewCustomer from "./pages/dashboard/admin/NewCustomer";
-import CustomerDetails from "./pages/dashboard/admin/CustomerDetails";
-
+import StationDetailPage from "./pages/shared/StationDetailPage";
+import { CustomerVerification } from "./pages/dashboard/staff/CustomerVerification";
+import { LicenseVerification } from "./pages/dashboard/staff/LicenseVerification";
+import { IdentityVerification } from "./pages/dashboard/staff/IdentityVerification";
+import { VehicleAvailable, VehicleRented } from "./pages/dashboard/staff";
 
 function App() {
   return (
@@ -28,101 +28,178 @@ function App() {
       <div className="App">
         <Routes>
           {/* Public routes with Header/Footer */}
-          <Route path="/" element={
-            <>
-              <Header />
-              <main className="min-h-screen">
-                <HomePage />
-              </main>
-              <Footer />
-            </>
-          } />
-          <Route path="/vehicles" element={
-            <>
-              <Header />
-              <main className="min-h-screen">
-                <VehiclesPage />
-              </main>
-              <Footer />
-            </>
-          } />
-          <Route path="/vehicle/:id" element={
-            <>
-              <Header />
-              <main className="min-h-screen">
-                <DetailsPage />
-              </main>
-              <Footer />
-            </>
-          } />
-          <Route path="/login" element={
-            <>
-              <Header />
-              <main className="min-h-screen">
-                <LoginPage />
-              </main>
-              <Footer />
-            </>
-          } />
-          <Route path="/stations" element={
-            <>
-              <Header />
-              <main className="min-h-screen">
-                <Stations />
-              </main>
-              <Footer />
-            </>
-          } />
-          <Route path="/how-it-works" element={
-            <>
-              <Header />
-              <main className="min-h-screen">
-                <HowItWorks />
-              </main>
-              <Footer />
-            </>
-          } />
-          <Route path="/register" element={
-            <>
-              <Header />
-              <main className="min-h-screen">
-                <Register />
-              </main>
-              <Footer />
-            </>
-          } />
-          <Route path="/booking/:vehicleId?" element={
-            <>
-              <Header />
-              <main className="min-h-screen">
-                <BookingPage />
-              </main>
-              <Footer />
-            </>
-          } />
+          <Route
+            path="/"
+            element={
+              <>
+                <Header />
+                <main className="min-h-screen">
+                  <HomePage />
+                </main>
+                <Footer />
+              </>
+            }
+          />
+          <Route
+            path="/vehicles"
+            element={
+              <>
+                <Header />
+                <main className="min-h-screen">
+                  <VehiclesPage />
+                </main>
+                <Footer />
+              </>
+            }
+          />
+          <Route
+            path="/vehicle/:id"
+            element={
+              <>
+                <Header />
+                <main className="min-h-screen">
+                  <DetailsPage />
+                </main>
+                <Footer />
+              </>
+            }
+          />
+          <Route
+            path="/login"
+            element={
+              <>
+                <Header />
+                <main className="min-h-screen">
+                  <LoginPage />
+                </main>
+                <Footer />
+              </>
+            }
+          />
+          <Route
+            path="/stations"
+            element={
+              <>
+                <Header />
+                <main className="min-h-screen">
+                  <Stations />
+                </main>
+                <Footer />
+              </>
+            }
+          />
+          <Route
+            path="/stations/:stationId"
+            element={
+              <>
+                <Header />
+                <main className="min-h-screen">
+                  <StationDetailPage />
+                </main>
+                <Footer />
+              </>
+            }
+          />
+          <Route
+            path="/how-it-works"
+            element={
+              <>
+                <Header />
+                <main className="min-h-screen">
+                  <HowItWorks />
+                </main>
+                <Footer />
+              </>
+            }
+          />
+          <Route
+            path="/register"
+            element={
+              <>
+                <Header />
+                <main className="min-h-screen">
+                  <Register />
+                </main>
+                <Footer />
+              </>
+            }
+          />
+          <Route
+            path="/booking/:vehicleId?"
+            element={
+              <>
+                <Header />
+                <main className="min-h-screen">
+                  <BookingPage />
+                </main>
+                <Footer />
+              </>
+            }
+          />
 
           {/* Dashboard routes without Header/Footer */}
           <Route path="/dashboard" element={<RoleSwitcher />} />
-          <Route path="/admin/dashboard" element={
+          <Route
+            path="/admin/dashboard"
+            element={
+              <DashboardLayout>
+                <AdminDashboard />
+              </DashboardLayout>
+            }
+          />
+          <Route
+            path="/admin/fleet/overview"
+            element={
+              <DashboardLayout>
+                <FleetOverview />
+              </DashboardLayout>
+            }
+          />
+          <Route
+            path="/admin/fleet/distribution"
+            element={
+              <DashboardLayout>
+                <VehicleDistribution />
+              </DashboardLayout>
+            }
+          />
+          <Route
+            path="/staff/dashboard"
+            element={
+              <DashboardLayout>
+                <StaffDashboard />
+              </DashboardLayout>
+            }
+          />
+
+          <Route path="/staff/vehicles/available" element={
             <DashboardLayout>
-              <AdminDashboard />
-              
+              <VehicleAvailable />
             </DashboardLayout>
           } />
-          <Route path="/admin/customers/*" element={
+
+          <Route path="/staff/vehicles/rented" element={
             <DashboardLayout>
-              <CustomerManagement />
+              <VehicleRented />
             </DashboardLayout>
-          }>
-            <Route path="history" element={<RentalHistory />} />
-            <Route path="complaints" element={<ComplaintHandling />} />
-            <Route path="blacklist" element={<RiskList />} />
-            <Route path="new" element={<NewCustomer />} />
-            <Route path=":id" element={<CustomerDetails />} />
-          </Route>
-          <Route path="/staff/dashboard" element={
+          } />
+
+          {/* Staff Verification Routes */}
+          <Route path="/staff/customer-verification" element={
             <DashboardLayout>
-              <StaffDashboard />
+              <CustomerVerification />
+            </DashboardLayout>
+          } />
+          
+          <Route path="/staff/verification/license" element={
+            <DashboardLayout>
+              <LicenseVerification />
+            </DashboardLayout>
+          } />
+          
+          <Route path="/staff/verification/identity" element={
+            <DashboardLayout>
+              <IdentityVerification />
             </DashboardLayout>
           } />
 
@@ -133,7 +210,5 @@ function App() {
     </Router>
   );
 }
-
-
 
 export default App;

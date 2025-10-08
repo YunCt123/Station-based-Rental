@@ -17,6 +17,10 @@ import { VehicleDistribution } from "./pages/dashboard/admin/VehicleDistribution
 import Stations from "./pages/shared/Stations";
 import NotFoundPage from "./pages/shared/NotFoundPage";
 import StationDetailPage from "./pages/shared/StationDetailPage";
+import { CustomerVerification } from "./pages/dashboard/staff/CustomerVerification";
+import { LicenseVerification } from "./pages/dashboard/staff/LicenseVerification";
+import { IdentityVerification } from "./pages/dashboard/staff/IdentityVerification";
+import { VehicleAvailable, VehicleRented } from "./pages/dashboard/staff";
 
 function App() {
   return (
@@ -167,6 +171,37 @@ function App() {
               </DashboardLayout>
             }
           />
+
+          <Route path="/staff/vehicles/available" element={
+            <DashboardLayout>
+              <VehicleAvailable />
+            </DashboardLayout>
+          } />
+
+          <Route path="/staff/vehicles/rented" element={
+            <DashboardLayout>
+              <VehicleRented />
+            </DashboardLayout>
+          } />
+
+          {/* Staff Verification Routes */}
+          <Route path="/staff/customer-verification" element={
+            <DashboardLayout>
+              <CustomerVerification />
+            </DashboardLayout>
+          } />
+          
+          <Route path="/staff/verification/license" element={
+            <DashboardLayout>
+              <LicenseVerification />
+            </DashboardLayout>
+          } />
+          
+          <Route path="/staff/verification/identity" element={
+            <DashboardLayout>
+              <IdentityVerification />
+            </DashboardLayout>
+          } />
 
           {/* 404 route */}
           <Route path="*" element={<NotFoundPage />} />

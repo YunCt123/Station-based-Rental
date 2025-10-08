@@ -21,6 +21,9 @@ import { CustomerVerification } from "./pages/dashboard/staff/CustomerVerificati
 import { LicenseVerification } from "./pages/dashboard/staff/LicenseVerification";
 import { IdentityVerification } from "./pages/dashboard/staff/IdentityVerification";
 import { VehicleAvailable, VehicleRented } from "./pages/dashboard/staff";
+import {CustomerManagement} from "./pages/dashboard/admin/CustomerManagement";
+import NewCustomer from "./pages/dashboard/admin/NewCustomer";
+import CustomerDetails from "./pages/dashboard/admin/CustomerDetails";
 
 function App() {
   return (
@@ -144,6 +147,30 @@ function App() {
             element={
               <DashboardLayout>
                 <AdminDashboard />
+              </DashboardLayout>
+            }
+          />
+          <Route
+            path="/admin/customers/profiles"
+            element={
+              <DashboardLayout>
+                <CustomerManagement />
+              </DashboardLayout>
+            }
+          />
+          <Route
+            path="/admin/customers/profiles/new"
+            element={
+              <DashboardLayout>
+                <NewCustomer />
+              </DashboardLayout>
+            }
+          />
+          <Route
+            path="/admin/customers/profiles/:id"
+            element={
+              <DashboardLayout>
+                <CustomerDetails />
               </DashboardLayout>
             }
           />

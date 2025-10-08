@@ -9,7 +9,7 @@ import {
 } from '@heroicons/react/24/outline';
 
 const navItems = [
-  { id: 'profile', label: 'Hồ sơ khách hàng', icon: UserCircleIcon, path: '/admin/customers' },
+  { id: 'profile', label: 'Hồ sơ khách hàng', icon: UserCircleIcon, path: '/admin/customers/profiles' },
   { id: 'history', label: 'Lịch sử thuê', icon: ClockIcon, path: '/admin/customers/history' },
   { id: 'complaints', label: 'Xử lý khiếu nại', icon: ExclamationTriangleIcon, path: '/admin/customers/complaints' },
   { id: 'risks', label: 'Danh sách có rủi ro', icon: DocumentTextIcon, path: '/admin/customers/blacklist', badge: 'New' }
@@ -67,7 +67,7 @@ export const CustomerManagement: React.FC = () => {
         <main className="lg:col-span-3 space-y-6">
           <div className="bg-white rounded-lg shadow p-6">
             {/* Base list view at /admin/customers */}
-            {activePath === '/admin/customers' && (
+            {activePath === '/admin/customers/profiles' && (
               <div>
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-lg font-semibold text-gray-900">Hồ sơ khách hàng</h2>

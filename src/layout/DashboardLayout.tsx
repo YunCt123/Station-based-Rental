@@ -15,7 +15,7 @@ const AppLogo: React.FC = () => (
   </div>
 );
 
-export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
+const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   return (
     <div className="flex h-screen bg-gray-50">
       {/* Sidebar */}
@@ -34,3 +34,5 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
     </div>
   );
 };
+
+export default DashboardLayout;

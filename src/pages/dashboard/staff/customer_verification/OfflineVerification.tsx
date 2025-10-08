@@ -6,7 +6,6 @@ import {
   XCircleIcon,
   ExclamationTriangleIcon,
   ArrowPathIcon,
-  ShieldCheckIcon,
   ClockIcon,
   UserIcon
 } from '@heroicons/react/24/outline';
@@ -32,7 +31,7 @@ interface LicenseValidation {
   restrictions: string[];
 }
 
-export const LicenseVerification: React.FC = () => {
+export const OfflineVerification: React.FC = () => {
   const [licenseInfo, setLicenseInfo] = useState<LicenseInfo>({
     licenseNumber: '',
     fullName: '',
@@ -64,20 +63,29 @@ export const LicenseVerification: React.FC = () => {
         expiryDate: '20/01/2031',
         licenseClass: 'B1, B2',
         issuePlace: 'Cục CSGT - Bộ Công an',
-        restrictions: 'Đeo kính lúc lái xe'
+        restrictions: 'Đeo kính khi lái xe'
       };
-
+      
       setLicenseInfo(mockLicenseData);
       setScanStatus('success');
       
-      // Simulate license validation
+      // Validate license
+      const today = new Date();
+      const expiryDate = new Date('2031-01-20');
+      const daysUntilExpiry = Math.ceil((expiryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+      const isExpired = expiryDate < today;
+      
       const mockValidation: LicenseValidation = {
         isValid: true,
-        isExpired: false,
-        daysUntilExpiry: 2555,
-        validationStatus: 'valid',
-        message: 'Giấy phép lái xe hợp lệ và đủ điều kiện thuê xe',
-        restrictions: ['Phải đeo kính lúc lái xe']
+        isExpired,
+        daysUntilExpiry,
+        validationStatus: isExpired ? 'expired' : (daysUntilExpiry < 30 ? 'restricted' : 'valid'),
+        message: isExpired 
+          ? 'GPLX đã hết hạn. Không thể thực hiện thuê xe.'
+          : daysUntilExpiry < 30
+          ? 'GPLX sắp hết hạn. Vui lòng gia hạn trước khi thuê xe.'
+          : 'GPLX hợp lệ và có thể sử dụng để thuê xe.',
+        restrictions: mockLicenseData.restrictions ? [mockLicenseData.restrictions] : []
       };
       
       setValidation(mockValidation);
@@ -85,49 +93,68 @@ export const LicenseVerification: React.FC = () => {
   };
 
   const handleFrontPhotoCapture = () => {
-    setCapturedImage('/api/placeholder/400/250');
+    // Simulate photo capture
+    setCapturedImage('https://via.placeholder.com/400x250');
   };
 
   const handleBackPhotoCapture = () => {
-    setBackImage('/api/placeholder/400/250');
-  };
-
-  const getValidationColor = (status: string) => {
-    switch (status) {
-      case 'valid':
-        return 'text-green-600 bg-green-50 border-green-200';
-      case 'expired':
-        return 'text-red-600 bg-red-50 border-red-200';
-      case 'restricted':
-        return 'text-yellow-600 bg-yellow-50 border-yellow-200';
-      default:
-        return 'text-gray-600 bg-gray-50 border-gray-200';
-    }
+    // Simulate photo capture
+    setBackImage('https://via.placeholder.com/400x250');
   };
 
   const getValidationIcon = (status: string) => {
     switch (status) {
       case 'valid':
-        return <CheckCircleIcon className="w-6 h-6 text-green-600" />;
+        return <CheckCircleIcon className="w-8 h-8 text-green-500 flex-shrink-0" />;
       case 'expired':
-        return <XCircleIcon className="w-6 h-6 text-red-600" />;
+      case 'invalid':
+        return <XCircleIcon className="w-8 h-8 text-red-500 flex-shrink-0" />;
       case 'restricted':
-        return <ExclamationTriangleIcon className="w-6 h-6 text-yellow-600" />;
+        return <ExclamationTriangleIcon className="w-8 h-8 text-yellow-500 flex-shrink-0" />;
       default:
-        return <ShieldCheckIcon className="w-6 h-6 text-gray-600" />;
+        return null;
     }
   };
 
+  const getValidationColor = (status: string) => {
+    switch (status) {
+      case 'valid':
+        return 'border-green-200 bg-green-50 text-green-800';
+      case 'expired':
+      case 'invalid':
+        return 'border-red-200 bg-red-50 text-red-800';
+      case 'restricted':
+        return 'border-yellow-200 bg-yellow-50 text-yellow-800';
+      default:
+        return 'border-gray-200 bg-gray-50 text-gray-800';
+    }
+  };
+
+  const handleReset = () => {
+    setCapturedImage(null);
+    setBackImage(null);
+    setScanStatus('idle');
+    setValidation(null);
+    setShowDetails(false);
+    setLicenseInfo({
+      licenseNumber: '',
+      fullName: '',
+      dateOfBirth: '',
+      address: '',
+      issueDate: '',
+      expiryDate: '',
+      licenseClass: '',
+      issuePlace: '',
+      restrictions: ''
+    });
+  };
+
   return (
-    <div className="p-6 max-w-6xl mx-auto">
-      {/* Header */}
-      <div className="mb-8">
-        <div className="flex items-center space-x-3 mb-4">
-          <DocumentTextIcon className="w-8 h-8 text-blue-600" />
-          <h1 className="text-3xl font-bold text-gray-900">Kiểm tra giấy phép lái xe</h1>
-        </div>
-        <p className="text-gray-600">
-          Quét và xác thực giấy phép lái xe của khách hàng để đảm bảo đủ điều kiện thuê xe
+    <div className="p-6">
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-800">Xác thực GPLX trực tiếp</h1>
+        <p className="text-gray-600 mt-2">
+          Quét và xác thực giấy phép lái xe cho khách hàng tại quầy
         </p>
       </div>
 
@@ -402,7 +429,10 @@ export const LicenseVerification: React.FC = () => {
                       Chấp nhận và tiếp tục
                     </button>
                   )}
-                  <button className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700">
+                  <button 
+                    onClick={handleReset}
+                    className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+                  >
                     Quét lại GPLX
                   </button>
                 </div>
@@ -444,3 +474,5 @@ export const LicenseVerification: React.FC = () => {
     </div>
   );
 };
+
+export default OfflineVerification;

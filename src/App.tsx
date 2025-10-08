@@ -15,10 +15,8 @@ import { StaffDashboard } from "./pages/dashboard/staff/StaffDashboard";
 import Stations from "./pages/shared/Stations";
 import NotFoundPage from "./pages/shared/NotFoundPage";
 import StationDetailPage from "./pages/shared/StationDetailPage";
-import { CustomerVerification } from "./pages/dashboard/staff/CustomerVerification";
-import { LicenseVerification } from "./pages/dashboard/staff/LicenseVerification";
-import { IdentityVerification } from "./pages/dashboard/staff/IdentityVerification";
-import { VehicleAvailable, VehicleRented } from "./pages/dashboard/staff";
+import { DeliveryProcedures } from "./pages/dashboard/staff/DeliveryProcedures";
+import { CustomerVerification, VehicleAvailable, VehicleRented, IdentityVerification, VehicleInspection } from "./pages/dashboard/staff";
 
 
 function App() {
@@ -134,22 +132,29 @@ function App() {
             </DashboardLayout>
           } />
 
+          {/* Staff Delivery Procedures Routes */}
+          <Route path="/staff/delivery-procedures" element={
+            <DashboardLayout>
+              <DeliveryProcedures />
+            </DashboardLayout>
+          } />
+
           {/* Staff Verification Routes */}
-          <Route path="/staff/customer-verification" element={
+          <Route path="/staff/verification/license" element={
             <DashboardLayout>
               <CustomerVerification />
             </DashboardLayout>
           } />
-          
-          <Route path="/staff/verification/license" element={
-            <DashboardLayout>
-              <LicenseVerification />
-            </DashboardLayout>
-          } />
-          
-          <Route path="/staff/verification/identity" element={
+
+          <Route path="/staff/identity-verification" element={
             <DashboardLayout>
               <IdentityVerification />
+            </DashboardLayout>
+          } />
+
+          <Route path="/staff/vehicle-inspection" element={
+            <DashboardLayout>
+              <VehicleInspection />
             </DashboardLayout>
           } />
 

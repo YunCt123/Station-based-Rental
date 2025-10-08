@@ -7,6 +7,9 @@ import {
   DocumentTextIcon,
   PlusCircleIcon
 } from '@heroicons/react/24/outline';
+import EyeOutlined from '@ant-design/icons/EyeOutlined';
+import { Modal } from 'antd';
+import NewCustomer from './NewCustomer';
 
 const navItems = [
   { id: 'profile', label: 'Hồ sơ khách hàng', icon: UserCircleIcon, path: '/admin/customers/profiles' },
@@ -21,6 +24,7 @@ export const CustomerManagement: React.FC = () => {
   const location = useLocation();
   const activePath = location.pathname;
   const [list, setList] = useState(() => getCustomers());
+  const [createOpen, setCreateOpen] = useState(false);
 
   useEffect(() => {
     // refresh customer list when location changes (simple approach)
@@ -71,9 +75,9 @@ export const CustomerManagement: React.FC = () => {
               <div>
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-lg font-semibold text-gray-900">Hồ sơ khách hàng</h2>
-                  <Link to="/admin/customers/new" className="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white rounded-md text-sm">
+                  <button onClick={() => setCreateOpen(true)} className="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white rounded-md text-sm">
                     <PlusCircleIcon className="w-4 h-4 mr-2" /> Thêm khách hàng
-                  </Link>
+                  </button>
                 </div>
 
                 <div className="overflow-x-auto">
@@ -100,7 +104,9 @@ export const CustomerManagement: React.FC = () => {
                             }`}>{c.risk}</span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-right">
-                            <Link to={`/admin/customers/${c.id}`} className="text-sm text-blue-600">Xem</Link>
+                            <Link to={`/admin/customers/profiles/${c.id}`} className="inline-flex items-center text-sm text-blue-600">
+                              <EyeOutlined className="mr-2" />
+                            </Link>
                           </td>
                         </tr>
                       ))}
@@ -113,6 +119,15 @@ export const CustomerManagement: React.FC = () => {
             {/* Nested routes will render here */}
             <Outlet />
           </div>
+          <Modal open={createOpen} title="Thêm khách hàng" onCancel={() => setCreateOpen(false)} footer={null}>
+            <NewCustomer
+              onCreate={() => {
+                // refresh list after creation
+                setList(getCustomers());
+              }}
+              onClose={() => setCreateOpen(false)}
+            />
+          </Modal>
 
           {/* small help panel */}
           

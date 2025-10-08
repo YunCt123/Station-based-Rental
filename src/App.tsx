@@ -24,6 +24,9 @@ import { VehicleAvailable, VehicleRented } from "./pages/dashboard/staff";
 import {CustomerManagement} from "./pages/dashboard/admin/CustomerManagement";
 import NewCustomer from "./pages/dashboard/admin/NewCustomer";
 import CustomerDetails from "./pages/dashboard/admin/CustomerDetails";
+import RentalHistory from "./pages/dashboard/admin/RentalHistory";
+import ComplaintHandling from "./pages/dashboard/admin/ComplaintHandling";
+import RiskList from "./pages/dashboard/admin/RiskList";
 
 function App() {
   return (
@@ -171,6 +174,30 @@ function App() {
             element={
               <DashboardLayout>
                 <CustomerDetails />
+              </DashboardLayout>
+            }
+          />
+          <Route
+            path="/admin/customers/history"
+            element={
+              <DashboardLayout>
+                <RentalHistory />
+              </DashboardLayout>
+            }
+          />
+          <Route
+            path="/admin/customers/complaints"
+            element={
+              <DashboardLayout>
+                <ComplaintHandling />
+              </DashboardLayout>
+            }
+          />
+          <Route
+            path="/admin/customers/blacklist"
+            element={
+              <DashboardLayout>
+                <RiskList />
               </DashboardLayout>
             }
           />

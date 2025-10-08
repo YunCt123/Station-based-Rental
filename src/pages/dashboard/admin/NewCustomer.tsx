@@ -5,9 +5,10 @@ import { addCustomer } from '../../../data/customersStore';
 
 type NewCustomerProps = {
   onCreate?: (c: Customer) => void;
+  onClose?: () => void; // if provided, do not navigate and call this to close modal
 };
 
-const NewCustomer: React.FC<NewCustomerProps> = ({ onCreate }) => {
+const NewCustomer: React.FC<NewCustomerProps> = ({ onCreate, onClose }) => {
   const navigate = useNavigate();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -28,14 +29,17 @@ const NewCustomer: React.FC<NewCustomerProps> = ({ onCreate }) => {
 
   addCustomer(newCustomer);
   onCreate?.(newCustomer);
-
-  // navigate back to list after create
-  navigate('/admin/customers');
+  // if called inside a modal, just close the modal; otherwise navigate
+  if (onClose) {
+    onClose();
+  } else {
+    navigate('/admin/customers');
+  }
   };
 
   return (
     <div>
-      <h3 className="text-lg font-semibold mb-4">Thêm khách hàng mới</h3>
+      
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="block text-sm text-gray-700">Họ và tên</label>
@@ -51,7 +55,14 @@ const NewCustomer: React.FC<NewCustomerProps> = ({ onCreate }) => {
         </div>
         <div className="flex space-x-2">
           <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-md">Tạo</button>
-          <button type="button" onClick={() => navigate('/admin/customers')} className="px-4 py-2 border rounded-md">Hủy</button>
+          <button
+            type="button"
+            onClick={() => {
+              if (onClose) onClose(); else navigate('/admin/customers');
+            }}
+            className="px-4 py-2 border rounded-md">
+            Hủy
+          </button>
         </div>
       </form>
     </div>

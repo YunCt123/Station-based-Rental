@@ -14,6 +14,12 @@ import { AdminDashboard } from "./pages/dashboard/admin/AdminDashboard";
 import { StaffDashboard } from "./pages/dashboard/staff/StaffDashboard";
 import Stations from "./pages/shared/Stations";
 import NotFoundPage from "./pages/shared/NotFoundPage";
+import { CustomerManagement } from "./pages/dashboard/admin/CustomerManagement";
+import RentalHistory from "./pages/dashboard/admin/RentalHistory";
+import ComplaintHandling from "./pages/dashboard/admin/ComplaintHandling";
+import RiskList from "./pages/dashboard/admin/RiskList";
+import NewCustomer from "./pages/dashboard/admin/NewCustomer";
+import CustomerDetails from "./pages/dashboard/admin/CustomerDetails";
 
 
 function App() {
@@ -100,8 +106,20 @@ function App() {
           <Route path="/admin/dashboard" element={
             <DashboardLayout>
               <AdminDashboard />
+              
             </DashboardLayout>
           } />
+          <Route path="/admin/customers/*" element={
+            <DashboardLayout>
+              <CustomerManagement />
+            </DashboardLayout>
+          }>
+            <Route path="history" element={<RentalHistory />} />
+            <Route path="complaints" element={<ComplaintHandling />} />
+            <Route path="blacklist" element={<RiskList />} />
+            <Route path="new" element={<NewCustomer />} />
+            <Route path=":id" element={<CustomerDetails />} />
+          </Route>
           <Route path="/staff/dashboard" element={
             <DashboardLayout>
               <StaffDashboard />

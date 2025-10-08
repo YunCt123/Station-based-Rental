@@ -18,6 +18,8 @@ import StationDetailPage from "./pages/shared/StationDetailPage";
 <<<<<<< HEAD
 import { DeliveryProcedures } from "./pages/dashboard/staff/DeliveryProcedures";
 import { CustomerVerification, VehicleAvailable, VehicleRented, IdentityVerification, VehicleInspection } from "./pages/dashboard/staff";
+import { OnlineVerification } from "./pages/dashboard/staff/OnlineVerification";
+import { OfflineVerification } from "./pages/dashboard/staff/OfflineVerification";
 
 =======
 import { DeliveryProcedures } from "./pages/dashboard/staff/DeliveryProcedures";
@@ -146,6 +148,18 @@ function App() {
           } />
 
           {/* Staff Verification Routes */}
+          <Route path="/staff/verification/online" element={
+            <DashboardLayout>
+              <OnlineVerification />
+            </DashboardLayout>
+          } />
+
+          <Route path="/staff/verification/offline" element={
+            <DashboardLayout>
+              <OfflineVerification />
+            </DashboardLayout>
+          } />
+
           <Route path="/staff/verification/license" element={
             <DashboardLayout>
               <CustomerVerification />

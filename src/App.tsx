@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Header from "./layout/Header";
 import Footer from "./layout/Footer";
@@ -21,10 +22,40 @@ import { DeliveryProcedures } from "./pages/dashboard/staff/DeliveryProcedures";
 import { CustomerVerification, VehicleAvailable, VehicleRented, IdentityVerification, VehicleInspection } from "./pages/dashboard/staff";
 import { OnlineVerification } from "./pages/dashboard/staff/OnlineVerification";
 import { OfflineVerification } from "./pages/dashboard/staff/OfflineVerification";
+import { TranslationProvider } from "./contexts/TranslationContext";
+
+// User interface for type safety
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: "customer" | "staff" | "admin";
+  phoneNumber?: string;
+  dateOfBirth?: string;
+  isVerified?: boolean;
+}
 
 function App() {
+   const [user, setUser] = useState<User | null>(() => {
+    // Try to load user from localStorage on app start
+    const savedUser = localStorage.getItem("user");
+    return savedUser ? JSON.parse(savedUser) : null;
+  });
+
+  const handleLogin = (userData: User) => {
+    setUser(userData);
+    // Save user to localStorage
+    localStorage.setItem("user", JSON.stringify(userData));
+  };
+
+  const handleLogout = () => {
+    setUser(null);
+    // Remove user from localStorage
+    localStorage.removeItem("user");
+  };
   return (
     <Router>
+      <TranslationProvider>
       <div className="App">
         <Routes>
           {/* Public routes with Header/Footer */}
@@ -32,7 +63,7 @@ function App() {
             path="/"
             element={
               <>
-                <Header />
+                <Header user={user} onLogout={handleLogout} />
                 <main className="min-h-screen">
                   <HomePage />
                 </main>
@@ -70,7 +101,7 @@ function App() {
               <>
                 <Header />
                 <main className="min-h-screen">
-                  <LoginPage />
+                  <LoginPage onLogin={handleLogin} />
                 </main>
                 <Footer />
               </>
@@ -226,6 +257,7 @@ function App() {
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </div>
+      </TranslationProvider>
     </Router>
   );
 }

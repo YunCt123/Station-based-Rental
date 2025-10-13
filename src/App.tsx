@@ -21,6 +21,7 @@ import { DeliveryProcedures } from "./pages/dashboard/staff/DeliveryProcedures";
 import { CustomerVerification, VehicleAvailable, VehicleRented, IdentityVerification, VehicleInspection } from "./pages/dashboard/staff";
 import { OnlineVerification } from "./pages/dashboard/staff/OnlineVerification";
 import { OfflineVerification } from "./pages/dashboard/staff/OfflineVerification";
+import VehicleReserved from "./pages/dashboard/staff/VehicleReserved";
 
 function App() {
   return (
@@ -175,6 +176,12 @@ function App() {
           <Route path="/staff/vehicles/available" element={
             <DashboardLayout>
               <VehicleAvailable />
+            </DashboardLayout>
+          } />
+
+          <Route path="/staff/vehicles/booked" element={
+            <DashboardLayout>
+              <VehicleReserved />
             </DashboardLayout>
           } />
 

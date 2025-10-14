@@ -6,7 +6,7 @@ import {
   ClockIcon,
   ExclamationTriangleIcon,
   DocumentTextIcon,
-  PlusCircleIcon
+  
 } from '@heroicons/react/24/outline';
 
 const CustomerDetails: React.FC = () => {

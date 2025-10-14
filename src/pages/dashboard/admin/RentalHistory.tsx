@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link} from 'react-router-dom';
 import { UserCircleIcon, ClockIcon, ExclamationTriangleIcon,DocumentTextIcon } from '@heroicons/react/24/outline';
 
 const RentalHistory: React.FC = () => {

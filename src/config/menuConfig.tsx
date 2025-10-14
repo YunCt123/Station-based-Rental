@@ -66,30 +66,7 @@ export const getMenuSections = (): SidebarSection[] => [
         title: 'Thủ tục bàn giao',
         icon: <DocumentTextIcon className="w-5 h-5" />,
         path: '/staff/delivery-procedures',
-        roles: [UserRole.STATION_STAFF],
-        children: [
-          {
-            id: 'vehicle-inspection',
-            title: 'Kiểm tra xe',
-            icon: <WrenchScrewdriverIcon className="w-4 h-4" />,
-            path: '/staff/procedures/inspection',
-            roles: [UserRole.STATION_STAFF]
-          },
-          {
-            id: 'photo-capture',
-            title: 'Chụp ảnh',
-            icon: <DocumentTextIcon className="w-4 h-4" />,
-            path: '/staff/procedures/photos',
-            roles: [UserRole.STATION_STAFF]
-          },
-          {
-            id: 'status-update',
-            title: 'Cập nhật tình trạng',
-            icon: <ClipboardDocumentListIcon className="w-4 h-4" />,
-            path: '/staff/procedures/status',
-            roles: [UserRole.STATION_STAFF]
-          }
-        ]
+        roles: [UserRole.STATION_STAFF]
       },
       {
         id: 'customer-verification',
@@ -99,19 +76,19 @@ export const getMenuSections = (): SidebarSection[] => [
         roles: [UserRole.STATION_STAFF],
         children: [
           {
-            id: 'license-check',
-            title: 'Kiểm tra giấy phép lái xe',
-            icon: <DocumentTextIcon className="w-4 h-4" />,
-            path: '/staff/verification/license',
+            id: 'online-verification',
+            title: 'Xác thực tài khoản online',
+            icon: <UserIcon className="w-4 h-4" />,
+            path: '/staff/verification/online',
             roles: [UserRole.STATION_STAFF]
           },
           {
-            id: 'id-verification',
-            title: 'Đối chiếu hồ sơ',
-            icon: <UserIcon className="w-4 h-4" />,
-            path: '/staff/verification/identity',
+            id: 'offline-verification',
+            title: 'Xác thực trực tiếp',
+            icon: <DocumentTextIcon className="w-4 h-4" />,
+            path: '/staff/verification/offline',
             roles: [UserRole.STATION_STAFF]
-          }
+          },
         ]
       }
     ]

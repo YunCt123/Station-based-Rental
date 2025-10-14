@@ -8,8 +8,8 @@ import {
   ChevronRightIcon,
   ChevronLeftIcon,
 } from '@heroicons/react/24/outline';
-import { IdentityVerification } from './IdentityVerification';
-import { VehicleInspection } from './VehicleInspection';
+import { IdentityVerification } from '../IdentityVerification';
+import { VehicleInspection } from '../VehicleInspection';
 
 // Import components for each step (simplified versions for integration)
 // Full components are available at their individual routes

@@ -15,18 +15,11 @@ import { StaffDashboard } from "./pages/dashboard/staff/StaffDashboard";
 import Stations from "./pages/shared/Stations";
 import NotFoundPage from "./pages/shared/NotFoundPage";
 import StationDetailPage from "./pages/shared/StationDetailPage";
-<<<<<<< HEAD
-import { DeliveryProcedures } from "./pages/dashboard/staff/DeliveryProcedures";
-import { CustomerVerification, VehicleAvailable, VehicleRented, IdentityVerification, VehicleInspection } from "./pages/dashboard/staff";
-import { OnlineVerification } from "./pages/dashboard/staff/OnlineVerification";
-import { OfflineVerification } from "./pages/dashboard/staff/OfflineVerification";
-import VehicleReserved from "./pages/dashboard/staff/VehicleReserved";
-
-=======
-import { DeliveryProcedures } from "./pages/dashboard/staff/DeliveryProcedures";
-import { CustomerVerification, VehicleAvailable, VehicleRented, IdentityVerification, VehicleInspection } from "./pages/dashboard/staff";
-
->>>>>>> cafa803 (justify delivery procedures)
+import { DeliveryProcedures } from "./pages/dashboard/staff/delivery_procedures/DeliveryProcedures";
+import {VehicleAvailable, VehicleRented, IdentityVerification, VehicleInspection } from "./pages/dashboard/staff";
+import VehicleReserved from "./pages/dashboard/staff/vehicle/VehicleReserved";
+import OnlineVerification from "./pages/dashboard/staff/customer_verification/OnlineVerification";
+import OfflineVerification from "./pages/dashboard/staff/customer_verification/OfflineVerification";
 
 function App() {
   return (
@@ -164,12 +157,6 @@ function App() {
           <Route path="/staff/verification/offline" element={
             <DashboardLayout>
               <OfflineVerification />
-            </DashboardLayout>
-          } />
-
-          <Route path="/staff/verification/license" element={
-            <DashboardLayout>
-              <CustomerVerification />
             </DashboardLayout>
           } />
 

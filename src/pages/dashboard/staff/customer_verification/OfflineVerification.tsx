@@ -32,7 +32,6 @@ interface LicenseValidation {
 }
 
 export const OfflineVerification: React.FC = () => {
-export const OfflineVerification: React.FC = () => {
   const [licenseInfo, setLicenseInfo] = useState<LicenseInfo>({
     licenseNumber: '',
     fullName: '',
@@ -65,18 +64,10 @@ export const OfflineVerification: React.FC = () => {
         licenseClass: 'B1, B2',
         issuePlace: 'Cục CSGT - Bộ Công an',
         restrictions: 'Đeo kính khi lái xe'
-        restrictions: 'Đeo kính khi lái xe'
       };
-      
       
       setLicenseInfo(mockLicenseData);
       setScanStatus('success');
-      
-      // Validate license
-      const today = new Date();
-      const expiryDate = new Date('2031-01-20');
-      const daysUntilExpiry = Math.ceil((expiryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-      const isExpired = expiryDate < today;
       
       // Validate license
       const today = new Date();
@@ -95,15 +86,6 @@ export const OfflineVerification: React.FC = () => {
           ? 'GPLX sắp hết hạn. Vui lòng gia hạn trước khi thuê xe.'
           : 'GPLX hợp lệ và có thể sử dụng để thuê xe.',
         restrictions: mockLicenseData.restrictions ? [mockLicenseData.restrictions] : []
-        isExpired,
-        daysUntilExpiry,
-        validationStatus: isExpired ? 'expired' : (daysUntilExpiry < 30 ? 'restricted' : 'valid'),
-        message: isExpired 
-          ? 'GPLX đã hết hạn. Không thể thực hiện thuê xe.'
-          : daysUntilExpiry < 30
-          ? 'GPLX sắp hết hạn. Vui lòng gia hạn trước khi thuê xe.'
-          : 'GPLX hợp lệ và có thể sử dụng để thuê xe.',
-        restrictions: mockLicenseData.restrictions ? [mockLicenseData.restrictions] : []
       };
       
       setValidation(mockValidation);
@@ -113,73 +95,37 @@ export const OfflineVerification: React.FC = () => {
   const handleFrontPhotoCapture = () => {
     // Simulate photo capture
     setCapturedImage('https://via.placeholder.com/400x250');
-    // Simulate photo capture
-    setCapturedImage('https://via.placeholder.com/400x250');
   };
 
   const handleBackPhotoCapture = () => {
     // Simulate photo capture
     setBackImage('https://via.placeholder.com/400x250');
-    // Simulate photo capture
-    setBackImage('https://via.placeholder.com/400x250');
   };
 
-  const getValidationIcon = (status: string) => {
   const getValidationIcon = (status: string) => {
     switch (status) {
       case 'valid':
         return <CheckCircleIcon className="w-8 h-8 text-green-500 flex-shrink-0" />;
-        return <CheckCircleIcon className="w-8 h-8 text-green-500 flex-shrink-0" />;
       case 'expired':
-      case 'invalid':
-        return <XCircleIcon className="w-8 h-8 text-red-500 flex-shrink-0" />;
       case 'invalid':
         return <XCircleIcon className="w-8 h-8 text-red-500 flex-shrink-0" />;
       case 'restricted':
         return <ExclamationTriangleIcon className="w-8 h-8 text-yellow-500 flex-shrink-0" />;
-        return <ExclamationTriangleIcon className="w-8 h-8 text-yellow-500 flex-shrink-0" />;
       default:
-        return null;
         return null;
     }
   };
 
   const getValidationColor = (status: string) => {
-  const getValidationColor = (status: string) => {
     switch (status) {
       case 'valid':
-        return 'border-green-200 bg-green-50 text-green-800';
         return 'border-green-200 bg-green-50 text-green-800';
       case 'expired':
       case 'invalid':
         return 'border-red-200 bg-red-50 text-red-800';
-      case 'invalid':
-        return 'border-red-200 bg-red-50 text-red-800';
       case 'restricted':
         return 'border-yellow-200 bg-yellow-50 text-yellow-800';
-        return 'border-yellow-200 bg-yellow-50 text-yellow-800';
       default:
-        return 'border-gray-200 bg-gray-50 text-gray-800';
-    }
-  };
-
-  const handleReset = () => {
-    setCapturedImage(null);
-    setBackImage(null);
-    setScanStatus('idle');
-    setValidation(null);
-    setShowDetails(false);
-    setLicenseInfo({
-      licenseNumber: '',
-      fullName: '',
-      dateOfBirth: '',
-      address: '',
-      issueDate: '',
-      expiryDate: '',
-      licenseClass: '',
-      issuePlace: '',
-      restrictions: ''
-    });
         return 'border-gray-200 bg-gray-50 text-gray-800';
     }
   };
@@ -204,11 +150,6 @@ export const OfflineVerification: React.FC = () => {
   };
 
   return (
-    <div className="p-6">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">Xác thực GPLX trực tiếp</h1>
-        <p className="text-gray-600 mt-2">
-          Quét và xác thực giấy phép lái xe cho khách hàng tại quầy
     <div className="p-6">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-800">Xác thực GPLX trực tiếp</h1>

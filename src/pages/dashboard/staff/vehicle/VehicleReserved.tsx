@@ -30,7 +30,8 @@ const mockReservedVehicles = [
     customer: { name: 'Lê Thị D', phone: '0911112222' }
   },
 ];
-const VehicleReserved = () => {
+
+export default function VehicleReserved() {
   const [vehicles, setVehicles] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState('');
@@ -230,5 +231,3 @@ const VehicleReserved = () => {
     </Card>
   );
 }
-
-export default VehicleReserved;

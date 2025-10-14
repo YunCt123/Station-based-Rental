@@ -111,16 +111,38 @@ function App() {
 
           {/* Dashboard routes without Header/Footer */}
           <Route path="/dashboard" element={<RoleSwitcher />} />
-          <Route path="/admin/dashboard" element={
-            <DashboardLayout>
-              <AdminDashboard />
-            </DashboardLayout>
-          } />
-          <Route path="/staff/dashboard" element={
-            <DashboardLayout>
-              <StaffDashboard />
-            </DashboardLayout>
-          } />
+          <Route
+            path="/admin/dashboard"
+            element={
+              <DashboardLayout>
+                <AdminDashboard />
+              </DashboardLayout>
+            }
+          />
+          <Route
+            path="/admin/fleet/overview"
+            element={
+              <DashboardLayout>
+                <FleetOverview />
+              </DashboardLayout>
+            }
+          />
+          <Route
+            path="/admin/fleet/distribution"
+            element={
+              <DashboardLayout>
+                <VehicleDistribution />
+              </DashboardLayout>
+            }
+          />
+          <Route
+            path="/staff/dashboard"
+            element={
+              <DashboardLayout>
+                <StaffDashboard />
+              </DashboardLayout>
+            }
+          />
 
           <Route path="/staff/vehicles/available" element={
             <DashboardLayout>

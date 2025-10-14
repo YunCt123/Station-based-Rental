@@ -4,10 +4,10 @@ import {
     Input,
     Space,
     Spin,
-    message,
     Tag,
     Card,
     Modal,
+    Descriptions,
 } from 'antd';
 import { SearchOutlined } from '@ant-design/icons';
 
@@ -48,13 +48,12 @@ const mockVehicles = [
     },
 ];
 
-export const VehicleAvailable = () => {
+export default function VehicleAvailable() {
     const [vehicles, setVehicles] = useState(mockVehicles);
     const [loading, setLoading] = useState(false);
     const [searchText, setSearchText] = useState('');
     const [selectedVehicle, setSelectedVehicle] = useState<any>(null);
     const [isModalVisible, setIsModalVisible] = useState(false);
-    const [deliveredVehicle, setDeliveredVehicle] = useState<any>(null);
 
     useEffect(() => {
         // Simulate loading
@@ -65,21 +64,12 @@ export const VehicleAvailable = () => {
         }, 1000);
     }, []);
 
-    const handleSelectVehicle = (vehicle: any) => {
+    // Show details modal instead of navigating
+    const handleOpenDetails = (vehicle: any) => {
         setSelectedVehicle(vehicle);
         setIsModalVisible(true);
     };
-
-    const handleConfirmDelivery = () => {
-        setDeliveredVehicle(selectedVehicle);
-        setIsModalVisible(false);
-        message.success(`Xe ${selectedVehicle.licensePlate} đã được giao cho khách.`);
-        // Nếu muốn loại xe khỏi danh sách có sẵn:
-        setVehicles(prev => prev.filter(v => v.id !== selectedVehicle.id));
-        setSelectedVehicle(null);
-    };
-
-    const handleCancelDelivery = () => {
+    const handleCloseDetails = () => {
         setIsModalVisible(false);
         setSelectedVehicle(null);
     };
@@ -170,9 +160,9 @@ export const VehicleAvailable = () => {
                         padding: '4px 12px',
                         cursor: 'pointer'
                     }}
-                    onClick={() => handleSelectVehicle(record)}
+                    onClick={() => handleOpenDetails(record)}
                 >
-                    Chọn xe
+                    Chi tiết
                 </button>
             ),
         },
@@ -180,75 +170,66 @@ export const VehicleAvailable = () => {
 
     return (
         <Card title="Danh sách xe có sẵn">
-            {/* Modal xác nhận giao xe */}
+            {/* Modal chi tiết xe */}
             <Modal
-                title="Xác nhận giao xe"
+                title="Chi tiết xe"
                 open={isModalVisible}
-                onOk={handleConfirmDelivery}
-                onCancel={handleCancelDelivery}
-                okText="Giao xe"
-                cancelText="Hủy"
+                onCancel={handleCloseDetails}
+                footer={null}
                 bodyStyle={{ padding: 24 }}
+                width={760}
             >
                 {selectedVehicle && (
-                    <>
-                        <div
+                    <div
+                        style={{
+                            display: 'flex',
+                            gap: 16,
+                            alignItems: 'flex-start',
+                        }}
+                    >
+                        <img
+                            src={selectedVehicle.image}
+                            alt="vehicle"
                             style={{
-                                display: 'flex',
-                                justifyContent: 'space-between',
-                                alignItems: 'flex-start',
-                                border: '1px solid #f0f0f0',
+                                width: 160,
+                                height: 100,
+                                objectFit: 'cover',
                                 borderRadius: 8,
-                                padding: 16,
-                                background: '#fafafa',
-                                gap: 0,
+                                border: '1px solid #e4e4e4',
+                                boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+                                flexShrink: 0,
                             }}
-                        >
-                            <img
-                                src={selectedVehicle.image}
-                                alt="vehicle"
-                                style={{
-                                    width: 120,
-                                    height: 80,
-                                    objectFit: 'cover',
-                                    borderRadius: 8,
-                                    border: '1px solid #e4e4e4',
-                                    boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-                                }}
-                            />
-                            <div style={{ flex: 2, display: 'flex', justifyContent: 'space-between', width: '100%' }}>
-                                <div style={{ minWidth: 120, textAlign: 'left' }}>
-                                    <div style={{ marginBottom: 12, fontSize: 16 }}>
-                                        <b>{selectedVehicle.type} - {selectedVehicle.model}</b>
-                                    </div>
-                                    <div style={{ color: '#888', marginBottom: 8 }}>ID:</div>
-                                    <div style={{ color: '#888', marginBottom: 8 }}>Biển số:</div>
-                                    <div style={{ color: '#888', marginBottom: 8 }}>Tình trạng kỹ thuật:</div>
-                                    <div style={{ color: '#888', marginBottom: 8 }}>Pin:</div>
-                                    <div style={{ color: '#888', marginBottom: 8 }}>Vị trí:</div>
-                                    <div style={{ color: '#888', marginBottom: 8 }}>Trạng thái:</div>
+                        />
+                        <div style={{ flex: 1 }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                                <div style={{ fontSize: 16, fontWeight: 600 }}>
+                                    {selectedVehicle.type} - {selectedVehicle.model}
                                 </div>
-                                <div style={{ minWidth: 120, textAlign: 'right' }}>
-                                    <div style={{ marginBottom: 12, fontSize: 16, visibility: 'hidden' }}>
-                                        {selectedVehicle.type} - {selectedVehicle.model}
-                                    </div>
-                                    <div style={{ marginBottom: 8 }}><b>{selectedVehicle.id}</b></div>
-                                    <div style={{ marginBottom: 8 }}><b>{selectedVehicle.licensePlate}</b></div>
-                                    <div style={{ marginBottom: 8 }}>{selectedVehicle.technicalStatus}</div>
-                                    <div style={{ marginBottom: 8 }}>{selectedVehicle.battery}</div>
-                                    <div style={{ marginBottom: 8 }}>{selectedVehicle.location}</div>
-                                    <div style={{ marginBottom: 8 }}>
-                                        <Tag color="green" style={{ fontWeight: 500 }}>Có sẵn</Tag>
-                                    </div>
-                                </div>
+                                <Tag color="green" style={{ fontWeight: 500 }}>Có sẵn</Tag>
                             </div>
+                            <Descriptions
+                                size="middle"
+                                column={2}
+                                labelStyle={{ color: '#888', width: 120 }}
+                                contentStyle={{ fontWeight: 500 }}
+                                bordered
+                            >
+                                <Descriptions.Item label="ID">{selectedVehicle.id}</Descriptions.Item>
+                                <Descriptions.Item label="Biển số">{selectedVehicle.licensePlate}</Descriptions.Item>
+                                <Descriptions.Item label="Loại xe">{selectedVehicle.type}</Descriptions.Item>
+                                <Descriptions.Item label="Model">{selectedVehicle.model}</Descriptions.Item>
+                                <Descriptions.Item label="Tình trạng kỹ thuật">{selectedVehicle.technicalStatus}</Descriptions.Item>
+                                <Descriptions.Item label="Pin">{selectedVehicle.battery}</Descriptions.Item>
+                                <Descriptions.Item label="Vị trí">{selectedVehicle.location}</Descriptions.Item>
+                                <Descriptions.Item label="Trạng thái">
+                                    <Tag color="green">Có sẵn</Tag>
+                                </Descriptions.Item>
+                            </Descriptions>
                         </div>
-                        <div style={{ marginTop: 16, color: 'red', textAlign: 'center', fontWeight: 500 }}>
-                            Bạn có chắc chắn muốn giao xe này cho khách?
-                        </div>
-                    </>
+                    </div>
                 )}
             </Modal>
+
             <Space direction="vertical" style={{ width: '100%' }}>
                 <Input
                     placeholder="Search vehicles..."
@@ -268,72 +249,7 @@ export const VehicleAvailable = () => {
                         rowKey="id"
                     />
                 </Spin>
-                {deliveredVehicle && (
-                    <Card
-                        type="inner"
-                        title="Xe đã giao cho khách"
-                        style={{
-                            marginTop: 16,
-                            background: '#f6ffed',
-                            borderColor: '#b7eb8f',
-                            borderRadius: 8,
-                            boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-                        }}
-                    >
-                        <div
-                            style={{
-                                display: 'flex',
-                                alignItems: 'flex-start',
-                                gap: 32,
-                                padding: 8,
-                            }}
-                        >
-                            <img
-                                src={deliveredVehicle.image}
-                                alt="vehicle"
-                                style={{
-                                    width: 240,
-                                    height: 160,
-                                    objectFit: 'cover',
-                                    borderRadius: 8,
-                                    border: '1px solid #e4e4e4',
-                                    boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-                                    marginRight: 32,
-                                }}
-                            />
-                            <div style={{ flex: 2, width: '100%' }}>
-                                <div style={{ marginBottom: 12, fontSize: 16 }}>
-                                    <b>{deliveredVehicle.type} - {deliveredVehicle.model}</b>
-                                </div>
-                                <div
-                                    style={{
-                                        display: 'grid',
-                                        gridTemplateColumns: 'auto 1fr auto 1fr',
-                                        gap: '8px 16px',
-                                        marginBottom: 8,
-                                    }}
-                                >
-                                    <div style={{ color: '#888' }}>ID:</div>
-                                    <div><b>{deliveredVehicle.id}</b></div>
-                                    <div style={{ color: '#888' }}>Biển số:</div>
-                                    <div><b>{deliveredVehicle.licensePlate}</b></div>
-                                    <div style={{ color: '#888' }}>Tình trạng kỹ thuật:</div>
-                                    <div>{deliveredVehicle.technicalStatus}</div>
-                                    <div style={{ color: '#888' }}>Pin:</div>
-                                    <div>{deliveredVehicle.battery}</div>
-                                    <div style={{ color: '#888' }}>Vị trí:</div>
-                                    <div>{deliveredVehicle.location}</div>
-                                    <div style={{ color: '#888' }}>Trạng thái:</div>
-                                    <div>
-                                        <Tag color="green" style={{ fontWeight: 500 }}>Đã giao</Tag>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </Card>
-                )}
             </Space>
         </Card>
     );
 }
-

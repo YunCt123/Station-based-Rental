@@ -17,16 +17,11 @@ import { VehicleDistribution } from "./pages/dashboard/admin/VehicleDistribution
 import Stations from "./pages/shared/Stations";
 import NotFoundPage from "./pages/shared/NotFoundPage";
 import StationDetailPage from "./pages/shared/StationDetailPage";
-import { CustomerVerification } from "./pages/dashboard/staff/CustomerVerification";
-import { LicenseVerification } from "./pages/dashboard/staff/LicenseVerification";
-import { IdentityVerification } from "./pages/dashboard/staff/IdentityVerification";
-import { VehicleAvailable, VehicleRented } from "./pages/dashboard/staff";
-import {CustomerManagement} from "./pages/dashboard/admin/CustomerManagement";
-import NewCustomer from "./pages/dashboard/admin/NewCustomer";
-import CustomerDetails from "./pages/dashboard/admin/CustomerDetails";
-import RentalHistory from "./pages/dashboard/admin/RentalHistory";
-import ComplaintHandling from "./pages/dashboard/admin/ComplaintHandling";
-import RiskList from "./pages/dashboard/admin/RiskList";
+import { DeliveryProcedures } from "./pages/dashboard/staff/DeliveryProcedures";
+import { CustomerVerification, VehicleAvailable, VehicleRented, IdentityVerification, VehicleInspection } from "./pages/dashboard/staff";
+import { OnlineVerification } from "./pages/dashboard/staff/OnlineVerification";
+import { OfflineVerification } from "./pages/dashboard/staff/OfflineVerification";
+import VehicleReserved from "./pages/dashboard/staff/VehicleReserved";
 
 function App() {
   return (
@@ -232,28 +227,53 @@ function App() {
             </DashboardLayout>
           } />
 
+          <Route path="/staff/vehicles/booked" element={
+            <DashboardLayout>
+              <VehicleReserved />
+            </DashboardLayout>
+          } />
+
           <Route path="/staff/vehicles/rented" element={
             <DashboardLayout>
               <VehicleRented />
             </DashboardLayout>
           } />
 
+          {/* Staff Delivery Procedures Routes */}
+          <Route path="/staff/delivery-procedures" element={
+            <DashboardLayout>
+              <DeliveryProcedures />
+            </DashboardLayout>
+          } />
+
           {/* Staff Verification Routes */}
-          <Route path="/staff/customer-verification" element={
+          <Route path="/staff/verification/online" element={
+            <DashboardLayout>
+              <OnlineVerification />
+            </DashboardLayout>
+          } />
+
+          <Route path="/staff/verification/offline" element={
+            <DashboardLayout>
+              <OfflineVerification />
+            </DashboardLayout>
+          } />
+
+          <Route path="/staff/verification/license" element={
             <DashboardLayout>
               <CustomerVerification />
             </DashboardLayout>
           } />
-          
-          <Route path="/staff/verification/license" element={
-            <DashboardLayout>
-              <LicenseVerification />
-            </DashboardLayout>
-          } />
-          
-          <Route path="/staff/verification/identity" element={
+
+          <Route path="/staff/identity-verification" element={
             <DashboardLayout>
               <IdentityVerification />
+            </DashboardLayout>
+          } />
+
+          <Route path="/staff/vehicle-inspection" element={
+            <DashboardLayout>
+              <VehicleInspection />
             </DashboardLayout>
           } />
 

@@ -149,54 +149,6 @@ function App() {
             }
           />
           <Route
-            path="/admin/customers/profiles"
-            element={
-              <DashboardLayout>
-                <CustomerManagement />
-              </DashboardLayout>
-            }
-          />
-          <Route
-            path="/admin/customers/profiles/new"
-            element={
-              <DashboardLayout>
-                <NewCustomer />
-              </DashboardLayout>
-            }
-          />
-          <Route
-            path="/admin/customers/profiles/:id"
-            element={
-              <DashboardLayout>
-                <CustomerDetails />
-              </DashboardLayout>
-            }
-          />
-          <Route
-            path="/admin/customers/history"
-            element={
-              <DashboardLayout>
-                <RentalHistory />
-              </DashboardLayout>
-            }
-          />
-          <Route
-            path="/admin/customers/complaints"
-            element={
-              <DashboardLayout>
-                <ComplaintHandling />
-              </DashboardLayout>
-            }
-          />
-          <Route
-            path="/admin/customers/blacklist"
-            element={
-              <DashboardLayout>
-                <RiskList />
-              </DashboardLayout>
-            }
-          />
-          <Route
             path="/admin/fleet/overview"
             element={
               <DashboardLayout>

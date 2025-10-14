@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { ChevronLeftIcon, ChevronRightIcon, ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline';
 import type { SidebarProps, MenuItem, SidebarSection } from '../../types/sidebar';
 
@@ -58,6 +59,7 @@ export const Sidebar: React.FC<SidebarComponentProps> = ({
     if (item.children && item.children.length > 0) {
       toggleMenuItem(item.id);
     } else {
+      // for backward compatibility call onNavigate if provided
       onNavigate?.(item.path);
     }
   };
@@ -73,34 +75,34 @@ export const Sidebar: React.FC<SidebarComponentProps> = ({
     
     return (
       <div key={item.id} className="mb-1">
-        <button
-          onClick={() => handleItemClick(item)}
-          className={`
-            w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200
-            ${level > 0 ? 'ml-4' : ''}
-            ${isActive 
-              ? 'bg-blue-600 text-white shadow-md border-l-4 border-blue-800' 
-              : 'text-gray-700 hover:bg-blue-50 hover:text-blue-800 hover:border-l-2 hover:border-blue-300'
-            }
-            ${isCollapsed ? 'justify-center' : 'justify-start'}
-          `}
-          title={isCollapsed ? item.title : undefined}
-        >
-          <span className={`flex-shrink-0 w-5 h-5 ${isActive ? 'text-white' : 'text-blue-600'} transition-colors duration-200`}>
-            {item.icon}
-          </span>
-          
-          {!isCollapsed && (
-            <>
-              <span className="ml-3 flex-1 text-left">{item.title}</span>
-              
-              {item.badge && (
-                <span className="ml-2 px-2 py-1 text-xs bg-red-500 text-white rounded-full shadow-sm">
-                  {item.badge}
-                </span>
-              )}
-              
-              {hasChildren && (
+        {hasChildren ? (
+          <button
+            onClick={() => handleItemClick(item)}
+            className={`
+              w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200
+              ${level > 0 ? 'ml-4' : ''}
+              ${isActive 
+                ? 'bg-blue-600 text-white shadow-md border-l-4 border-blue-800' 
+                : 'text-gray-700 hover:bg-blue-50 hover:text-blue-800 hover:border-l-2 hover:border-blue-300'
+              }
+              ${isCollapsed ? 'justify-center' : 'justify-start'}
+            `}
+            title={isCollapsed ? item.title : undefined}
+          >
+            <span className={`flex-shrink-0 w-5 h-5 ${isActive ? 'text-white' : 'text-blue-600'} transition-colors duration-200`}>
+              {item.icon}
+            </span>
+
+            {!isCollapsed && (
+              <>
+                <span className="ml-3 flex-1 text-left">{item.title}</span>
+
+                {item.badge && (
+                  <span className="ml-2 px-2 py-1 text-xs bg-red-500 text-white rounded-full shadow-sm">
+                    {item.badge}
+                  </span>
+                )}
+
                 <span className={`ml-2 ${isActive ? 'text-white' : 'text-blue-500'} transition-colors duration-200`}>
                   {isOpen ? (
                     <ChevronUpIcon className="w-4 h-4" />
@@ -108,11 +110,41 @@ export const Sidebar: React.FC<SidebarComponentProps> = ({
                     <ChevronDownIcon className="w-4 h-4" />
                   )}
                 </span>
-              )}
-            </>
-          )}
-        </button>
-        
+              </>
+            )}
+          </button>
+        ) : (
+          <Link
+            to={item.path}
+            className={`
+              w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200
+              ${level > 0 ? 'ml-4' : ''}
+              ${isActive 
+                ? 'bg-blue-600 text-white shadow-md border-l-4 border-blue-800' 
+                : 'text-gray-700 hover:bg-blue-50 hover:text-blue-800 hover:border-l-2 hover:border-blue-300'
+              }
+              ${isCollapsed ? 'justify-center' : 'justify-start'}
+            `}
+            title={isCollapsed ? item.title : undefined}
+          >
+            <span className={`flex-shrink-0 w-5 h-5 ${isActive ? 'text-white' : 'text-blue-600'} transition-colors duration-200`}>
+              {item.icon}
+            </span>
+
+            {!isCollapsed && (
+              <>
+                <span className="ml-3 flex-1 text-left">{item.title}</span>
+
+                {item.badge && (
+                  <span className="ml-2 px-2 py-1 text-xs bg-red-500 text-white rounded-full shadow-sm">
+                    {item.badge}
+                  </span>
+                )}
+              </>
+            )}
+          </Link>
+        )}
+
         {hasChildren && !isCollapsed && isOpen && (
           <div className="mt-1 space-y-1 pl-2 border-l-2 border-blue-200 ml-3">
             {item.children!.map(childItem => renderMenuItem(childItem, level + 1))}

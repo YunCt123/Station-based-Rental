@@ -48,7 +48,7 @@ const mockVehicles = [
     },
 ];
 
-export default function VehicleAvailable() {
+const VehicleAvailable: React.FC = () => {
     const [vehicles, setVehicles] = useState(mockVehicles);
     const [loading, setLoading] = useState(false);
     const [searchText, setSearchText] = useState('');
@@ -253,3 +253,5 @@ export default function VehicleAvailable() {
         </Card>
     );
 }
+
+export default VehicleAvailable;

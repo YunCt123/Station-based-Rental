@@ -48,7 +48,7 @@ interface VehicleTransfer {
   completedAt?: string;
 }
 
-export const VehicleDistribution: React.FC = () => {
+const VehicleDistribution: React.FC = () => {
   const [selectedStation, setSelectedStation] = useState<string | null>(null);
   const [transferModalOpen, setTransferModalOpen] = useState(false);
   const [transferData, setTransferData] = useState({
@@ -862,3 +862,5 @@ export const VehicleDistribution: React.FC = () => {
     </div>
   );
 };
+
+export default VehicleDistribution;

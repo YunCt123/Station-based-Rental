@@ -27,12 +27,10 @@ import {
 } from "@/components/EnhancedSearch";
 import {
   vehicleService,
-  type VehicleSearchFilters,
 } from "@/services/vehicleService";
-import type { Vehicle } from "@/types/vehicle";
+import type { Vehicle, VehicleSearchFilters } from "@/types/vehicle";
 import { Search, Filter, Grid, List, SlidersHorizontal } from "lucide-react";
 import { useTranslation } from "@/contexts/TranslationContext";
-import HeroCarousel from "@/components/HeroCarousel";
 
 const Vehicles = () => {
   const { t, language } = useTranslation();
@@ -322,39 +320,22 @@ const Vehicles = () => {
     <PageTransition>
       <div className="min-h-screen bg-background">
         {/* Header */}
-       <HeroCarousel
-      heightClass="h-[420px] md:h-[520px]"
-      autoplayMs={3000}
-      slides={[
-        {
-          image:
-            "https://shop.vinfastauto.com/on/demandware.static/-/Sites-app_vinfast_vn-Library/default/dw174b57d5/images/PDP/vf9/202406/hero.webp",
-          title: t("common.vehiclesHeaderTitle"),
-          subtitle: t("common.vehiclesHeaderSubtitle"),
-          ctaText: t("common.viewAllVehicles"),
-          ctaHref: "/vehicles",
-          align: "center",
-        },
-        {
-          image:
-            "https://cdn.tienphong.vn/images/a6bf4f60924201126af6849ca45a3980b039b2e68480d2da6589e6ff9ba548c624bbdbb2416fe89d78f7f83417d8c92791c395aaa9493e5cdaf349cad3d4a15e/vf9-9117.jpg",
-          title: t("common.evDealsTitle"),
-          subtitle: t("common.evDealsSubtitle"),
-          ctaText: t("common.bookNow"),
-          ctaHref: "/deals",
-          align: "left",
-        },
-        {
-          image:
-            "https://static.automotor.vn/images/upload/2024/05/08/vinfast-vf3-vneconomtautomotive3.jpg",
-          title: t("common.safetyTitle"),
-          subtitle: t("common.safetySubtitle"),
-          ctaText: t("common.learnMore"),
-          ctaHref: "/safety",
-          align: "right",
-        },
-      ]}
-    />
+        <FadeIn>
+          <div className="bg-gradient-hero py-16">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+              <SlideIn direction="top" delay={100}>
+                <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
+                  {t("common.vehiclesHeaderTitle")}
+                </h1>
+              </SlideIn>
+              <SlideIn direction="top" delay={200}>
+                <p className="text-xl text-white/90 mb-8 max-w-2xl mx-auto">
+                  {t("common.vehiclesHeaderSubtitle")}
+                </p>
+              </SlideIn>
+            </div>
+          </div>
+        </FadeIn>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {/* Search and Filter Bar */}

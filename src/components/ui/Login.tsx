@@ -98,6 +98,15 @@ const Login = ({ onLogin }: LoginProps) => {
   return (
     <div className="min-h-screen bg-gradient-hero flex items-center justify-center p-4">
       <div className="w-full max-w-md">
+        {/* Logo */}
+        <div className="text-center mb-8">
+          <Link to="/" className="inline-flex items-center space-x-2 group">
+            <div className="p-3 bg-white rounded-xl group-hover:scale-105 transition-transform duration-200 shadow-lg">
+              <Car className="h-8 w-8 text-primary" />
+            </div>
+            <span className="text-2xl font-bold text-white">EVRentals</span>
+          </Link>
+        </div>
 
         {/* Login Card */}
         <Card className="shadow-premium">

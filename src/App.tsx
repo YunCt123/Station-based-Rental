@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Header from "./layout/Header";
 import Footer from "./layout/Footer";
@@ -17,6 +18,22 @@ import VehicleDistribution  from "./pages/dashboard/admin/VehicleDistribution";
 import Stations from "./pages/shared/Stations";
 import NotFoundPage from "./pages/shared/NotFoundPage";
 import StationDetailPage from "./pages/shared/StationDetailPage";
+import { DeliveryProcedures } from "./pages/dashboard/staff/DeliveryProcedures";
+import { CustomerVerification, VehicleAvailable, VehicleRented, IdentityVerification, VehicleInspection } from "./pages/dashboard/staff";
+import { OnlineVerification } from "./pages/dashboard/staff/OnlineVerification";
+import { OfflineVerification } from "./pages/dashboard/staff/OfflineVerification";
+import { TranslationProvider } from "./contexts/TranslationContext";
+
+// User interface for type safety
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: "customer" | "staff" | "admin";
+  phoneNumber?: string;
+  dateOfBirth?: string;
+  isVerified?: boolean;
+}
 import DeliveryProcedures from "./pages/dashboard/staff/delivery_procedures/DeliveryProcedures";
 import VehicleReserved from "./pages/dashboard/staff/vehicle/VehicleReserved";
 import OnlineVerification from "./pages/dashboard/staff/customer_verification/OnlineVerification";
@@ -30,8 +47,26 @@ import IdentityVerification from "./pages/dashboard/staff/delivery_procedures/Id
 import VehicleInspection from "./pages/dashboard/staff/delivery_procedures/VehicleInspection";
 
 function App() {
+   const [user, setUser] = useState<User | null>(() => {
+    // Try to load user from localStorage on app start
+    const savedUser = localStorage.getItem("user");
+    return savedUser ? JSON.parse(savedUser) : null;
+  });
+
+  const handleLogin = (userData: User) => {
+    setUser(userData);
+    // Save user to localStorage
+    localStorage.setItem("user", JSON.stringify(userData));
+  };
+
+  const handleLogout = () => {
+    setUser(null);
+    // Remove user from localStorage
+    localStorage.removeItem("user");
+  };
   return (
     <Router>
+      <TranslationProvider>
       <div className="App">
         <Routes>
           {/* Public routes with Header/Footer */}
@@ -39,7 +74,7 @@ function App() {
             path="/"
             element={
               <>
-                <Header />
+                <Header user={user} onLogout={handleLogout} />
                 <main className="min-h-screen">
                   <HomePage />
                 </main>
@@ -51,7 +86,7 @@ function App() {
             path="/vehicles"
             element={
               <>
-                <Header />
+                <Header user={user} onLogout={handleLogout} />
                 <main className="min-h-screen">
                   <VehiclesPage />
                 </main>
@@ -60,10 +95,10 @@ function App() {
             }
           />
           <Route
-            path="/vehicle/:id"
+            path="/vehicles/:id"
             element={
               <>
-                <Header />
+                <Header user={user} onLogout={handleLogout} />
                 <main className="min-h-screen">
                   <DetailsPage />
                 </main>
@@ -75,9 +110,9 @@ function App() {
             path="/login"
             element={
               <>
-                <Header />
+                <Header user={user} onLogout={handleLogout} />
                 <main className="min-h-screen">
-                  <LoginPage />
+                  <LoginPage onLogin={handleLogin} />
                 </main>
                 <Footer />
               </>
@@ -87,7 +122,7 @@ function App() {
             path="/stations"
             element={
               <>
-                <Header />
+                <Header user={user} onLogout={handleLogout} />
                 <main className="min-h-screen">
                   <Stations />
                 </main>
@@ -99,7 +134,7 @@ function App() {
             path="/stations/:stationId"
             element={
               <>
-                <Header />
+                <Header user={user} onLogout={handleLogout} />
                 <main className="min-h-screen">
                   <StationDetailPage />
                 </main>
@@ -111,7 +146,7 @@ function App() {
             path="/how-it-works"
             element={
               <>
-                <Header />
+                <Header user={user} onLogout={handleLogout} />
                 <main className="min-h-screen">
                   <HowItWorks />
                 </main>
@@ -123,7 +158,7 @@ function App() {
             path="/register"
             element={
               <>
-                <Header />
+                <Header user={user} onLogout={handleLogout} />
                 <main className="min-h-screen">
                   <Register />
                 </main>
@@ -135,7 +170,7 @@ function App() {
             path="/booking/:vehicleId?"
             element={
               <>
-                <Header />
+                <Header user={user} onLogout={handleLogout} />
                 <main className="min-h-screen">
                   <BookingPage />
                 </main>
@@ -252,6 +287,7 @@ function App() {
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </div>
+      </TranslationProvider>
     </Router>
   );
 }

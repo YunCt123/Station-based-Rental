@@ -4,13 +4,12 @@ import {
   
   ClockIcon,
   
-  
-  PlusCircleIcon
+ 
 } from '@heroicons/react/24/outline';
 import EyeOutlined from '@ant-design/icons/EyeOutlined';
 import EditOutlined from '@ant-design/icons/EditOutlined';
-import { Button, Input, Modal } from 'antd';
-import NewCustomer from './NewCustomer';
+import { Button, Input } from 'antd';
+// import NewCustomer from './NewCustomer';
 
 // const navItems = [
 //   { id: 'profile', label: 'Hồ sơ khách hàng', icon: UserCircleIcon, path: '/admin/customers/profiles' },
@@ -19,7 +18,7 @@ import NewCustomer from './NewCustomer';
 //   { id: 'risks', label: 'Danh sách có rủi ro', icon: DocumentTextIcon, path: '/admin/customers/blacklist', badge: 'New' }
 // ];
 
-import { getCustomers } from '../../../data/customersStore';
+ import { getCustomers } from '../../../data/customersStore';
 
 import { DeleteOutlined } from '@ant-design/icons';
 
@@ -27,7 +26,7 @@ export const CustomerManagement: React.FC = () => {
   const location = useLocation();
   const activePath = location.pathname;
   const [list, setList] = useState(() => getCustomers());
-  const [createOpen, setCreateOpen] = useState(false);
+  // const [setCreateOpen] = useState(false);
   const [query, setQuery] = useState('');
 
   useEffect(() => {
@@ -100,9 +99,9 @@ export const CustomerManagement: React.FC = () => {
                       style={{ width: 360 }}
                     />
 
-                    <button onClick={() => setCreateOpen(true)} className="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white rounded-md text-sm">
+                    {/* <button onClick={() => setCreateOpen(true)} className="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white rounded-md text-sm">
                       <PlusCircleIcon className="w-4 h-4 mr-2" /> Thêm khách hàng
-                    </button>
+                    </button> */}
                   </div>
                 </div>
 
@@ -153,7 +152,7 @@ export const CustomerManagement: React.FC = () => {
             {/* Nested routes will render here */}
             <Outlet />
           </div>
-          <Modal open={createOpen} title="Thêm khách hàng" onCancel={() => setCreateOpen(false)} footer={null}>
+          {/* <Modal open={createOpen} title="Thêm khách hàng" onCancel={() => setCreateOpen(false)} footer={null}>
             <NewCustomer
               onCreate={() => {
                 // refresh list after creation
@@ -161,7 +160,7 @@ export const CustomerManagement: React.FC = () => {
               }}
               onClose={() => setCreateOpen(false)}
             />
-          </Modal>
+          </Modal> */}
 
           {/* small help panel */}
           

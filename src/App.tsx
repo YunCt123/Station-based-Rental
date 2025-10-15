@@ -28,6 +28,7 @@ import VehicleAvailable from "./pages/dashboard/staff/vehicle/VehicleAvailable";
 import VehicleRented from "./pages/dashboard/staff/vehicle/VehicleRented";
 import IdentityVerification from "./pages/dashboard/staff/delivery_procedures/IdentityVerification";
 import VehicleInspection from "./pages/dashboard/staff/delivery_procedures/VehicleInspection";
+import CustomerManagement from "./pages/dashboard/admin/CustomerManagement";
 
 function App() {
   return (
@@ -140,6 +141,14 @@ function App() {
             element={
               <DashboardLayout>
                 <VehicleDistribution />
+              </DashboardLayout>
+            }
+          />
+          <Route
+            path="/admin/customers/customer_management"
+            element={
+              <DashboardLayout>
+                <CustomerManagement />
               </DashboardLayout>
             }
           />

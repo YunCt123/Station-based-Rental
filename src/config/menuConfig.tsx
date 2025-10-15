@@ -11,7 +11,8 @@ import {
   ClipboardDocumentListIcon,
   WrenchScrewdriverIcon,
   UserIcon,
-  CurrencyDollarIcon
+  CurrencyDollarIcon,
+  BoltIcon
 } from '@heroicons/react/24/outline';
 
 import type { SidebarSection } from '../types/sidebar';
@@ -133,22 +134,22 @@ export const getMenuSections = (): SidebarSection[] => [
           {
             id: 'battery-status',
             title: 'Trạng thái pin',
-            icon: <ChartBarIcon className="w-4 h-4" />,
-            path: '/staff/vehicles/battery',
+            icon: <BoltIcon className="w-4 h-4" />,
+            path: '/staff/station-management/battery-status',
             roles: [UserRole.STATION_STAFF]
           },
           {
             id: 'technical-status',
             title: 'Tình trạng kỹ thuật',
             icon: <WrenchScrewdriverIcon className="w-4 h-4" />,
-            path: '/staff/vehicles/technical',
+            path: '/staff/station-management/technical-status',
             roles: [UserRole.STATION_STAFF]
           },
           {
-            id: 'malfunction-report',
+            id: 'incident-report',
             title: 'Báo cáo sự cố',
             icon: <ExclamationTriangleIcon className="w-4 h-4" />,
-            path: '/staff/vehicles/malfunction',
+            path: '/staff/station-management/incident-report',
             roles: [UserRole.STATION_STAFF]
           }
         ]

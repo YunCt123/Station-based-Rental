@@ -35,15 +35,15 @@ export const CustomerManagement: React.FC = () => {
     setList(getCustomers());
   }, [location.pathname]);
 
-  const filteredList = list.filter((c) => {
- if (!query) return true;
-  const q = query.trim().toLowerCase();
-   return (
-     c.name.toLowerCase().includes(q) ||
-     (c.email || '').toLowerCase().includes(q) ||
-     (c.phone || '').toLowerCase().includes(q)
-   );
- });
+//   const filteredList = list.filter((c) => {
+//  if (!query) return true;
+//   const q = query.trim().toLowerCase();
+//    return (
+//      c.name.toLowerCase().includes(q) ||
+//      (c.email || '').toLowerCase().includes(q) ||
+//      (c.phone || '').toLowerCase().includes(q)
+//    );
+//  });
 
   return (
     <div className="space-y-6">

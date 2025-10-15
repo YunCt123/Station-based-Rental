@@ -100,7 +100,7 @@ const Navbar = ({ user, onLogout }: NavbarProps) => {
                     className="flex items-center space-x-2"
                   >
                     <div className="w-8 h-8 bg-gradient-primary rounded-full flex items-center justify-center">
-                      <User className="h-4 w-4 text-white" />
+                      <User className="h-4 w-4 text-black" />
                     </div>
                     <span className="text-sm font-medium">{user.name}</span>
                   </Button>

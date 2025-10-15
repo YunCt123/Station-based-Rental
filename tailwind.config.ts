@@ -115,6 +115,11 @@ export default {
         'primary-gradient': 'linear-gradient(135deg, #3b82f6 0%, #22c55e 100%)',
         'electric-gradient': 'linear-gradient(135deg, #0ea5e9 0%, #22c55e 100%)',
         'battery-gradient': 'linear-gradient(90deg, #ef4444 0%, #eab308 50%, #22c55e 100%)',
+        "gradient-primary": "var(--gradient-primary)",
+        "gradient-success": "var(--gradient-success)",
+        "gradient-hero": "var(--gradient-hero)",
+        "gradient-card": "var(--gradient-card)",
+        
       },
       
       // Custom Shadows with Electric theme

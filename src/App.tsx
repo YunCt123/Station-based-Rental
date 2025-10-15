@@ -1,7 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Header from "./layout/Header";
 import Footer from "./layout/Footer";
-import DashboardLayout  from "./layout/DashboardLayout";
+import DashboardLayout from "./layout/DashboardLayout";
 import LoginPage from "./pages/auth/Login";
 import VehiclesPage from "./pages/shared/VehiclesPage";
 import HomePage from "./pages/shared/HomePage";
@@ -10,10 +10,12 @@ import HowItWorks from "./pages/shared/HowItWorks";
 import BookingPage from "./pages/shared/BookingPage";
 import Register from "./pages/auth/Register";
 import RoleSwitcher from "./pages/dashboard/RoleSwitcher";
-import AdminDashboard  from "./pages/dashboard/admin/AdminDashboard";
+import AdminDashboard from "./pages/dashboard/admin/AdminDashboard";
 import StaffDashboard from "./pages/dashboard/staff/StaffDashboard";
-import FleetOverview  from "./pages/dashboard/admin/FleetOverview";
-import VehicleDistribution  from "./pages/dashboard/admin/VehicleDistribution";
+import FleetOverview from "./pages/dashboard/admin/FleetOverview";
+import VehicleDistribution from "./pages/dashboard/admin/VehicleDistribution";
+import { DeliveryHistory } from "./pages/dashboard/admin/DeliveryHistory";
+import { ReturnHistory } from "./pages/dashboard/admin/ReturnHistory";
 import Stations from "./pages/shared/Stations";
 import NotFoundPage from "./pages/shared/NotFoundPage";
 import StationDetailPage from "./pages/shared/StationDetailPage";
@@ -171,6 +173,22 @@ function App() {
             }
           />
           <Route
+            path="/admin/transactions/delivery"
+            element={
+              <DashboardLayout>
+                <DeliveryHistory />
+              </DashboardLayout>
+            }
+          />
+          <Route
+            path="/admin/transactions/return"
+            element={
+              <DashboardLayout>
+                <ReturnHistory />
+              </DashboardLayout>
+            }
+          />
+          <Route
             path="/staff/dashboard"
             element={
               <DashboardLayout>
@@ -179,74 +197,107 @@ function App() {
             }
           />
 
-          <Route path="/staff/vehicles/available" element={
-            <DashboardLayout>
-              <VehicleAvailable />
-            </DashboardLayout>
-          } />
+          <Route
+            path="/staff/vehicles/available"
+            element={
+              <DashboardLayout>
+                <VehicleAvailable />
+              </DashboardLayout>
+            }
+          />
 
-          <Route path="/staff/vehicles/booked" element={
-            <DashboardLayout>
-              <VehicleReserved />
-            </DashboardLayout>
-          } />
+          <Route
+            path="/staff/vehicles/booked"
+            element={
+              <DashboardLayout>
+                <VehicleReserved />
+              </DashboardLayout>
+            }
+          />
 
-          <Route path="/staff/vehicles/rented" element={
-            <DashboardLayout>
-              <VehicleRented />
-            </DashboardLayout>
-          } />
+          <Route
+            path="/staff/vehicles/rented"
+            element={
+              <DashboardLayout>
+                <VehicleRented />
+              </DashboardLayout>
+            }
+          />
 
           {/* Staff Delivery Procedures Routes */}
-          <Route path="/staff/delivery-procedures" element={
-            <DashboardLayout>
-              <DeliveryProcedures />
-            </DashboardLayout>
-          } />
+          <Route
+            path="/staff/delivery-procedures"
+            element={
+              <DashboardLayout>
+                <DeliveryProcedures />
+              </DashboardLayout>
+            }
+          />
 
           {/* Staff Verification Routes */}
-          <Route path="/staff/verification/online" element={
-            <DashboardLayout>
-              <OnlineVerification />
-            </DashboardLayout>
-          } />
+          <Route
+            path="/staff/verification/online"
+            element={
+              <DashboardLayout>
+                <OnlineVerification />
+              </DashboardLayout>
+            }
+          />
 
-          <Route path="/staff/verification/offline" element={
-            <DashboardLayout>
-              <OfflineVerification />
-            </DashboardLayout>
-          } />
+          <Route
+            path="/staff/verification/offline"
+            element={
+              <DashboardLayout>
+                <OfflineVerification />
+              </DashboardLayout>
+            }
+          />
 
-          <Route path="/staff/identity-verification" element={
-            <DashboardLayout>
-              <IdentityVerification />
-            </DashboardLayout>
-          } />
+          <Route
+            path="/staff/identity-verification"
+            element={
+              <DashboardLayout>
+                <IdentityVerification />
+              </DashboardLayout>
+            }
+          />
 
-          <Route path="/staff/vehicle-inspection" element={
-            <DashboardLayout>
-              <VehicleInspection />
-            </DashboardLayout>
-          } />
+          <Route
+            path="/staff/vehicle-inspection"
+            element={
+              <DashboardLayout>
+                <VehicleInspection />
+              </DashboardLayout>
+            }
+          />
 
           {/* Station Management Routes */}
-          <Route path="/staff/station-management/battery-status" element={
-            <DashboardLayout>
-              <BatteryStatus />
-            </DashboardLayout>
-          } />
+          <Route
+            path="/staff/station-management/battery-status"
+            element={
+              <DashboardLayout>
+                <BatteryStatus />
+              </DashboardLayout>
+            }
+          />
 
-          <Route path="/staff/station-management/technical-status" element={
-            <DashboardLayout>
-              <TechnicalStatus />
-            </DashboardLayout>
-          } />
+          <Route
+            path="/staff/station-management/technical-status"
+            element={
+              <DashboardLayout>
+                <TechnicalStatus />
+              </DashboardLayout>
+            }
+          />
 
-          <Route path="/staff/station-management/incident-report" element={
-            <DashboardLayout>
-              <IncidentReport />
-            </DashboardLayout>
-          } />
+          <Route
+            path="/staff/station-management/incident-report"
+            element={
+              <DashboardLayout>
+                <IncidentReport />
+              </DashboardLayout>
+            }
+          />
 
           {/* 404 route */}
           <Route path="*" element={<NotFoundPage />} />

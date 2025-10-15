@@ -8,8 +8,8 @@ import {
   ChevronRightIcon,
   ChevronLeftIcon,
 } from '@heroicons/react/24/outline';
-import { IdentityVerification } from './IdentityVerification';
-import { VehicleInspection } from './VehicleInspection';
+import IdentityVerification from './IdentityVerification';
+import VehicleInspection from './VehicleInspection';
 
 // Import components for each step (simplified versions for integration)
 // Full components are available at their individual routes
@@ -31,7 +31,7 @@ interface Vehicle {
   status: 'idle' | 'verifying' | 'rented' | 'maintenance';
 }
 
-export const DeliveryProcedures: React.FC = () => {
+const DeliveryProcedures: React.FC = () => {
   const [currentStep, setCurrentStep] = useState<DeliveryStep>('identity-verification');
   const [completedSteps, setCompletedSteps] = useState<DeliveryStep[]>([]);
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
@@ -710,3 +710,5 @@ export const DeliveryProcedures: React.FC = () => {
     </div>
   );
 };
+
+export default DeliveryProcedures;

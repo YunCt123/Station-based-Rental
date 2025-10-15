@@ -9,7 +9,7 @@ import {
   XCircleIcon
 } from '@heroicons/react/24/outline';
 
-export const StaffDashboard: React.FC = () => {
+const StaffDashboard: React.FC = () => {
   const stats = [
     {
       title: 'Xe có sẵn',
@@ -237,3 +237,5 @@ export const StaffDashboard: React.FC = () => {
     </div>
   );
 };
+
+export default StaffDashboard;

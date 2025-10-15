@@ -4,7 +4,7 @@ import {
   ClipboardDocumentCheckIcon,
 } from '@heroicons/react/24/outline';
 
-export const IdentityVerification: React.FC = () => {
+const IdentityVerification: React.FC = () => {
   return (
     <div className="p-6 max-w-7xl mx-auto">
       {/* Header */}
@@ -79,3 +79,5 @@ export const IdentityVerification: React.FC = () => {
     </div>
   );
 };
+
+export default IdentityVerification;

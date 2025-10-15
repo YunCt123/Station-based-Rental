@@ -1,7 +1,8 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 
-export const RoleSwitcher: React.FC = () => {
+
+const RoleSwitcher: React.FC = () => {
   const navigate = useNavigate();
 
   const setUserRole = (role: 'admin' | 'station_staff', userInfo?: any) => {
@@ -130,3 +131,5 @@ export const RoleSwitcher: React.FC = () => {
     </div>
   );
 };
+
+export default RoleSwitcher;

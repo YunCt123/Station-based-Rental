@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import {
   CheckCircleIcon,
   WrenchScrewdriverIcon,
@@ -9,16 +10,38 @@ interface Vehicle {
   model: string;
   licensePlate: string;
   status: 'idle' | 'verifying' | 'rented' | 'maintenance';
+  battery?: string;
+  technicalStatus?: string;
+  location?: string;
 }
 
-export const VehicleInspection: React.FC = () => {
+const VehicleInspection: React.FC = () => {
+  const location = useLocation();
   const [deliveryVehicle, setDeliveryVehicle] = useState<Vehicle | null>(null);
 
-  const mockVehicles: Vehicle[] = [
-    { id: 'EV001', model: 'Tesla Model 3', licensePlate: '30A-12345', status: 'idle' },
-    { id: 'EV002', model: 'VinFast VF8', licensePlate: '30B-67890', status: 'verifying' },
-    { id: 'EV003', model: 'BYD Seal', licensePlate: '30C-11111', status: 'maintenance' },
-  ];
+  // Nhận thông tin xe từ bước trước
+  useEffect(() => {
+    const vehicleFromState = (location.state as any)?.vehicle;
+    if (vehicleFromState) {
+      setDeliveryVehicle({
+        id: vehicleFromState.id || vehicleFromState.licensePlate,
+        model: vehicleFromState.model,
+        licensePlate: vehicleFromState.licensePlate,
+        status: 'verifying',
+        battery: vehicleFromState.battery,
+        technicalStatus: vehicleFromState.technicalStatus,
+        location: vehicleFromState.location
+      });
+    } else {
+      // Fallback nếu không có xe được truyền từ bước trước
+      setDeliveryVehicle({
+        id: 'EV002',
+        model: 'VinFast VF8',
+        licensePlate: '30B-67890',
+        status: 'verifying'
+      });
+    }
+  }, [location.state]);
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
@@ -39,51 +62,43 @@ export const VehicleInspection: React.FC = () => {
           Kiểm tra xe
         </h2>
 
-        {/* Vehicle Selection */}
-        <div className="mb-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Chọn xe cần kiểm tra</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {mockVehicles.filter(v => v.status === 'verifying' || v.status === 'idle').map((vehicle) => (
-              <div
-                key={vehicle.id}
-                onClick={() => setDeliveryVehicle(vehicle)}
-                className={`p-4 border rounded-lg cursor-pointer transition-colors ${
-                  deliveryVehicle?.id === vehicle.id
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                }`}
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className="font-semibold text-gray-900">{vehicle.model}</h4>
-                  <span className={`px-2 py-1 text-xs font-medium rounded ${
-                    vehicle.status === 'idle' ? 'bg-green-100 text-green-800' :
-                    vehicle.status === 'rented' ? 'bg-blue-100 text-blue-800' :
-                    vehicle.status === 'maintenance' ? 'bg-red-100 text-red-800' :
-                    'bg-yellow-100 text-yellow-800'
-                  }`}>
-                    {vehicle.status === 'idle' ? 'Sẵn sàng' :
-                     vehicle.status === 'verifying' ? 'Đang kiểm tra' :
-                     vehicle.status === 'rented' ? 'Đang thuê' :
-                     'Bảo trì'}
-                  </span>
-                </div>
-                <div className="text-sm text-gray-600">
-                  <div>Biển số: {vehicle.licensePlate}</div>
-                </div>
+        {/* Vehicle Information */}
+        {deliveryVehicle && (
+          <div className="mb-6 bg-blue-50 rounded-lg p-6 border border-blue-200">
+            <h3 className="text-lg font-medium text-blue-900 mb-4">Thông tin xe cần kiểm tra</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="bg-white rounded-lg p-4">
+                <div className="text-sm text-gray-600">Model</div>
+                <div className="font-semibold text-gray-900">{deliveryVehicle.model}</div>
               </div>
-            ))}
-          </div>
-          
-          {deliveryVehicle && (
-            <div className="mt-4 bg-blue-50 rounded-lg p-4">
-              <h4 className="font-medium text-blue-900 mb-2">Xe được chọn để kiểm tra:</h4>
-              <div className="text-sm text-blue-700">
-                <div>{deliveryVehicle.model} - {deliveryVehicle.licensePlate}</div>
-                <div>Trạng thái: <span className="font-medium">{deliveryVehicle.status === 'idle' ? 'Sẵn sàng' : 'Đang kiểm tra'}</span></div>
+              <div className="bg-white rounded-lg p-4">
+                <div className="text-sm text-gray-600">Biển số</div>
+                <div className="font-semibold text-gray-900">{deliveryVehicle.licensePlate}</div>
               </div>
+              {deliveryVehicle.battery && (
+                <div className="bg-white rounded-lg p-4">
+                  <div className="text-sm text-gray-600">Pin</div>
+                  <div className="font-semibold text-green-600">{deliveryVehicle.battery}</div>
+                </div>
+              )}
+              {deliveryVehicle.technicalStatus && (
+                <div className="bg-white rounded-lg p-4">
+                  <div className="text-sm text-gray-600">Tình trạng kỹ thuật</div>
+                  <div className="font-semibold text-gray-900">{deliveryVehicle.technicalStatus}</div>
+                </div>
+              )}
             </div>
-          )}
-        </div>
+          </div>
+        )}
+
+        {!deliveryVehicle && (
+          <div className="mb-6 bg-yellow-50 rounded-lg p-6 border border-yellow-200">
+            <div className="text-yellow-800">
+              <div className="font-medium">Chưa có xe được chọn</div>
+              <div className="text-sm mt-1">Vui lòng chọn xe từ bước trước để tiến hành kiểm tra.</div>
+            </div>
+          </div>
+        )}
 
         {/* Inspection Phases */}
         <div className="space-y-6">
@@ -276,3 +291,5 @@ export const VehicleInspection: React.FC = () => {
     </div>
   );
 };
+
+export default VehicleInspection;

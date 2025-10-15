@@ -45,6 +45,7 @@ import VehicleAvailable from "./pages/dashboard/staff/vehicle/VehicleAvailable";
 import VehicleRented from "./pages/dashboard/staff/vehicle/VehicleRented";
 import IdentityVerification from "./pages/dashboard/staff/delivery_procedures/IdentityVerification";
 import VehicleInspection from "./pages/dashboard/staff/delivery_procedures/VehicleInspection";
+import CustomerManagement from "./pages/dashboard/admin/CustomerManagement";
 
 function App() {
    const [user, setUser] = useState<User | null>(() => {
@@ -70,114 +71,87 @@ function App() {
       <div className="App">
         <Routes>
           {/* Public routes with Header/Footer */}
-          <Route
-            path="/"
-            element={
-              <>
-                <Header user={user} onLogout={handleLogout} />
-                <main className="min-h-screen">
-                  <HomePage />
-                </main>
-                <Footer />
-              </>
-            }
-          />
-          <Route
-            path="/vehicles"
-            element={
-              <>
-                <Header user={user} onLogout={handleLogout} />
-                <main className="min-h-screen">
-                  <VehiclesPage />
-                </main>
-                <Footer />
-              </>
-            }
-          />
-          <Route
-            path="/vehicles/:id"
-            element={
-              <>
-                <Header user={user} onLogout={handleLogout} />
-                <main className="min-h-screen">
-                  <DetailsPage />
-                </main>
-                <Footer />
-              </>
-            }
-          />
-          <Route
-            path="/login"
-            element={
-              <>
-                <Header user={user} onLogout={handleLogout} />
-                <main className="min-h-screen">
-                  <LoginPage onLogin={handleLogin} />
-                </main>
-                <Footer />
-              </>
-            }
-          />
-          <Route
-            path="/stations"
-            element={
-              <>
-                <Header user={user} onLogout={handleLogout} />
-                <main className="min-h-screen">
-                  <Stations />
-                </main>
-                <Footer />
-              </>
-            }
-          />
-          <Route
-            path="/stations/:stationId"
-            element={
-              <>
-                <Header user={user} onLogout={handleLogout} />
-                <main className="min-h-screen">
-                  <StationDetailPage />
-                </main>
-                <Footer />
-              </>
-            }
-          />
-          <Route
-            path="/how-it-works"
-            element={
-              <>
-                <Header user={user} onLogout={handleLogout} />
-                <main className="min-h-screen">
-                  <HowItWorks />
-                </main>
-                <Footer />
-              </>
-            }
-          />
-          <Route
-            path="/register"
-            element={
-              <>
-                <Header user={user} onLogout={handleLogout} />
-                <main className="min-h-screen">
-                  <Register />
-                </main>
-                <Footer />
-              </>
-            }
-          />
-          <Route
-            path="/booking/:vehicleId?"
-            element={
-              <>
-                <Header user={user} onLogout={handleLogout} />
-                <main className="min-h-screen">
-                  <BookingPage />
-                </main>
-                <Footer />
-              </>
-            }
-          />
+          <Route path="/" element={
+            <>
+              <Header />
+              <main className="min-h-screen">
+                <HomePage />
+              </main>
+              <Footer />
+            </>
+          } />
+          <Route path="/vehicles" element={
+            <>
+              <Header />
+              <main className="min-h-screen">
+                <VehiclesPage />
+              </main>
+              <Footer />
+            </>
+          } />
+          <Route path="/vehicle/:id" element={
+            <>
+              <Header />
+              <main className="min-h-screen">
+                <DetailsPage />
+              </main>
+              <Footer />
+            </>
+          } />
+          <Route path="/login" element={
+            <>
+              <Header />
+              <main className="min-h-screen">
+                <LoginPage />
+              </main>
+              <Footer />
+            </>
+          } />
+          <Route path="/stations" element={
+            <>
+              <Header />
+              <main className="min-h-screen">
+                <Stations />
+              </main>
+              <Footer />
+            </>
+          } />
+          <Route path="/stations/:stationId" element={
+            <>
+              <Header />
+              <main className="min-h-screen">
+                <StationDetailPage />
+              </main>
+              <Footer />
+            </>
+          } />
+          <Route path="/how-it-works" element={
+            <>
+              <Header />
+              <main className="min-h-screen">
+                <HowItWorks />
+              </main>
+              <Footer />
+            </>
+          } />
+          <Route path="/register" element={
+            <>
+              <Header />
+              <main className="min-h-screen">
+                <Register />
+              </main>
+              <Footer />
+            </>
+          } />
+          <Route path="/booking/:vehicleId?" element={
+            <>
+              <Header />
+              <main className="min-h-screen">
+                <BookingPage />
+              </main>
+              <Footer />
+            </>
+          } />
 
           {/* Dashboard routes without Header/Footer */}
           <Route path="/dashboard" element={<RoleSwitcher />} />
@@ -202,6 +176,14 @@ function App() {
             element={
               <DashboardLayout>
                 <VehicleDistribution />
+              </DashboardLayout>
+            }
+          />
+          <Route
+            path="/admin/customers/customer_management"
+            element={
+              <DashboardLayout>
+                <CustomerManagement />
               </DashboardLayout>
             }
           />
@@ -291,5 +273,7 @@ function App() {
     </Router>
   );
 }
+
+
 
 export default App;

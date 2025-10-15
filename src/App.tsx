@@ -17,6 +17,7 @@ import { VehicleDistribution } from "./pages/dashboard/admin/VehicleDistribution
 import Stations from "./pages/shared/Stations";
 import NotFoundPage from "./pages/shared/NotFoundPage";
 import StationDetailPage from "./pages/shared/StationDetailPage";
+<<<<<<< HEAD
 import { CustomerVerification } from "./pages/dashboard/staff/CustomerVerification";
 import { LicenseVerification } from "./pages/dashboard/staff/LicenseVerification";
 import { IdentityVerification } from "./pages/dashboard/staff/IdentityVerification";
@@ -27,6 +28,11 @@ import CustomerDetails from "./pages/dashboard/admin/CustomerDetails";
 import RentalHistory from "./pages/dashboard/admin/RentalHistory";
 import ComplaintHandling from "./pages/dashboard/admin/ComplaintHandling";
 import RiskList from "./pages/dashboard/admin/RiskList";
+=======
+import { DeliveryProcedures } from "./pages/dashboard/staff/DeliveryProcedures";
+import { CustomerVerification, VehicleAvailable, VehicleRented, IdentityVerification, VehicleInspection } from "./pages/dashboard/staff";
+
+>>>>>>> cafa803 (justify delivery procedures)
 
 function App() {
   return (
@@ -238,22 +244,29 @@ function App() {
             </DashboardLayout>
           } />
 
+          {/* Staff Delivery Procedures Routes */}
+          <Route path="/staff/delivery-procedures" element={
+            <DashboardLayout>
+              <DeliveryProcedures />
+            </DashboardLayout>
+          } />
+
           {/* Staff Verification Routes */}
-          <Route path="/staff/customer-verification" element={
+          <Route path="/staff/verification/license" element={
             <DashboardLayout>
               <CustomerVerification />
             </DashboardLayout>
           } />
-          
-          <Route path="/staff/verification/license" element={
-            <DashboardLayout>
-              <LicenseVerification />
-            </DashboardLayout>
-          } />
-          
-          <Route path="/staff/verification/identity" element={
+
+          <Route path="/staff/identity-verification" element={
             <DashboardLayout>
               <IdentityVerification />
+            </DashboardLayout>
+          } />
+
+          <Route path="/staff/vehicle-inspection" element={
+            <DashboardLayout>
+              <VehicleInspection />
             </DashboardLayout>
           } />
 

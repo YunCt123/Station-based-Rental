@@ -75,7 +75,7 @@ function App() {
             path="/vehicles"
             element={
               <>
-                <Header />
+                <Header user={user} onLogout={handleLogout} />
                 <main className="min-h-screen">
                   <VehiclesPage />
                 </main>
@@ -87,7 +87,7 @@ function App() {
             path="/vehicle/:id"
             element={
               <>
-                <Header />
+                <Header user={user} onLogout={handleLogout} />
                 <main className="min-h-screen">
                   <DetailsPage />
                 </main>
@@ -99,7 +99,7 @@ function App() {
             path="/login"
             element={
               <>
-                <Header />
+                <Header user={user} onLogout={handleLogout} />
                 <main className="min-h-screen">
                   <LoginPage onLogin={handleLogin} />
                 </main>
@@ -111,7 +111,7 @@ function App() {
             path="/stations"
             element={
               <>
-                <Header />
+                <Header user={user} onLogout={handleLogout} />
                 <main className="min-h-screen">
                   <Stations />
                 </main>
@@ -123,7 +123,7 @@ function App() {
             path="/stations/:stationId"
             element={
               <>
-                <Header />
+                <Header user={user} onLogout={handleLogout} />
                 <main className="min-h-screen">
                   <StationDetailPage />
                 </main>
@@ -135,7 +135,7 @@ function App() {
             path="/how-it-works"
             element={
               <>
-                <Header />
+                <Header user={user} onLogout={handleLogout} />
                 <main className="min-h-screen">
                   <HowItWorks />
                 </main>
@@ -147,7 +147,7 @@ function App() {
             path="/register"
             element={
               <>
-                <Header />
+                <Header user={user} onLogout={handleLogout} />
                 <main className="min-h-screen">
                   <Register />
                 </main>
@@ -159,7 +159,7 @@ function App() {
             path="/booking/:vehicleId?"
             element={
               <>
-                <Header />
+                <Header user={user} onLogout={handleLogout} />
                 <main className="min-h-screen">
                   <BookingPage />
                 </main>

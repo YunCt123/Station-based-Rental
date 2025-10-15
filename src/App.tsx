@@ -84,7 +84,7 @@ function App() {
             }
           />
           <Route
-            path="/vehicle/:id"
+            path="/vehicles/:id"
             element={
               <>
                 <Header user={user} onLogout={handleLogout} />

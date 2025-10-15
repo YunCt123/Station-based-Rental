@@ -39,7 +39,7 @@ interface StationFleetData {
   };
 }
 
-export const FleetOverview: React.FC = () => {
+const FleetOverview: React.FC = () => {
   // Mock data - in real app, this would come from API
   const fleetStats: VehicleStats = {
     total: 247,
@@ -448,3 +448,5 @@ export const FleetOverview: React.FC = () => {
     </div>
   );
 };
+
+export default FleetOverview;

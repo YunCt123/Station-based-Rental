@@ -15,7 +15,7 @@ interface Vehicle {
   location?: string;
 }
 
-export const VehicleInspection: React.FC = () => {
+const VehicleInspection: React.FC = () => {
   const location = useLocation();
   const [deliveryVehicle, setDeliveryVehicle] = useState<Vehicle | null>(null);
 
@@ -291,3 +291,5 @@ export const VehicleInspection: React.FC = () => {
     </div>
   );
 };
+
+export default VehicleInspection;

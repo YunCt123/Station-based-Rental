@@ -1,7 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Header from "./layout/Header";
 import Footer from "./layout/Footer";
-import { DashboardLayout } from "./layout/DashboardLayout";
+import DashboardLayout  from "./layout/DashboardLayout";
 import LoginPage from "./pages/auth/Login";
 import VehiclesPage from "./pages/shared/VehiclesPage";
 import HomePage from "./pages/shared/HomePage";
@@ -9,19 +9,25 @@ import DetailsPage from "./pages/shared/DetailsPage";
 import HowItWorks from "./pages/shared/HowItWorks";
 import BookingPage from "./pages/shared/BookingPage";
 import Register from "./pages/auth/Register";
-import { RoleSwitcher } from "./pages/dashboard/RoleSwitcher";
-import { AdminDashboard } from "./pages/dashboard/admin/AdminDashboard";
-import { StaffDashboard } from "./pages/dashboard/staff/StaffDashboard";
-import { FleetOverview } from "./pages/dashboard/admin/FleetOverview";
-import { VehicleDistribution } from "./pages/dashboard/admin/VehicleDistribution";
+import RoleSwitcher from "./pages/dashboard/RoleSwitcher";
+import AdminDashboard  from "./pages/dashboard/admin/AdminDashboard";
+import StaffDashboard from "./pages/dashboard/staff/StaffDashboard";
+import FleetOverview  from "./pages/dashboard/admin/FleetOverview";
+import VehicleDistribution  from "./pages/dashboard/admin/VehicleDistribution";
 import Stations from "./pages/shared/Stations";
 import NotFoundPage from "./pages/shared/NotFoundPage";
 import StationDetailPage from "./pages/shared/StationDetailPage";
-import { DeliveryProcedures } from "./pages/dashboard/staff/delivery_procedures/DeliveryProcedures";
-import {VehicleAvailable, VehicleRented, IdentityVerification, VehicleInspection } from "./pages/dashboard/staff";
+import DeliveryProcedures from "./pages/dashboard/staff/delivery_procedures/DeliveryProcedures";
 import VehicleReserved from "./pages/dashboard/staff/vehicle/VehicleReserved";
 import OnlineVerification from "./pages/dashboard/staff/customer_verification/OnlineVerification";
 import OfflineVerification from "./pages/dashboard/staff/customer_verification/OfflineVerification";
+import BatteryStatus from "./pages/dashboard/staff/manage_vehicles/BatteryStatus";
+import TechnicalStatus from "./pages/dashboard/staff/manage_vehicles/TechnicalStatus";
+import IncidentReport from "./pages/dashboard/staff/manage_vehicles/IncidentReport";
+import VehicleAvailable from "./pages/dashboard/staff/vehicle/VehicleAvailable";
+import VehicleRented from "./pages/dashboard/staff/vehicle/VehicleRented";
+import IdentityVerification from "./pages/dashboard/staff/delivery_procedures/IdentityVerification";
+import VehicleInspection from "./pages/dashboard/staff/delivery_procedures/VehicleInspection";
 
 function App() {
   return (
@@ -220,6 +226,25 @@ function App() {
           <Route path="/staff/vehicle-inspection" element={
             <DashboardLayout>
               <VehicleInspection />
+            </DashboardLayout>
+          } />
+
+          {/* Station Management Routes */}
+          <Route path="/staff/station-management/battery-status" element={
+            <DashboardLayout>
+              <BatteryStatus />
+            </DashboardLayout>
+          } />
+
+          <Route path="/staff/station-management/technical-status" element={
+            <DashboardLayout>
+              <TechnicalStatus />
+            </DashboardLayout>
+          } />
+
+          <Route path="/staff/station-management/incident-report" element={
+            <DashboardLayout>
+              <IncidentReport />
             </DashboardLayout>
           } />
 

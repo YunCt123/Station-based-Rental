@@ -8,7 +8,7 @@ import {
   ClockIcon
 } from '@heroicons/react/24/outline';
 
-export const AdminDashboard: React.FC = () => {
+const AdminDashboard: React.FC = () => {
   const stats = [
     {
       title: 'Tổng số xe',
@@ -201,3 +201,5 @@ export const AdminDashboard: React.FC = () => {
     </div>
   );
 };
+
+export default AdminDashboard;

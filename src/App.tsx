@@ -35,114 +35,87 @@ function App() {
       <div className="App">
         <Routes>
           {/* Public routes with Header/Footer */}
-          <Route
-            path="/"
-            element={
-              <>
-                <Header />
-                <main className="min-h-screen">
-                  <HomePage />
-                </main>
-                <Footer />
-              </>
-            }
-          />
-          <Route
-            path="/vehicles"
-            element={
-              <>
-                <Header />
-                <main className="min-h-screen">
-                  <VehiclesPage />
-                </main>
-                <Footer />
-              </>
-            }
-          />
-          <Route
-            path="/vehicle/:id"
-            element={
-              <>
-                <Header />
-                <main className="min-h-screen">
-                  <DetailsPage />
-                </main>
-                <Footer />
-              </>
-            }
-          />
-          <Route
-            path="/login"
-            element={
-              <>
-                <Header />
-                <main className="min-h-screen">
-                  <LoginPage />
-                </main>
-                <Footer />
-              </>
-            }
-          />
-          <Route
-            path="/stations"
-            element={
-              <>
-                <Header />
-                <main className="min-h-screen">
-                  <Stations />
-                </main>
-                <Footer />
-              </>
-            }
-          />
-          <Route
-            path="/stations/:stationId"
-            element={
-              <>
-                <Header />
-                <main className="min-h-screen">
-                  <StationDetailPage />
-                </main>
-                <Footer />
-              </>
-            }
-          />
-          <Route
-            path="/how-it-works"
-            element={
-              <>
-                <Header />
-                <main className="min-h-screen">
-                  <HowItWorks />
-                </main>
-                <Footer />
-              </>
-            }
-          />
-          <Route
-            path="/register"
-            element={
-              <>
-                <Header />
-                <main className="min-h-screen">
-                  <Register />
-                </main>
-                <Footer />
-              </>
-            }
-          />
-          <Route
-            path="/booking/:vehicleId?"
-            element={
-              <>
-                <Header />
-                <main className="min-h-screen">
-                  <BookingPage />
-                </main>
-                <Footer />
-              </>
-            }
-          />
+          <Route path="/" element={
+            <>
+              <Header />
+              <main className="min-h-screen">
+                <HomePage />
+              </main>
+              <Footer />
+            </>
+          } />
+          <Route path="/vehicles" element={
+            <>
+              <Header />
+              <main className="min-h-screen">
+                <VehiclesPage />
+              </main>
+              <Footer />
+            </>
+          } />
+          <Route path="/vehicle/:id" element={
+            <>
+              <Header />
+              <main className="min-h-screen">
+                <DetailsPage />
+              </main>
+              <Footer />
+            </>
+          } />
+          <Route path="/login" element={
+            <>
+              <Header />
+              <main className="min-h-screen">
+                <LoginPage />
+              </main>
+              <Footer />
+            </>
+          } />
+          <Route path="/stations" element={
+            <>
+              <Header />
+              <main className="min-h-screen">
+                <Stations />
+              </main>
+              <Footer />
+            </>
+          } />
+          <Route path="/stations/:stationId" element={
+            <>
+              <Header />
+              <main className="min-h-screen">
+                <StationDetailPage />
+              </main>
+              <Footer />
+            </>
+          } />
+          <Route path="/how-it-works" element={
+            <>
+              <Header />
+              <main className="min-h-screen">
+                <HowItWorks />
+              </main>
+              <Footer />
+            </>
+          } />
+          <Route path="/register" element={
+            <>
+              <Header />
+              <main className="min-h-screen">
+                <Register />
+              </main>
+              <Footer />
+            </>
+          } />
+          <Route path="/booking/:vehicleId?" element={
+            <>
+              <Header />
+              <main className="min-h-screen">
+                <BookingPage />
+              </main>
+              <Footer />
+            </>
+          } />
 
           {/* Dashboard routes without Header/Footer */}
           <Route path="/dashboard" element={<RoleSwitcher />} />
@@ -255,5 +228,7 @@ function App() {
     </Router>
   );
 }
+
+
 
 export default App;

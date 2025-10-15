@@ -9,6 +9,8 @@ import {
 import {
   BoltIcon as BoltSolidIcon,
 } from '@heroicons/react/24/solid';
+import { BatteryUpdateModal } from '../../../../components/dashboard/staff/BatteryUpdateModal';
+import { ChargingControlModal } from '../../../../components/dashboard/staff/ChargingControlModal';
 
 interface Vehicle {
   id: string;
@@ -17,9 +19,9 @@ interface Vehicle {
   batteryLevel: number;
   batteryStatus: 'excellent' | 'good' | 'warning' | 'critical';
   chargingStatus: 'charging' | 'full' | 'discharging' | 'idle';
-  location: string;
   lastCharged: string;
   estimatedRange: number;
+  position: string; // Vị trí trong trạm (Vị trí 1, 2, 3...)
 }
 
 const mockVehicles: Vehicle[] = [
@@ -30,7 +32,7 @@ const mockVehicles: Vehicle[] = [
     batteryLevel: 85,
     batteryStatus: 'excellent',
     chargingStatus: 'full',
-    location: 'Trạm A - Vị trí 1',
+    position: 'Vị trí 1',
     lastCharged: '2024-10-14 08:30',
     estimatedRange: 340
   },
@@ -41,7 +43,7 @@ const mockVehicles: Vehicle[] = [
     batteryLevel: 45,
     batteryStatus: 'good',
     chargingStatus: 'discharging',
-    location: 'Trạm B - Vị trí 3',
+    position: 'Vị trí 3',
     lastCharged: '2024-10-14 06:15',
     estimatedRange: 180
   },
@@ -52,7 +54,7 @@ const mockVehicles: Vehicle[] = [
     batteryLevel: 15,
     batteryStatus: 'warning',
     chargingStatus: 'charging',
-    location: 'Trạm A - Vị trí 5',
+    position: 'Vị trí 5',
     lastCharged: '2024-10-14 09:00',
     estimatedRange: 60
   },
@@ -63,7 +65,7 @@ const mockVehicles: Vehicle[] = [
     batteryLevel: 8,
     batteryStatus: 'critical',
     chargingStatus: 'charging',
-    location: 'Trạm C - Vị trí 2',
+    position: 'Vị trí 2',
     lastCharged: '2024-10-13 20:45',
     estimatedRange: 25
   },
@@ -72,6 +74,10 @@ const mockVehicles: Vehicle[] = [
 const BatteryStatus: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
+  const [showUpdateModal, setShowUpdateModal] = useState(false);
+  const [showChargingModal, setShowChargingModal] = useState(false);
+  const [actionType, setActionType] = useState<'start-charging' | 'stop-charging' | 'update-status'>('update-status');
 
   const getBatteryColor = (level: number, status: string) => {
     if (status === 'critical' || level <= 15) return 'text-red-500';
@@ -96,7 +102,7 @@ const BatteryStatus: React.FC = () => {
   const filteredVehicles = mockVehicles.filter(vehicle => {
     const matchesSearch = vehicle.model.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          vehicle.licensePlate.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         vehicle.location.toLowerCase().includes(searchTerm.toLowerCase());
+                         vehicle.position.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesFilter = filterStatus === 'all' || vehicle.batteryStatus === filterStatus;
     
@@ -107,6 +113,74 @@ const BatteryStatus: React.FC = () => {
     // Simulate refresh
     console.log('Refreshing battery data...');
   };
+
+  const handleStartCharging = (vehicle: Vehicle) => {
+    setSelectedVehicle(vehicle);
+    setActionType('start-charging');
+    setShowChargingModal(true);
+  };
+
+  const handleStopCharging = (vehicle: Vehicle) => {
+    setSelectedVehicle(vehicle);
+    setActionType('stop-charging');
+    setShowChargingModal(true);
+  };
+
+  const handleUpdateBatteryStatus = (vehicle: Vehicle) => {
+    setSelectedVehicle(vehicle);
+    setShowUpdateModal(true);
+  };
+
+  const handleSubmitBatteryUpdate = () => {
+    if (!selectedVehicle) return;
+    
+    // Simulate API call
+    console.log('Cập nhật mức pin:', {
+      vehicleId: selectedVehicle.id,
+      newBatteryLevel: selectedVehicle.batteryLevel,
+      timestamp: new Date()
+    });
+    
+    setShowUpdateModal(false);
+    setSelectedVehicle(null);
+  };
+
+  const handleSubmitChargingControl = () => {
+    if (!selectedVehicle) return;
+    
+    const newStatus = actionType === 'start-charging' ? 'charging' : 'idle';
+    
+    // Simulate API call
+    console.log(`${actionType === 'start-charging' ? 'Bắt đầu' : 'Dừng'} sạc xe:`, {
+      vehicleId: selectedVehicle.id,
+      action: actionType,
+      newStatus: newStatus,
+      timestamp: new Date()
+    });
+    
+    // Update local state
+    setSelectedVehicle({
+      ...selectedVehicle,
+      chargingStatus: newStatus
+    });
+    
+    setShowChargingModal(false);
+    setSelectedVehicle(null);
+    setActionType('update-status');
+    setActionType('update-status');
+    setShowUpdateModal(true);
+  };
+
+  const confirmChargingAction = () => {
+    if (!selectedVehicle) return;
+    
+    const action = actionType === 'start-charging' ? 'Bắt đầu sạc' : 'Dừng sạc';
+    console.log(`${action} xe ${selectedVehicle.licensePlate}`);
+    setShowChargingModal(false);
+    setSelectedVehicle(null);
+  };
+
+
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
@@ -235,7 +309,7 @@ const BatteryStatus: React.FC = () => {
                   Pin
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Vị trí xe
+                  Vị trí
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Trạng thái
@@ -290,7 +364,7 @@ const BatteryStatus: React.FC = () => {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{vehicle.location}</div>
+                    <div className="text-sm text-gray-900">{vehicle.position}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
@@ -305,9 +379,29 @@ const BatteryStatus: React.FC = () => {
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm font-medium transition-colors">
-                      Chi tiết
-                    </button>
+                    <div className="flex gap-2">
+                      {vehicle.chargingStatus === 'idle' || vehicle.chargingStatus === 'discharging' ? (
+                        <button 
+                          onClick={() => handleStartCharging(vehicle)}
+                          className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-xs font-medium transition-colors"
+                        >
+                          Bắt đầu sạc
+                        </button>
+                      ) : (
+                        <button 
+                          onClick={() => handleStopCharging(vehicle)}
+                          className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-xs font-medium transition-colors"
+                        >
+                          Dừng sạc
+                        </button>
+                      )}
+                      <button 
+                        onClick={() => handleUpdateBatteryStatus(vehicle)}
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs font-medium transition-colors"
+                      >
+                        Cập nhật
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -322,6 +416,81 @@ const BatteryStatus: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Charging Action Modal */}
+      {showChargingModal && selectedVehicle && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-md w-full p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              {actionType === 'start-charging' ? 'Bắt đầu sạc xe' : 'Dừng sạc xe'}
+            </h3>
+            
+            <div className="mb-4">
+              <p className="text-sm text-gray-600 mb-2">Xe: {selectedVehicle.model}</p>
+              <p className="text-sm text-gray-600 mb-2">Biển số: {selectedVehicle.licensePlate}</p>
+              <p className="text-sm text-gray-600 mb-2">Vị trí: {selectedVehicle.position}</p>
+              <p className="text-sm text-gray-600 mb-2">Pin hiện tại: {selectedVehicle.batteryLevel}%</p>
+            </div>
+
+            <div className="bg-yellow-50 border border-yellow-200 rounded p-3 mb-4">
+              <p className="text-sm text-yellow-800">
+                {actionType === 'start-charging' 
+                  ? 'Bạn có chắc chắn muốn bắt đầu sạc xe này không?'
+                  : 'Bạn có chắc chắn muốn dừng sạc xe này không?'
+                }
+              </p>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={confirmChargingAction}
+                className="flex-1 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors"
+              >
+                Xác nhận
+              </button>
+              <button
+                onClick={() => setShowChargingModal(false)}
+                className="flex-1 bg-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-400 transition-colors"
+              >
+                Hủy
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Battery Update Modal */}
+      <BatteryUpdateModal
+        isOpen={showUpdateModal}
+        vehicle={selectedVehicle}
+        batteryLevel={selectedVehicle?.batteryLevel || 0}
+        setBatteryLevel={(level) => {
+          if (selectedVehicle) {
+            setSelectedVehicle({
+              ...selectedVehicle,
+              batteryLevel: level
+            });
+          }
+        }}
+        onSubmit={handleSubmitBatteryUpdate}
+        onClose={() => {
+          setShowUpdateModal(false);
+          setSelectedVehicle(null);
+        }}
+      />
+
+      {/* Charging Control Modal */}
+      <ChargingControlModal
+        isOpen={showChargingModal}
+        vehicle={selectedVehicle}
+        isCharging={selectedVehicle?.chargingStatus === 'charging'}
+        onConfirm={handleSubmitChargingControl}
+        onClose={() => {
+          setShowChargingModal(false);
+          setSelectedVehicle(null);
+          setActionType('update-status');
+        }}
+      />
     </div>
   );
 };

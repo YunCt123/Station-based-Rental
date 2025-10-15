@@ -1,59 +1,66 @@
+import { Suspense } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Header from "./layout/Header";
 import Footer from "./layout/Footer";
 import DashboardLayout  from "./layout/DashboardLayout";
-import LoginPage from "./pages/auth/Login";
-import VehiclesPage from "./pages/shared/VehiclesPage";
-import HomePage from "./pages/shared/HomePage";
-import DetailsPage from "./pages/shared/DetailsPage";
-import HowItWorks from "./pages/shared/HowItWorks";
-import BookingPage from "./pages/shared/BookingPage";
-import Register from "./pages/auth/Register";
-import RoleSwitcher from "./pages/dashboard/RoleSwitcher";
-import AdminDashboard  from "./pages/dashboard/admin/AdminDashboard";
-import StaffDashboard from "./pages/dashboard/staff/StaffDashboard";
-import FleetOverview  from "./pages/dashboard/admin/FleetOverview";
-import VehicleDistribution  from "./pages/dashboard/admin/VehicleDistribution";
-import Stations from "./pages/shared/Stations";
+import { PageLoadingFallback } from "./components/lazyload/LazyLoadingFallback";
+import {
+  LazyHomePage,
+  LazyVehiclesPage,
+  LazyBookingPage,
+  LazyDetailsPage,
+  LazyHowItWorks,
+  LazyStations,
+  LazyStationDetailPage,
+  LazyLogin,
+  LazyRegister,
+  LazyStaffDashboard,
+  LazyBatteryStatus,
+  LazyTechnicalStatus,
+  LazyIncidentReport,
+  LazyDeliveryProcedures,
+  LazyVehicleInspection,
+  LazyIdentityVerification,
+  LazyVehicleReserved,
+  LazyVehicleRented,
+  LazyVehicleAvailable,
+  LazyAdminDashboard,
+  LazyFleetOverview,
+  LazyVehicleDistribution,
+  LazyRoleSwitcher
+} from "./components/lazyload/LazyComponents";
+
+// Keep these as regular imports as they might not exist as separate files yet
 import NotFoundPage from "./pages/shared/NotFoundPage";
-import StationDetailPage from "./pages/shared/StationDetailPage";
-import DeliveryProcedures from "./pages/dashboard/staff/delivery_procedures/DeliveryProcedures";
-import VehicleReserved from "./pages/dashboard/staff/vehicle/VehicleReserved";
 import OnlineVerification from "./pages/dashboard/staff/customer_verification/OnlineVerification";
 import OfflineVerification from "./pages/dashboard/staff/customer_verification/OfflineVerification";
-import BatteryStatus from "./pages/dashboard/staff/manage_vehicles/BatteryStatus";
-import TechnicalStatus from "./pages/dashboard/staff/manage_vehicles/TechnicalStatus";
-import IncidentReport from "./pages/dashboard/staff/manage_vehicles/IncidentReport";
-import VehicleAvailable from "./pages/dashboard/staff/vehicle/VehicleAvailable";
-import VehicleRented from "./pages/dashboard/staff/vehicle/VehicleRented";
-import IdentityVerification from "./pages/dashboard/staff/delivery_procedures/IdentityVerification";
-import VehicleInspection from "./pages/dashboard/staff/delivery_procedures/VehicleInspection";
 
 function App() {
   return (
     <Router>
       <div className="App">
-        <Routes>
-          {/* Public routes with Header/Footer */}
-          <Route
-            path="/"
-            element={
-              <>
-                <Header />
-                <main className="min-h-screen">
-                  <HomePage />
-                </main>
-                <Footer />
-              </>
-            }
-          />
+        <Suspense fallback={<PageLoadingFallback />}>
+          <Routes>
+            {/* Public routes with Header/Footer */}
+            <Route
+              path="/"
+              element={
+                <>
+                  <Header />
+                  <main className="min-h-screen">
+                    <LazyHomePage />
+                  </main>
+                  <Footer />
+                </>
+              }
+            />
           <Route
             path="/vehicles"
             element={
               <>
                 <Header />
                 <main className="min-h-screen">
-                  <VehiclesPage />
+                  <LazyVehiclesPage />
                 </main>
                 <Footer />
               </>
@@ -65,7 +72,7 @@ function App() {
               <>
                 <Header />
                 <main className="min-h-screen">
-                  <DetailsPage />
+                  <LazyDetailsPage />
                 </main>
                 <Footer />
               </>
@@ -77,7 +84,7 @@ function App() {
               <>
                 <Header />
                 <main className="min-h-screen">
-                  <LoginPage />
+                  <LazyLogin />
                 </main>
                 <Footer />
               </>
@@ -89,7 +96,7 @@ function App() {
               <>
                 <Header />
                 <main className="min-h-screen">
-                  <Stations />
+                  <LazyStations />
                 </main>
                 <Footer />
               </>
@@ -101,7 +108,7 @@ function App() {
               <>
                 <Header />
                 <main className="min-h-screen">
-                  <StationDetailPage />
+                  <LazyStationDetailPage />
                 </main>
                 <Footer />
               </>
@@ -113,7 +120,7 @@ function App() {
               <>
                 <Header />
                 <main className="min-h-screen">
-                  <HowItWorks />
+                  <LazyHowItWorks />
                 </main>
                 <Footer />
               </>
@@ -125,7 +132,7 @@ function App() {
               <>
                 <Header />
                 <main className="min-h-screen">
-                  <Register />
+                  <LazyRegister />
                 </main>
                 <Footer />
               </>
@@ -137,7 +144,7 @@ function App() {
               <>
                 <Header />
                 <main className="min-h-screen">
-                  <BookingPage />
+                  <LazyBookingPage />
                 </main>
                 <Footer />
               </>
@@ -145,12 +152,12 @@ function App() {
           />
 
           {/* Dashboard routes without Header/Footer */}
-          <Route path="/dashboard" element={<RoleSwitcher />} />
+          <Route path="/dashboard" element={<LazyRoleSwitcher />} />
           <Route
             path="/admin/dashboard"
             element={
               <DashboardLayout>
-                <AdminDashboard />
+                <LazyAdminDashboard />
               </DashboardLayout>
             }
           />
@@ -158,7 +165,7 @@ function App() {
             path="/admin/fleet/overview"
             element={
               <DashboardLayout>
-                <FleetOverview />
+                <LazyFleetOverview />
               </DashboardLayout>
             }
           />
@@ -166,7 +173,7 @@ function App() {
             path="/admin/fleet/distribution"
             element={
               <DashboardLayout>
-                <VehicleDistribution />
+                <LazyVehicleDistribution />
               </DashboardLayout>
             }
           />
@@ -174,33 +181,33 @@ function App() {
             path="/staff/dashboard"
             element={
               <DashboardLayout>
-                <StaffDashboard />
+                <LazyStaffDashboard />
               </DashboardLayout>
             }
           />
 
           <Route path="/staff/vehicles/available" element={
             <DashboardLayout>
-              <VehicleAvailable />
+              <LazyVehicleAvailable />
             </DashboardLayout>
           } />
 
           <Route path="/staff/vehicles/booked" element={
             <DashboardLayout>
-              <VehicleReserved />
+              <LazyVehicleReserved />
             </DashboardLayout>
           } />
 
           <Route path="/staff/vehicles/rented" element={
             <DashboardLayout>
-              <VehicleRented />
+              <LazyVehicleRented />
             </DashboardLayout>
           } />
 
           {/* Staff Delivery Procedures Routes */}
           <Route path="/staff/delivery-procedures" element={
             <DashboardLayout>
-              <DeliveryProcedures />
+              <LazyDeliveryProcedures />
             </DashboardLayout>
           } />
 
@@ -219,38 +226,39 @@ function App() {
 
           <Route path="/staff/identity-verification" element={
             <DashboardLayout>
-              <IdentityVerification />
+              <LazyIdentityVerification />
             </DashboardLayout>
           } />
 
           <Route path="/staff/vehicle-inspection" element={
             <DashboardLayout>
-              <VehicleInspection />
+              <LazyVehicleInspection />
             </DashboardLayout>
           } />
 
           {/* Station Management Routes */}
           <Route path="/staff/station-management/battery-status" element={
             <DashboardLayout>
-              <BatteryStatus />
+              <LazyBatteryStatus />
             </DashboardLayout>
           } />
 
           <Route path="/staff/station-management/technical-status" element={
             <DashboardLayout>
-              <TechnicalStatus />
+              <LazyTechnicalStatus />
             </DashboardLayout>
           } />
 
           <Route path="/staff/station-management/incident-report" element={
             <DashboardLayout>
-              <IncidentReport />
+              <LazyIncidentReport />
             </DashboardLayout>
           } />
 
           {/* 404 route */}
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
+        </Suspense>
       </div>
     </Router>
   );

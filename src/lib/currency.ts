@@ -1,5 +1,4 @@
 import { useTranslation } from "@/contexts/TranslationContext";
-import { config } from "process";
 
 // ===== Dynamic USD → VND rate (using exchangerate-api.com) =====
 const FALLBACK_USD_TO_VND = 26000; // fallback nếu API lỗi

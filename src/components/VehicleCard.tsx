@@ -16,50 +16,7 @@ import {
 } from "lucide-react";
 import { useTranslation } from "@/contexts/TranslationContext";
 import { useCurrency } from "@/lib/currency";
-
-export interface Vehicle {
-  id: string;
-  name: string;
-  year: number;
-  brand: string;
-  model: string;
-  type:
-    | "SUV"
-    | "Sedan"
-    | "Hatchback"
-    | "Crossover"
-    | "Coupe"
-    | "Motorcycle"
-    | "Scooter"
-    | "Bike"
-    | "Bus"
-    | "Van"
-    | "Truck";
-  image: string;
-  batteryLevel: number;
-  location: string;
-  availability: "available" | "rented" | "maintenance";
-  pricePerHour: number;
-  pricePerDay: number;
-  rating: number;
-  reviewCount: number;
-  trips: number;
-  range: number;
-  seats: number;
-  features: string[];
-  condition: "excellent" | "good" | "fair" | "poor";
-  lastMaintenance: string;
-  mileage: number;
-  fuelEfficiency: string;
-  inspectionDate: string;
-  insuranceExpiry: string;
-  description: string;
-}
-
-interface VehicleCardProps {
-  vehicle: Vehicle;
-  className?: string;
-}
+import type { Vehicle, VehicleCardProps } from "@/types/vehicle";
 
 const VehicleCard = ({ vehicle, className = "" }: VehicleCardProps) => {
   const { t } = useTranslation();
@@ -82,50 +39,48 @@ const VehicleCard = ({ vehicle, className = "" }: VehicleCardProps) => {
   };
 
   const getConditionBadge = () => {
-    const conditions = {
-      excellent: {
-        class: "bg-green-100 text-green-800 border-green-200",
-        icon: "✓",
-      },
-      good: { class: "bg-blue-100 text-blue-800 border-blue-200", icon: "✓" },
-      fair: {
-        class: "bg-yellow-100 text-yellow-800 border-yellow-200",
-        icon: "⚠",
-      },
-      poor: { class: "bg-red-100 text-red-800 border-red-200", icon: "!" },
-    };
+  const conditions: Record<
+    "excellent" | "good" | "fair" | "poor",
+    { class: string; icon: string }
+  > = {
+    excellent: { class: "bg-green-100 text-green-800 border-green-200", icon: "✓" },
+    good:      { class: "bg-blue-100 text-blue-800 border-blue-200",   icon: "✓" },
+    fair:      { class: "bg-yellow-100 text-yellow-800 border-yellow-200", icon: "⚠" },
+    poor:      { class: "bg-red-100 text-red-800 border-red-200", icon: "!" },
+  };
 
-    const condition = conditions[vehicle.condition];
+  // ✅ Chuẩn hóa & fallback
+  const key = (vehicle.condition || "good").toLowerCase() as keyof typeof conditions;
+  const condition = conditions[key] ?? conditions.good;
+
+  return (
+    <Badge className={`text-xs border ${condition.class}`}>
+      {condition.icon} {t(`vehicle.condition.${key}`)}
+    </Badge>
+  );
+};
+
+const getMaintenanceStatus = () => {
+  if (!vehicle.lastMaintenance) return null;
+  const last = new Date(vehicle.lastMaintenance);
+  const days = Math.floor((Date.now() - last.getTime()) / (1000 * 60 * 60 * 24));
+  if (Number.isNaN(days)) return null; // ✅ tránh NaN
+  if (days > 90) {
     return (
-      <Badge className={`text-xs border ${condition.class}`}>
-        {condition.icon} {t(`vehicle.condition.${vehicle.condition}`)}
+      <Badge className="text-xs bg-orange-100 text-orange-800 border-orange-200">
+        ⏰ Maintenance Due
       </Badge>
     );
-  };
+  }
+  return null;
+};
 
-  const getMaintenanceStatus = () => {
-    if (!vehicle.lastMaintenance) return null;
-
-    const lastMaintenance = new Date(vehicle.lastMaintenance);
-    const daysSinceMaintenance = Math.floor(
-      (Date.now() - lastMaintenance.getTime()) / (1000 * 60 * 60 * 24)
-    );
-
-    if (daysSinceMaintenance > 90) {
-      return (
-        <Badge className="text-xs bg-orange-100 text-orange-800 border-orange-200">
-          ⏰ Maintenance Due
-        </Badge>
-      );
-    }
-    return null;
-  };
-
-  const getBatteryColor = () => {
-    if (vehicle.batteryLevel >= 80) return "text-success";
-    if (vehicle.batteryLevel >= 50) return "text-warning";
-    return "text-destructive";
-  };
+const getBatteryColor = () => {
+  // ✅ khớp với tailwind.config (success/warning/danger)
+  if (vehicle.batteryLevel >= 80) return "text-success-600";
+  if (vehicle.batteryLevel >= 50) return "text-warning-600";
+  return "text-danger-600";
+};
 
   const getVehicleTypeIcon = (type: Vehicle["type"]) => {
     const iconClass = "h-5 w-5 text-gray-600 dark:text-gray-400";

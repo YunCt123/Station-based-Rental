@@ -29,7 +29,7 @@ import {
   vehicleService,
   type VehicleSearchFilters,
 } from "@/services/vehicleService";
-import { Vehicle } from "@/components/VehicleCard";
+import type { Vehicle } from "@/types/vehicle";
 import { Search, Filter, Grid, List, SlidersHorizontal } from "lucide-react";
 import { useTranslation } from "@/contexts/TranslationContext";
 

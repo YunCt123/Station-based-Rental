@@ -1,90 +1,12 @@
 import api from "./api";
-import { Vehicle } from "@/components/VehicleCard";
-
-// Types for API responses
-export interface ApiResponse<T> {
-  success: boolean;
-  data: T;
-  meta?: {
-    total: number;
-    page: number;
-    limit: number;
-    totalPages: number;
-  };
-}
-
-// Backend vehicle data structure
-export interface BackendVehicle {
-  _id: string;
-  id?: string;
-  name: string;
-  year: number;
-  brand?: string;
-  model?: string;
-  type?: string;
-  image?: string;
-  station_id?: string;
-  station_name?: string;
-  status: 'AVAILABLE' | 'RESERVED' | 'RENTED' | 'MAINTENANCE';
-  batteryLevel?: number;
-  battery_soc?: number;
-  range?: number;
-  seats?: number;
-  pricePerHour?: number;
-  pricePerDay?: number;
-  pricing?: {
-    hourly?: number;
-    daily?: number;
-    currency?: string;
-  };
-  rating?: number;
-  reviewCount?: number;
-  trips?: number;
-  features?: string[];
-  condition?: string;
-  lastMaintenance?: string;
-  mileage?: number;
-  odo_km?: number;
-  fuelEfficiency?: string;
-  consumption_wh_per_km?: number;
-  inspectionDate?: string;
-  inspection_due_at?: string;
-  insuranceExpiry?: string;
-  insurance_expiry_at?: string;
-  description?: string;
-  active?: boolean;
-  tags?: string[];
-  createdAt?: string;
-  updatedAt?: string;
-}
-
-// Pagination meta information
-export interface PaginationMeta {
-  total?: number;
-  page?: number;
-  limit?: number;
-  totalPages?: number;
-}
-
-export interface VehicleSearchFilters {
-  type?: string;
-  brand?: string;
-  model?: string;
-  minPrice?: number;
-  maxPrice?: number;
-  city?: string;
-  batteryLevel?: number;
-  seats?: number;
-  status?: 'AVAILABLE' | 'RESERVED' | 'RENTED' | 'MAINTENANCE';
-  station_id?: string;
-  search?: string; // For general search
-}
-
-export interface SearchOptions {
-  limit?: number;
-  page?: number;
-  sort?: string;
-}
+import type { 
+  Vehicle, 
+  BackendVehicle, 
+  ApiResponse, 
+  PaginationMeta, 
+  VehicleSearchFilters, 
+  SearchOptions
+} from "@/types/vehicle";
 
 // Mapping function to convert backend vehicle data to frontend format
 function mapBackendVehicleToFrontend(backendVehicle: BackendVehicle): Vehicle {
@@ -189,9 +111,10 @@ export const vehicleService = {
       };
     } catch (error) {
       console.error('❌ Error searching vehicles:', error);
-      if (error.response) {
-        console.error('Error response data:', error.response.data);
-        console.error('Error status:', error.response.status);
+      if (error && typeof error === 'object' && 'response' in error) {
+        const axiosError = error as { response?: { data?: unknown; status?: number } };
+        console.error('Error response data:', axiosError.response?.data);
+        console.error('Error status:', axiosError.response?.status);
       }
       throw error;
     }

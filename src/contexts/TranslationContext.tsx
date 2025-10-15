@@ -163,6 +163,12 @@ export interface Translations {
     searchPlaceholder: string;
     vehiclesHeaderTitle: string;
     vehiclesHeaderSubtitle: string;
+    viewAllVehicles: string;
+    evDealsTitle: string;
+    evDealsSubtitle: string;
+    safetyTitle: string;
+    safetySubtitle: string;
+    learnMore: string;
     allLocations: string;
     priceRangeLabel: string;
     sortBy: string;
@@ -587,6 +593,14 @@ export const TranslationProvider: React.FC<TranslationProviderProps> = ({
         vehiclesHeaderTitle: "Find Your Perfect EV",
         vehiclesHeaderSubtitle:
           "Choose from our premium fleet of electric vehicles and experience the future of transportation",
+        viewAllVehicles: "View All Vehicles",
+        evDealsTitle: "Exclusive EV Deals",
+        evDealsSubtitle:
+          "Discover special offers on our electric vehicle rentals. Drive green and save more today!",
+        safetyTitle: "Your Safety, Our Priority",
+        safetySubtitle:
+          "All our vehicles undergo rigorous safety checks and maintenance to ensure a secure driving experience",
+        learnMore: "Learn More",
         allLocations: "All Locations",
         priceRangeLabel: "Price Range",
         sortBy: "Sort By",
@@ -982,6 +996,14 @@ export const TranslationProvider: React.FC<TranslationProviderProps> = ({
         vehiclesHeaderTitle: "Tìm Xe Điện Hoàn Hảo Của Bạn",
         vehiclesHeaderSubtitle:
           "Chọn từ đội xe điện cao cấp của chúng tôi và trải nghiệm tương lai của giao thông vận tải",
+        viewAllVehicles: "Xem Tất Cả Xe",
+        evDealsTitle: "Ưu Đãi Đặc Biệt Cho Xe Điện",
+        evDealsSubtitle:
+          "Khám phá các ưu đãi đặc biệt khi thuê xe điện của chúng tôi. Lái xe xanh và tiết kiệm hơn hôm nay!",
+        safetyTitle: "An Toàn Của Bạn, Ưu Tiên Của Chúng Tôi",
+        safetySubtitle:
+          "Tất cả các phương tiện của chúng tôi đều trải qua kiểm tra an toàn nghiêm ngặt và bảo trì để đảm bảo trải nghiệm lái xe an toàn",
+        learnMore: "Tìm Hiểu Thêm",
         allLocations: "Tất cả địa điểm",
         priceRangeLabel: "Khoảng giá",
         sortBy: "Sắp xếp theo",
@@ -1069,6 +1091,7 @@ export const TranslationProvider: React.FC<TranslationProviderProps> = ({
           "Chọn từ đội xe điện cao cấp của chúng tôi, tất cả đều đã sạc đầy và sẵn sàng khởi hành",
         status: "Trạng thái",
         recommended: "Khuyến nghị",
+        
       },
       register: {
         createAccount: "Tạo tài khoản của bạn",
@@ -1099,6 +1122,7 @@ export const TranslationProvider: React.FC<TranslationProviderProps> = ({
         alreadyHaveAccount: "Đã có tài khoản?",
         signInHere: "Đăng nhập tại đây",
         demoNote: "Demo: Điền vào biểu mẫu để tạo tài khoản ngay lập tức",
+        
       },
       help: {
         title: "Trung tâm trợ giúp",

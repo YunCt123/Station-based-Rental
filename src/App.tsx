@@ -34,6 +34,7 @@ import {
 import NotFoundPage from "./pages/shared/NotFoundPage";
 import OnlineVerification from "./pages/dashboard/staff/customer_verification/OnlineVerification";
 import OfflineVerification from "./pages/dashboard/staff/customer_verification/OfflineVerification";
+import CustomerManagement from "./pages/dashboard/admin/CustomerManagement";
 
 function App() {
   return (
@@ -178,6 +179,14 @@ function App() {
             }
           />
           <Route
+            path="/admin/customers/customer_management"
+            element={
+              <DashboardLayout>
+                <CustomerManagement />
+              </DashboardLayout>
+            }
+          />
+          <Route
             path="/staff/dashboard"
             element={
               <DashboardLayout>
@@ -263,5 +272,7 @@ function App() {
     </Router>
   );
 }
+
+
 
 export default App;

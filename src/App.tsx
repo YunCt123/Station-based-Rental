@@ -2,7 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Header from "./layout/Header";
 import Footer from "./layout/Footer";
 import DashboardLayout  from "./layout/DashboardLayout";
-import LoginPage from "./pages/auth/Login";
+
 import VehiclesPage from "./pages/shared/VehiclesPage";
 import HomePage from "./pages/shared/HomePage";
 import DetailsPage from "./pages/shared/DetailsPage";
@@ -29,6 +29,7 @@ import VehicleRented from "./pages/dashboard/staff/vehicle/VehicleRented";
 import IdentityVerification from "./pages/dashboard/staff/delivery_procedures/IdentityVerification";
 import VehicleInspection from "./pages/dashboard/staff/delivery_procedures/VehicleInspection";
 import CustomerManagement from "./pages/dashboard/admin/CustomerManagement";
+import LoginPage from "./pages/auth/Login";
 
 function App() {
   return (

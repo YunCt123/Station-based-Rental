@@ -1,7 +1,6 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -29,7 +28,7 @@ import {
   vehicleService,
 } from "@/services/vehicleService";
 import type { Vehicle, VehicleSearchFilters } from "@/types/vehicle";
-import { Search, Filter, Grid, List, SlidersHorizontal } from "lucide-react";
+import { Grid, List, SlidersHorizontal } from "lucide-react";
 import { useTranslation } from "@/contexts/TranslationContext";
 
 const Vehicles = () => {
@@ -39,7 +38,7 @@ const Vehicles = () => {
   // State for vehicles data
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [totalVehicles, setTotalVehicles] = useState(0);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage] = useState(1);
 
   // Loading states
   const [isInitialLoading, setIsInitialLoading] = useState(true);

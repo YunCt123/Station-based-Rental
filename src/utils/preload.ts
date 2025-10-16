@@ -24,7 +24,7 @@ export const addResourceHints = () => {
   };
 
   // Preconnect to any external domains you use
-  // addLink('preconnect', 'https://fonts.googleapis.com');
+  addLink('preconnect', 'https://fonts.googleapis.com');
   // addLink('dns-prefetch', 'https://api.example.com');
 };
 

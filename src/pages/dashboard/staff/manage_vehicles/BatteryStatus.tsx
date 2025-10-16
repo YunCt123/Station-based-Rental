@@ -167,17 +167,6 @@ const BatteryStatus: React.FC = () => {
     setShowChargingModal(false);
     setSelectedVehicle(null);
     setActionType('update-status');
-    setActionType('update-status');
-    setShowUpdateModal(true);
-  };
-
-  const confirmChargingAction = () => {
-    if (!selectedVehicle) return;
-    
-    const action = actionType === 'start-charging' ? 'Bắt đầu sạc' : 'Dừng sạc';
-    console.log(`${action} xe ${selectedVehicle.licensePlate}`);
-    setShowChargingModal(false);
-    setSelectedVehicle(null);
   };
 
 
@@ -380,19 +369,19 @@ const BatteryStatus: React.FC = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm">
                     <div className="flex gap-2">
-                      {vehicle.chargingStatus === 'idle' || vehicle.chargingStatus === 'discharging' ? (
-                        <button 
-                          onClick={() => handleStartCharging(vehicle)}
-                          className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-xs font-medium transition-colors"
-                        >
-                          Bắt đầu sạc
-                        </button>
-                      ) : (
+                      {vehicle.chargingStatus === 'charging' ? (
                         <button 
                           onClick={() => handleStopCharging(vehicle)}
                           className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-xs font-medium transition-colors"
                         >
                           Dừng sạc
+                        </button>
+                      ) : (
+                        <button 
+                          onClick={() => handleStartCharging(vehicle)}
+                          className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-xs font-medium transition-colors"
+                        >
+                          Bắt đầu sạc
                         </button>
                       )}
                       <button 
@@ -417,47 +406,7 @@ const BatteryStatus: React.FC = () => {
         </div>
       </div>
 
-      {/* Charging Action Modal */}
-      {showChargingModal && selectedVehicle && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-md w-full p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              {actionType === 'start-charging' ? 'Bắt đầu sạc xe' : 'Dừng sạc xe'}
-            </h3>
-            
-            <div className="mb-4">
-              <p className="text-sm text-gray-600 mb-2">Xe: {selectedVehicle.model}</p>
-              <p className="text-sm text-gray-600 mb-2">Biển số: {selectedVehicle.licensePlate}</p>
-              <p className="text-sm text-gray-600 mb-2">Vị trí: {selectedVehicle.position}</p>
-              <p className="text-sm text-gray-600 mb-2">Pin hiện tại: {selectedVehicle.batteryLevel}%</p>
-            </div>
 
-            <div className="bg-yellow-50 border border-yellow-200 rounded p-3 mb-4">
-              <p className="text-sm text-yellow-800">
-                {actionType === 'start-charging' 
-                  ? 'Bạn có chắc chắn muốn bắt đầu sạc xe này không?'
-                  : 'Bạn có chắc chắn muốn dừng sạc xe này không?'
-                }
-              </p>
-            </div>
-
-            <div className="flex gap-3">
-              <button
-                onClick={confirmChargingAction}
-                className="flex-1 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors"
-              >
-                Xác nhận
-              </button>
-              <button
-                onClick={() => setShowChargingModal(false)}
-                className="flex-1 bg-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-400 transition-colors"
-              >
-                Hủy
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Battery Update Modal */}
       <BatteryUpdateModal

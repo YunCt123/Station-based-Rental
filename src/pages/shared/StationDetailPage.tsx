@@ -15,6 +15,7 @@ import {
 import { stations, type Station } from '../../data/stations';
 import { SAMPLE_VEHICLES, type VehicleData } from '../../data/vehicles';
 import VehicleCard from '../../components/VehicleCard';
+import type { Vehicle } from '@/types/vehicle';
 import { NotFoundPage } from '.';
 import { ArrowLeftIcon, BuildingStorefrontIcon, CreditCardIcon, InboxIcon, InformationCircleIcon, SparklesIcon, UsersIcon, WifiIcon } from '@heroicons/react/24/outline';
 import StationMap from '../../components/StationMap';

@@ -2,7 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Header from "./layout/Header";
 import Footer from "./layout/Footer";
 import DashboardLayout  from "./layout/DashboardLayout";
-
+import LoginPage from "./pages/auth/Login";
 import VehiclesPage from "./pages/shared/VehiclesPage";
 import HomePage from "./pages/shared/HomePage";
 import DetailsPage from "./pages/shared/DetailsPage";
@@ -17,7 +17,9 @@ import VehicleDistribution  from "./pages/dashboard/admin/VehicleDistribution";
 import Stations from "./pages/shared/Stations";
 import NotFoundPage from "./pages/shared/NotFoundPage";
 import StationDetailPage from "./pages/shared/StationDetailPage";
+import { TranslationProvider } from "./contexts/TranslationContext";
 import DeliveryProcedures from "./pages/dashboard/staff/delivery_procedures/DeliveryProcedures";
+import CustomerManagement from "./pages/dashboard/admin/CustomerManagement";
 import VehicleReserved from "./pages/dashboard/staff/vehicle/VehicleReserved";
 import OnlineVerification from "./pages/dashboard/staff/customer_verification/OnlineVerification";
 import OfflineVerification from "./pages/dashboard/staff/customer_verification/OfflineVerification";
@@ -28,32 +30,26 @@ import VehicleAvailable from "./pages/dashboard/staff/vehicle/VehicleAvailable";
 import VehicleRented from "./pages/dashboard/staff/vehicle/VehicleRented";
 import IdentityVerification from "./pages/dashboard/staff/delivery_procedures/IdentityVerification";
 import VehicleInspection from "./pages/dashboard/staff/delivery_procedures/VehicleInspection";
-import CustomerManagement from "./pages/dashboard/admin/CustomerManagement";
-import LoginPage from "./pages/auth/Login";
-import { TranslationProvider } from "@/contexts/TranslationContext";
 import { useState } from "react";
+import Settings from "./pages/dashboard/Settings";
+import { TooltipProvider } from "./components/ui/tooltip";
+import { Toaster } from "./components/ui/toaster";
+import { Toaster as Sonner } from "./components/ui/sonner";
 
-
-
-
-
-
-
-
-// Enhanced user types for different roles
+// User interface for type safety
 interface User {
-  id: string; // or _id if your API returns _id
+  id: string;
   name: string;
   email: string;
   role: "customer" | "staff" | "admin";
   phoneNumber?: string;
-  dateOfBirth?: string; // ISO string from backend
+  dateOfBirth?: string;
   isVerified?: boolean;
-  // stationId?: string; // uncomment only if backend really returns this
 }
 
-const App = () => {
-  const [user, setUser] = useState<User | null>(() => {
+
+function App() {
+   const [user, setUser] = useState<User | null>(() => {
     // Try to load user from localStorage on app start
     const savedUser = localStorage.getItem("user");
     return savedUser ? JSON.parse(savedUser) : null;
@@ -74,6 +70,9 @@ const App = () => {
   return (
     <Router>
       <TranslationProvider>
+        <TooltipProvider>
+          <Toaster/>
+          <Sonner/>
       <div className="App">
         <Routes>
           {/* Public routes with Header/Footer */}
@@ -272,9 +271,11 @@ const App = () => {
           } />
 
           {/* 404 route */}
+          <Route path="/settings" element={<Settings />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
-      </div>
+      </div>   
+      </TooltipProvider>
       </TranslationProvider>
     </Router>
   );

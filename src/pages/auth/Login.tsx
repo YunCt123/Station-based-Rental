@@ -37,7 +37,7 @@ interface LoginProps {
   onLogin: (userData: User) => void;
 }
 
-const Login = ({ onLogin }: LoginProps) => {
+const LoginPage = ({ onLogin }: LoginProps) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState<"user" | "staff" | "admin">("user");
@@ -256,4 +256,4 @@ const Login = ({ onLogin }: LoginProps) => {
   );
 };
 
-export default Login;
+export default LoginPage;

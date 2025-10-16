@@ -8,7 +8,6 @@ import {
   Clock,
   Zap,
   Users,
-  Fuel,
   Car,
   Bike,
   Bus,

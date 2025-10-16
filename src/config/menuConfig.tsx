@@ -257,9 +257,9 @@ export const getMenuSections = (): SidebarSection[] => [
         children: [
           {
             id: 'customer-profiles',
-            title: 'Hồ sơ khách hàng',
+            title: 'Quản Lý Khách Hàng',
             icon: <UserIcon className="w-4 h-4" />,
-            path: '/admin/customers/profiles',
+            path: '/admin/customers/customer_management',
             roles: [UserRole.ADMIN]
           },
           {

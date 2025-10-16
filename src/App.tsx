@@ -30,16 +30,56 @@ import IdentityVerification from "./pages/dashboard/staff/delivery_procedures/Id
 import VehicleInspection from "./pages/dashboard/staff/delivery_procedures/VehicleInspection";
 import CustomerManagement from "./pages/dashboard/admin/CustomerManagement";
 import LoginPage from "./pages/auth/Login";
+import { TranslationProvider } from "@/contexts/TranslationContext";
+import { useState } from "react";
 
-function App() {
+
+
+
+
+
+
+
+// Enhanced user types for different roles
+interface User {
+  id: string; // or _id if your API returns _id
+  name: string;
+  email: string;
+  role: "customer" | "staff" | "admin";
+  phoneNumber?: string;
+  dateOfBirth?: string; // ISO string from backend
+  isVerified?: boolean;
+  // stationId?: string; // uncomment only if backend really returns this
+}
+
+const App = () => {
+  const [user, setUser] = useState<User | null>(() => {
+    // Try to load user from localStorage on app start
+    const savedUser = localStorage.getItem("user");
+    return savedUser ? JSON.parse(savedUser) : null;
+  });
+
+  const handleLogin = (userData: User) => {
+    setUser(userData);
+    // Save user to localStorage
+    localStorage.setItem("user", JSON.stringify(userData));
+  };
+
+  const handleLogout = () => {
+    setUser(null);
+    // Remove user from localStorage
+    localStorage.removeItem("user");
+  };
+
   return (
     <Router>
+      <TranslationProvider>
       <div className="App">
         <Routes>
           {/* Public routes with Header/Footer */}
           <Route path="/" element={
             <>
-              <Header />
+              <Header user={user} onLogout={handleLogout} />
               <main className="min-h-screen">
                 <HomePage />
               </main>
@@ -48,7 +88,7 @@ function App() {
           } />
           <Route path="/vehicles" element={
             <>
-              <Header />
+              <Header user={user} onLogout={handleLogout} />
               <main className="min-h-screen">
                 <VehiclesPage />
               </main>
@@ -57,7 +97,7 @@ function App() {
           } />
           <Route path="/vehicle/:id" element={
             <>
-              <Header />
+              <Header user={user} onLogout={handleLogout} />
               <main className="min-h-screen">
                 <DetailsPage />
               </main>
@@ -66,7 +106,7 @@ function App() {
           } />
           <Route path="/login" element={
             <>
-              <Header />
+              <Header user={user} onLogout={handleLogout} />
               <main className="min-h-screen">
                 <LoginPage />
               </main>
@@ -75,7 +115,7 @@ function App() {
           } />
           <Route path="/stations" element={
             <>
-              <Header />
+              <Header user={user} onLogout={handleLogout} />
               <main className="min-h-screen">
                 <Stations />
               </main>
@@ -84,7 +124,7 @@ function App() {
           } />
           <Route path="/stations/:stationId" element={
             <>
-              <Header />
+              <Header user={user} onLogout={handleLogout} />
               <main className="min-h-screen">
                 <StationDetailPage />
               </main>
@@ -93,7 +133,7 @@ function App() {
           } />
           <Route path="/how-it-works" element={
             <>
-              <Header />
+              <Header user={user} onLogout={handleLogout} />
               <main className="min-h-screen">
                 <HowItWorks />
               </main>
@@ -102,7 +142,7 @@ function App() {
           } />
           <Route path="/register" element={
             <>
-              <Header />
+              <Header user={user} onLogout={handleLogout} />
               <main className="min-h-screen">
                 <Register />
               </main>
@@ -111,7 +151,7 @@ function App() {
           } />
           <Route path="/booking/:vehicleId?" element={
             <>
-              <Header />
+              <Header user={user} onLogout={handleLogout} />
               <main className="min-h-screen">
                 <BookingPage />
               </main>
@@ -235,6 +275,7 @@ function App() {
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </div>
+      </TranslationProvider>
     </Router>
   );
 }

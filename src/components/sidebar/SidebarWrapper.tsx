@@ -1,5 +1,5 @@
 import React from 'react';
-import { SimpleSidebar } from './SimpleSidebar';
+import { Sidebar } from './Sidebar';
 import { useUserRole, useUserSession } from '../../hooks/useSidebar';
 import { getMenuSections } from '../../config/menuConfig';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -73,7 +73,7 @@ export const SidebarWrapper: React.FC<SidebarWrapperProps> = ({
 
   return (
     <div className={className}>
-      <SimpleSidebar
+      <Sidebar
         currentRole={currentRole}
         currentPath={location.pathname}
         isCollapsed={isCollapsed}

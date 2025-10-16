@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
     Table,
     Input,
@@ -8,6 +9,7 @@ import {
     Card,
     Modal,
     Descriptions,
+    Button,
 } from 'antd';
 import { SearchOutlined } from '@ant-design/icons';
 
@@ -49,6 +51,7 @@ const mockVehicles = [
 ];
 
 const VehicleAvailable: React.FC = () => {
+    const navigate = useNavigate();
     const [vehicles, setVehicles] = useState(mockVehicles);
     const [loading, setLoading] = useState(false);
     const [searchText, setSearchText] = useState('');
@@ -72,6 +75,13 @@ const VehicleAvailable: React.FC = () => {
     const handleCloseDetails = () => {
         setIsModalVisible(false);
         setSelectedVehicle(null);
+    };
+
+    const handleStartDeliveryProcedure = () => {
+        if (!selectedVehicle) return;
+        setIsModalVisible(false);
+        // Navigate to delivery procedures with vehicle data
+        navigate('/staff/delivery-procedures', { state: { vehicle: selectedVehicle } });
     };
 
     const columns = [
@@ -175,7 +185,14 @@ const VehicleAvailable: React.FC = () => {
                 title="Chi tiết xe"
                 open={isModalVisible}
                 onCancel={handleCloseDetails}
-                footer={null}
+                footer={[
+                    <Button key="cancel" onClick={handleCloseDetails}>
+                        Đóng
+                    </Button>,
+                    <Button key="start" type="primary" onClick={handleStartDeliveryProcedure}>
+                        Bắt đầu thủ tục bàn giao
+                    </Button>,
+                ]}
                 bodyStyle={{ padding: 24 }}
                 width={760}
             >

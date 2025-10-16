@@ -3,25 +3,38 @@ import { Link, Outlet, useLocation } from "react-router-dom";
 import { ClockIcon } from "@heroicons/react/24/outline";
 import EyeOutlined from "@ant-design/icons/EyeOutlined";
 import EditOutlined from "@ant-design/icons/EditOutlined";
-import { Button, Input } from "antd";
-import { getCustomers } from "../../../data/customersStore";
-import { DeleteOutlined } from "@ant-design/icons";
+import { Button, Input, Modal } from "antd";
+import NewCustomer from './NewCustomer.tsx';
+import EditCustomer from './EditCustomer';
+import { getCustomers, findCustomer } from "../../../data/customersStore";
+import CustomerDetailsModal from './CustomerDetailsModal';
+import { DeleteOutlined,PlusOutlined } from "@ant-design/icons";
+import DeleteCustomer from "./deleteCustomer.tsx";
 
 export const CustomerManagement: React.FC = () => {
   const location = useLocation();
   const activePath = location.pathname;
   const [list, setList] = useState(() => getCustomers());
   const [query, setQuery] = useState("");
+  const [createOpen, setCreateOpen] = useState(false);
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editCustomerId, setEditCustomerId] = useState<string | null>(null);
+  const [deleteOpen, setDeleteOpen] = useState(false); // Keep one declaration
+  const [deleteCustomerId, setDeleteCustomerId] = useState<string | null>(null); // Keep one declaration
+  
 
   useEffect(() => {
     setList(getCustomers());
-  }, [location.pathname]);
+  }, [location.pathname]); 
 
   return (
-    <div className="space-y-6">
+    
+    <div className="space-y-6 ">
       <div className="flex items-center justify-between">
-        <Button>
-          <Link to="/admin/dashboard">← Back to dashboard</Link>
+        <Button type="text" className="px-0">
+          <Link to="/admin/dashboard" className="text-sm">← Back to dashboard</Link>
         </Button>
 
         <div className="flex items-center space-x-2 text-sm text-gray-500">
@@ -51,32 +64,32 @@ export const CustomerManagement: React.FC = () => {
                       style={{ width: 360 }}
                     />
 
-                    {/* <button onClick={() => setCreateOpen(true)} className="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white rounded-md text-sm">
-                      <PlusCircleIcon className="w-4 h-4 mr-2" /> Thêm khách hàng
-                    </button> */}
+                     <button onClick={() => setCreateOpen(true)} className="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white rounded-md text-sm">
+                      <PlusOutlined className="w-4 h-4 mr-2" /> Thêm khách hàng
+                    </button> 
                   </div>
                 </div>
 
                 <div className="overflow-x-auto">
                   <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50 text-center">
+                    <thead className="bg-gray-200 text-center  ">
                       <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-900 uppercase tracking-wider !font-bold">
                           Tên
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-900 uppercase tracking-wider !font-bold">
                           Email
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-900 uppercase tracking-wider !font-bold ">
                           Số điện thoại
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-900 uppercase tracking-wider !font-bold">
                           Tổng lượt thuê
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-900 uppercase tracking-wider !font-bold">
                           Rủi ro
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"></th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-900 uppercase tracking-wider !font-bold"></th>
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
@@ -108,24 +121,38 @@ export const CustomerManagement: React.FC = () => {
                             </span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-right">
-                            <Link
-                              to={`/admin/customers/profiles/${c.id}`}
-                              className="inline-flex items-center text-sm text-blue-600"
+                            <Button
+                              type="text"
+                              onClick={() => {
+                                setSelectedCustomerId(c.id);
+                                setDetailOpen(true);
+                              }}
+                              className="inline-flex items-center text-sm !text-blue-700 mr-4 hover:text-blue-600"
+                              aria-label={`Xem chi tiết ${c.name}`}
                             >
-                              <EyeOutlined className="mr-7 text-xl" />
-                            </Link>
-                            <Link
-                              to={`/admin/customers/profiles/${c.id}/edit`}
-                              className="inline-flex items-center text-sm text-blue-600"
+                              <EyeOutlined className="mr-2 text-xl" />
+                            </Button>
+                            <Button
+                              type="text"
+                              onClick={() => {
+                                setEditCustomerId(c.id);
+                                setEditOpen(true);
+                              }}
+                              className="inline-flex items-center text-sm text-gray-600 mr-4"
+                              aria-label={`Sửa ${c.name}`}
                             >
-                              <EditOutlined className="mr-7 text-xl" />
-                            </Link>
-                            <Link
-                              to={`/admin/customers/profiles/${c.id}/delete`}
-                              className="inline-flex items-center text-sm text-blue-600"
+                              <EditOutlined className="text-xl" />
+                            </Button>
+                            <Button
+                              type="text"
+                              className="inline-flex items-center text-sm text-red-600"
+                              onClick={() => {
+                                setDeleteCustomerId(c.id);
+                                setDeleteOpen(true);
+                              }}
                             >
                               <DeleteOutlined className="mr-7 !text-red-600 text-xl" />
-                            </Link>
+                            </Button>
                           </td>
                         </tr>
                       ))}
@@ -133,25 +160,48 @@ export const CustomerManagement: React.FC = () => {
                   </table>
                 </div>
               </div>
-            )}
-
-            {/* Nested routes will render here */}
+            )}           
             <Outlet />
           </div>
-          {/* <Modal open={createOpen} title="Thêm khách hàng" onCancel={() => setCreateOpen(false)} footer={null}>
+
+
+          <Modal open={createOpen}  onCancel={() => setCreateOpen(false)} footer={null}>
             <NewCustomer
               onCreate={() => {
-                // refresh list after creation
+                
                 setList(getCustomers());
+                setCreateOpen(false);
               }}
               onClose={() => setCreateOpen(false)}
             />
-          </Modal> */}
 
-          {/* small help panel */}
+           {/* popup view  */}
+          </Modal>
+          <Modal open={detailOpen} onCancel={() => setDetailOpen(false)} footer={null} width={2000} centered bodyStyle={{ padding: 24 }}>
+            <CustomerDetailsModal customer={selectedCustomerId ? findCustomer(selectedCustomerId) : null} />
+          </Modal>
+
+            {/* popup edit */}
+          <Modal open={editOpen} onCancel={() => setEditOpen(false)} footer={null} width={720} centered>
+            <EditCustomer
+              id={editCustomerId}
+              onUpdate={() => {
+                setList(getCustomers());
+                setEditOpen(false);
+              }}
+              onClose={() => setEditOpen(false)}
+            />
+          </Modal>
+
+              {/* popup delete */}
+          <Modal open={deleteOpen} onCancel={() => setDeleteOpen(false)} footer={null} width={400} centered>
+            <DeleteCustomer id={deleteCustomerId} />
+            
+          </Modal>
         </main>
       </div>
     </div>
+    
   );
 };
 

@@ -1,3 +1,5 @@
+
+import { useState } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Header from "./layout/Header";
 import Footer from "./layout/Footer";
@@ -30,7 +32,6 @@ import VehicleAvailable from "./pages/dashboard/staff/vehicle/VehicleAvailable";
 import VehicleRented from "./pages/dashboard/staff/vehicle/VehicleRented";
 import IdentityVerification from "./pages/dashboard/staff/delivery_procedures/IdentityVerification";
 import VehicleInspection from "./pages/dashboard/staff/delivery_procedures/VehicleInspection";
-import { useState } from "react";
 import Settings from "./pages/dashboard/Settings";
 import { TooltipProvider } from "./components/ui/tooltip";
 import { Toaster } from "./components/ui/toaster";
@@ -46,6 +47,7 @@ interface User {
   dateOfBirth?: string;
   isVerified?: boolean;
 }
+
 
 
 function App() {
@@ -71,8 +73,8 @@ function App() {
     <Router>
       <TranslationProvider>
         <TooltipProvider>
-          <Toaster/>
-          <Sonner/>
+          <Toaster />
+          <Sonner />
       <div className="App">
         <Routes>
           {/* Public routes with Header/Footer */}
@@ -107,7 +109,7 @@ function App() {
             <>
               <Header user={user} onLogout={handleLogout} />
               <main className="min-h-screen">
-                <LoginPage />
+                <LoginPage onLogin={handleLogin} />
               </main>
               <Footer />
             </>
@@ -274,7 +276,7 @@ function App() {
           <Route path="/settings" element={<Settings />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
-      </div>   
+      </div> 
       </TooltipProvider>
       </TranslationProvider>
     </Router>

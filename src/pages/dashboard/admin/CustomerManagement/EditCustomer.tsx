@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import type { Customer } from '../../../data/customersStore';
-import { findCustomer, updateCustomer } from '../../../data/customersStore';
+import type { Customer } from '../../../../data/customersStore';
+import { findCustomer, updateCustomer } from '../../../../data/customersStore';
 
 type Props = {
   id?: string | null;

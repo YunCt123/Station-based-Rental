@@ -28,7 +28,10 @@ import VehicleAvailable from "./pages/dashboard/staff/vehicle/VehicleAvailable";
 import VehicleRented from "./pages/dashboard/staff/vehicle/VehicleRented";
 import IdentityVerification from "./pages/dashboard/staff/delivery_procedures/IdentityVerification";
 import VehicleInspection from "./pages/dashboard/staff/delivery_procedures/VehicleInspection";
-import CustomerManagement from "./pages/dashboard/admin/CustomerManagement";
+import CustomerManagement from "./pages/dashboard/admin/CustomerManagement/CustomerManagement";
+
+import RentalHistory from "./pages/dashboard/admin/RentalHistory/RentalHistory";
+import EmployeeManagement from "./pages/dashboard/admin/EmployeeManagement/EmployeeList/EmployeeManagement";
 
 function App() {
   return (
@@ -152,6 +155,24 @@ function App() {
               </DashboardLayout>
             }
           />
+          <Route
+            path="/admin/customers/history"
+            element={
+              <DashboardLayout>
+                <RentalHistory />
+              </DashboardLayout>
+            }
+          />
+          
+           <Route
+            path="/admin/staff/list"
+            element={
+              <DashboardLayout>
+                <EmployeeManagement />
+              </DashboardLayout>
+            }
+          />
+
           <Route
             path="/staff/dashboard"
             element={

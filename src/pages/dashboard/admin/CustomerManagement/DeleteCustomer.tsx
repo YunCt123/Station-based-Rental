@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { findCustomer, deleteCustomer } from '../../../data/customersStore';
+import { findCustomer, deleteCustomer } from '../../../../data/customersStore';
 
 type Props = {
   id?: string | null;

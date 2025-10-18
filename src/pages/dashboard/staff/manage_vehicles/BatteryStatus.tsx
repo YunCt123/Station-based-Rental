@@ -9,8 +9,8 @@ import {
 import {
   BoltIcon as BoltSolidIcon,
 } from '@heroicons/react/24/solid';
-import { BatteryUpdateModal } from '../../../../components/dashboard/staff/BatteryUpdateModal';
-import { ChargingControlModal } from '../../../../components/dashboard/staff/ChargingControlModal';
+import { BatteryUpdateModal } from '../../../../components/dashboard/staff/manage_vehicles/BatteryUpdateModal';
+import { ChargingControlModal } from '../../../../components/dashboard/staff/manage_vehicles/ChargingControlModal';
 
 interface Vehicle {
   id: string;

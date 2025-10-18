@@ -12,9 +12,9 @@ import {
   XCircleIcon as XCircleSolidIcon,
   ExclamationTriangleIcon as ExclamationTriangleSolidIcon
 } from '@heroicons/react/24/solid';
-import { TechnicalIssueModal } from '../../../../components/dashboard/staff/TechnicalIssueModal';
-import { MaintenanceScheduleModal } from '../../../../components/dashboard/staff/MaintenanceScheduleModal';
-import { MaintenanceHistoryModal } from '../../../../components/dashboard/staff/MaintenanceHistoryModal';
+import { TechnicalIssueModal } from '../../../../components/dashboard/staff/manage_vehicles/TechnicalIssueModal';
+import { MaintenanceScheduleModal } from '../../../../components/dashboard/staff/manage_vehicles/MaintenanceScheduleModal';
+import { MaintenanceHistoryModal } from '../../../../components/dashboard/staff/manage_vehicles/MaintenanceHistoryModal';
 
 interface MaintenanceRecord {
   id: string;

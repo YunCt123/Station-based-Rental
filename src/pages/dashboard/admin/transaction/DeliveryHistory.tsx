@@ -4,13 +4,13 @@ import {
   FilterSection,
   PageHeader,
   type FilterOption,
-} from "../../../components/dashboard/shared";
+} from "../../../../components/dashboard/shared";
 import {
   DeliveryTable,
   DeliveryDetails,
   DeliveryStats,
-} from "../../../components/admin/delivery";
-import type { DeliveryTransaction } from "../../../types/admin";
+} from "../../../../components/admin/delivery";
+import type { DeliveryTransaction } from "../../../../types/admin";
 
 export const DeliveryHistory: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -201,3 +201,5 @@ export const DeliveryHistory: React.FC = () => {
     </div>
   );
 };
+
+export default DeliveryHistory;

@@ -15,7 +15,7 @@ import {
   QuickActions,
   type FilterOption,
   type QuickAction,
-} from "../../../components/dashboard/shared";
+} from "../../../../components/dashboard/shared";
 
 interface ReturnTransaction {
   id: string;
@@ -864,3 +864,5 @@ export const ReturnHistory: React.FC = () => {
     </div>
   );
 };
+
+export default ReturnHistory;

@@ -29,7 +29,7 @@ interface Incident {
   resolvedAt?: string;
   resolution?: string;
   images: string[];
-  location: string;
+  position: string;
 }
 
 const mockIncidents: Incident[] = [
@@ -46,7 +46,7 @@ const mockIncidents: Incident[] = [
     status: 'in-progress',
     assignedTo: 'Kỹ thuật viên Trần B',
     images: ['https://via.placeholder.com/200x150?text=Headlight'],
-    location: 'Trạm A - Vị trí 1'
+    position: 'Vị trí 1'
   },
   {
     id: 'INC002',
@@ -63,7 +63,7 @@ const mockIncidents: Incident[] = [
     resolvedAt: '2024-10-14 08:00',
     resolution: 'Đã kiểm tra và bôi trơn các bộ phận chuyển động. Tiếng ồn đã được khắc phục.',
     images: ['https://via.placeholder.com/200x150?text=Engine'],
-    location: 'Trạm A - Vị trí 5'
+    position: 'Vị trí 5'
   },
   {
     id: 'INC003',
@@ -77,7 +77,7 @@ const mockIncidents: Incident[] = [
     severity: 'low',
     status: 'reported',
     images: [],
-    location: 'Trạm B - Vị trí 3'
+    position: 'Vị trí 3'
   }
 ];
 
@@ -97,7 +97,7 @@ const IncidentReport: React.FC = () => {
     title: '',
     description: '',
     severity: 'medium' as const,
-    location: '',
+    position: '',
     images: [] as string[]
   });
 
@@ -178,7 +178,7 @@ const IncidentReport: React.FC = () => {
       severity: newIncident.severity,
       status: 'reported',
       images: newIncident.images,
-      location: newIncident.location
+      position: newIncident.position
     };
 
     setIncidents([incident, ...incidents]);
@@ -189,7 +189,7 @@ const IncidentReport: React.FC = () => {
       title: '',
       description: '',
       severity: 'medium',
-      location: '',
+      position: '',
       images: []
     });
     setShowReportForm(false);
@@ -367,7 +367,7 @@ const IncidentReport: React.FC = () => {
                           <div>Xe: <span className="font-medium text-gray-900">{incident.vehicleModel} - {incident.licensePlate}</span></div>
                           <div>Người báo cáo: <span className="font-medium text-gray-900">{incident.reportedBy}</span></div>
                           <div>Thời gian: <span className="font-medium text-gray-900">{incident.reportedAt}</span></div>
-                          <div>Vị trí: <span className="font-medium text-gray-900">{incident.location}</span></div>
+                          <div>Vị trí: <span className="font-medium text-gray-900">{incident.position}</span></div>
                         </div>
 
                         <p className="text-sm text-gray-600 line-clamp-2">{incident.description}</p>
@@ -460,7 +460,7 @@ const IncidentReport: React.FC = () => {
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Vị trí:</span>
-                      <span className="font-medium">{selectedIncident.location}</span>
+                      <span className="font-medium">{selectedIncident.position}</span>
                     </div>
                     {selectedIncident.assignedTo && (
                       <div className="flex justify-between">
@@ -608,8 +608,8 @@ const IncidentReport: React.FC = () => {
                     type="text"
                     required
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    value={newIncident.location}
-                    onChange={(e) => setNewIncident({ ...newIncident, location: e.target.value })}
+                    value={newIncident.position}
+                    onChange={(e) => setNewIncident({ ...newIncident, position: e.target.value })}
                     placeholder="VD: Trạm A - Vị trí 1"
                   />
                 </div>

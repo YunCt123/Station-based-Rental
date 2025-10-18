@@ -66,6 +66,10 @@ export const LazyVehicleAvailable = lazy(
   () => import("../../pages/dashboard/staff/vehicle/VehicleAvailable")
 );
 
+// Staff pages - payment
+export const LazyRentalPayment = lazy(() => import('../../pages/dashboard/staff/payment/RentalPayment'));
+export const LazyDepositPayment = lazy(() => import('../../pages/dashboard/staff/payment/DepositPayment'));
+
 // Admin pages
 export const LazyAdminDashboard = lazy(
   () => import("../../pages/dashboard/admin/AdminDashboard")

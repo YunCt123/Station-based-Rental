@@ -24,6 +24,8 @@ import {
   LazyVehicleReserved,
   LazyVehicleRented,
   LazyVehicleAvailable,
+  LazyRentalPayment,
+  LazyDepositPayment,
   LazyAdminDashboard,
   LazyFleetOverview,
   LazyVehicleDistribution,
@@ -305,6 +307,25 @@ function App() {
                 </DashboardLayout>
               }
             />
+          {/* Staff Payment Routes */}
+          <Route path="/staff/payment/rental" element={
+            <DashboardLayout>
+              <LazyRentalPayment />
+            </DashboardLayout>
+          } />
+
+          <Route path="/staff/payment/deposit" element={
+            <DashboardLayout>
+              <LazyDepositPayment />
+            </DashboardLayout>
+          } />
+
+          {/* Station Management Routes */}
+          <Route path="/staff/station-management/battery-status" element={
+            <DashboardLayout>
+              <LazyBatteryStatus />
+            </DashboardLayout>
+          } />
 
             <Route
               path="/staff/station-management/technical-status"

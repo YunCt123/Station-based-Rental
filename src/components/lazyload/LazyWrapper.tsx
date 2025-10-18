@@ -18,6 +18,7 @@ export const LazyWrapper: React.FC<LazyWrapperProps> = ({
 };
 
 // Simple lazy loading wrapper function
+// eslint-disable-next-line react-refresh/only-export-components, @typescript-eslint/no-explicit-any
 export const withLazyLoading = <T extends Record<string, any>>(
   Component: React.ComponentType<T>,
   fallback?: React.ReactNode

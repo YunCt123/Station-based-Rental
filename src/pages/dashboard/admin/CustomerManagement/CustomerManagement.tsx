@@ -72,22 +72,22 @@ export const CustomerManagement: React.FC = () => {
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-200 text-center  ">
                       <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-900 uppercase tracking-wider !font-bold">
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-900 uppercase tracking-wider">
                           Tên
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-900 uppercase tracking-wider !font-bold">
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-900 uppercase tracking-wider">
                           Email
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-900 uppercase tracking-wider !font-bold ">
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-900 uppercase tracking-wider">
                           Số điện thoại
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-900 uppercase tracking-wider !font-bold">
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-900 uppercase tracking-wider">
                           Tổng lượt thuê
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-900 uppercase tracking-wider !font-bold">
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-900 uppercase tracking-wider">
                           Rủi ro
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-900 uppercase tracking-wider !font-bold"></th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-900 uppercase tracking-wider"></th>
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">

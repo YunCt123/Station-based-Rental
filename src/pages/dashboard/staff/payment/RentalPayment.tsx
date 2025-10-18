@@ -15,6 +15,7 @@ import {
   QrCodeIcon,
   DevicePhoneMobileIcon
 } from '@heroicons/react/24/outline';
+import { Modal } from '../../../../components/Modal';
 
 // Types
 interface RentalRecord {
@@ -418,177 +419,171 @@ const RentalPayment: React.FC = () => {
       </div>
 
       {/* Payment Modal */}
-      {showPaymentModal && selectedRental && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold text-gray-900">Xử Lý Thanh Toán</h2>
-                <button
-                  onClick={() => setShowPaymentModal(false)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <XMarkIcon className="w-6 h-6" />
-                </button>
-              </div>
-
-              {/* Rental Summary */}
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-gray-600">Mã booking:</span>
-                  <span className="font-semibold">{selectedRental.bookingId}</span>
-                </div>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-gray-600">Khách hàng:</span>
-                  <span className="font-semibold">{selectedRental.customerName}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Số tiền cần thanh toán:</span>
-                  <span className="text-2xl font-bold text-red-600">${selectedRental.remainingAmount}</span>
-                </div>
-              </div>
-
-              {/* Payment Amount */}
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Số tiền thanh toán ($)
-                </label>
-                <input
-                  type="number"
-                  value={paymentAmount}
-                  onChange={(e) => setPaymentAmount(e.target.value)}
-                  placeholder="Nhập số tiền"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  min="0"
-                  max={selectedRental.remainingAmount}
-                  step="0.01"
-                />
-                <div className="flex gap-2 mt-2">
-                  <button
-                    onClick={() => setPaymentAmount((selectedRental.remainingAmount / 2).toFixed(2))}
-                    className="text-sm px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded"
-                  >
-                    50%
-                  </button>
-                  <button
-                    onClick={() => setPaymentAmount(selectedRental.remainingAmount.toString())}
-                    className="text-sm px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded"
-                  >
-                    Toàn bộ
-                  </button>
-                </div>
-              </div>
-
-              {/* Payment Method Selection */}
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-3">
-                  Phương thức thanh toán
-                </label>
-                <div className="grid grid-cols-2 gap-3">
-                  {paymentMethods.map((method) => (
-                    <div
-                      key={method.id}
-                      onClick={() => setSelectedPaymentMethod(method.id)}
-                      className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                        selectedPaymentMethod === method.id
-                          ? 'border-blue-500 bg-blue-50'
-                          : 'border-gray-200 hover:border-blue-300'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3 mb-2">
-                        <div className={`${selectedPaymentMethod === method.id ? 'text-blue-600' : 'text-gray-600'}`}>
-                          {method.icon}
-                        </div>
-                        <span className="font-medium text-gray-900">{method.name}</span>
-                      </div>
-                      <p className="text-xs text-gray-600">{method.description}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Payment Note */}
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Ghi chú (tùy chọn)
-                </label>
-                <textarea
-                  value={paymentNote}
-                  onChange={(e) => setPaymentNote(e.target.value)}
-                  placeholder="Nhập ghi chú về giao dịch..."
-                  rows={3}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setShowPaymentModal(false)}
-                  className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors"
-                >
-                  Hủy
-                </button>
-                <button
-                  onClick={handlePayment}
-                  disabled={!selectedPaymentMethod || !paymentAmount}
-                  className="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                >
-                  <CheckCircleIcon className="w-5 h-5" />
-                  Xác Nhận Thanh Toán
-                </button>
-              </div>
+      {selectedRental && (
+        <Modal
+          isOpen={showPaymentModal}
+          onClose={() => setShowPaymentModal(false)}
+          title="Xử Lý Thanh Toán"
+          subtitle={`${selectedRental.customerName} • ${selectedRental.bookingId}`}
+          size="lg"
+        >
+          {/* Rental Summary */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm text-gray-600">Mã booking:</span>
+              <span className="font-semibold">{selectedRental.bookingId}</span>
+            </div>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm text-gray-600">Khách hàng:</span>
+              <span className="font-semibold">{selectedRental.customerName}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-600">Số tiền cần thanh toán:</span>
+              <span className="text-2xl font-bold text-red-600">${selectedRental.remainingAmount}</span>
             </div>
           </div>
-        </div>
+
+          {/* Payment Amount */}
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Số tiền thanh toán ($)
+            </label>
+            <input
+              type="number"
+              value={paymentAmount}
+              onChange={(e) => setPaymentAmount(e.target.value)}
+              placeholder="Nhập số tiền"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              min="0"
+              max={selectedRental.remainingAmount}
+              step="0.01"
+            />
+            <div className="flex gap-2 mt-2">
+              <button
+                onClick={() => setPaymentAmount((selectedRental.remainingAmount / 2).toFixed(2))}
+                className="text-sm px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded"
+              >
+                50%
+              </button>
+              <button
+                onClick={() => setPaymentAmount(selectedRental.remainingAmount.toString())}
+                className="text-sm px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded"
+              >
+                Toàn bộ
+              </button>
+            </div>
+          </div>
+
+          {/* Payment Method Selection */}
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              Phương thức thanh toán
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              {paymentMethods.map((method) => (
+                <div
+                  key={method.id}
+                  onClick={() => setSelectedPaymentMethod(method.id)}
+                  className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                    selectedPaymentMethod === method.id
+                      ? 'border-blue-500 bg-blue-50'
+                      : 'border-gray-200 hover:border-blue-300'
+                  }`}
+                >
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className={`${selectedPaymentMethod === method.id ? 'text-blue-600' : 'text-gray-600'}`}>
+                      {method.icon}
+                    </div>
+                    <span className="font-medium text-gray-900">{method.name}</span>
+                  </div>
+                  <p className="text-xs text-gray-600">{method.description}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Payment Note */}
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Ghi chú (tùy chọn)
+            </label>
+            <textarea
+              value={paymentNote}
+              onChange={(e) => setPaymentNote(e.target.value)}
+              placeholder="Nhập ghi chú về giao dịch..."
+              rows={3}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex gap-3">
+            <button
+              onClick={() => setShowPaymentModal(false)}
+              className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+            >
+              Hủy
+            </button>
+            <button
+              onClick={handlePayment}
+              disabled={!selectedPaymentMethod || !paymentAmount}
+              className="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              <CheckCircleIcon className="w-5 h-5" />
+              Xác Nhận Thanh Toán
+            </button>
+          </div>
+        </Modal>
       )}
 
       {/* Success Modal */}
-      {showSuccessModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4 text-center">
-            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <CheckCircleIcon className="w-10 h-10 text-green-600" />
-            </div>
-            <h3 className="text-2xl font-bold text-gray-900 mb-2">Thanh Toán Thành Công!</h3>
-            <p className="text-gray-600 mb-6">
-              Giao dịch đã được xử lý thành công. Bạn có thể in hóa đơn hoặc đóng cửa sổ này.
-            </p>
-            <div className="space-y-2 text-sm text-left bg-gray-50 p-4 rounded-lg mb-6">
-              <div className="flex justify-between">
-                <span className="text-gray-600">Mã giao dịch:</span>
-                <span className="font-medium">TX{Date.now()}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Số tiền:</span>
-                <span className="font-medium">${paymentAmount}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Phương thức:</span>
-                <span className="font-medium">
-                  {paymentMethods.find(m => m.id === selectedPaymentMethod)?.name}
-                </span>
-              </div>
-            </div>
-            <div className="flex gap-3">
-              <button
-                onClick={() => {/* Print receipt logic */}}
-                className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
-              >
-                <PrinterIcon className="w-5 h-5" />
-                In Hóa Đơn
-              </button>
-              <button
-                onClick={handleCloseSuccessModal}
-                className="flex-1 bg-gray-600 text-white py-3 rounded-lg font-medium hover:bg-gray-700 transition-colors flex items-center justify-center gap-2"
-              >
-                <XMarkIcon className="w-5 h-5" />
-                Đóng
-              </button>
-            </div>
+      <Modal
+        isOpen={showSuccessModal}
+        onClose={handleCloseSuccessModal}
+        title="Thanh Toán Thành Công!"
+        size="md"
+      >
+        <div className="text-center">
+          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <CheckCircleIcon className="w-10 h-10 text-green-600" />
           </div>
         </div>
-      )}
+        <p className="text-gray-600 mb-6 text-center">
+          Giao dịch đã được xử lý thành công. Bạn có thể in hóa đơn hoặc đóng cửa sổ này.
+        </p>
+        <div className="space-y-2 text-sm text-left bg-gray-50 p-4 rounded-lg mb-6">
+          <div className="flex justify-between">
+            <span className="text-gray-600">Mã giao dịch:</span>
+            <span className="font-medium">TX{Date.now()}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-gray-600">Số tiền:</span>
+            <span className="font-medium">${paymentAmount}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-gray-600">Phương thức:</span>
+            <span className="font-medium">
+              {paymentMethods.find(m => m.id === selectedPaymentMethod)?.name}
+            </span>
+          </div>
+        </div>
+        <div className="flex gap-3">
+          <button
+            onClick={() => {/* Print receipt logic */}}
+            className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+          >
+            <PrinterIcon className="w-5 h-5" />
+            In Hóa Đơn
+          </button>
+          <button
+            onClick={handleCloseSuccessModal}
+            className="flex-1 bg-gray-600 text-white py-3 rounded-lg font-medium hover:bg-gray-700 transition-colors flex items-center justify-center gap-2"
+          >
+            <XMarkIcon className="w-5 h-5" />
+            Đóng
+          </button>
+        </div>
+      </Modal>
     </div>
   );
 };

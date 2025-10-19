@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import VehicleCard from "@/components/VehicleCard";
-// import { GoogleMaps } from "@/components/GoogleMaps";
+import { GoogleMaps } from "@/components/GoogleMaps";
 import { stations } from "@/data/stations";
 // import { getVehicles } from "@/data/vehicles";
 import { useTranslation } from "@/contexts/TranslationContext";

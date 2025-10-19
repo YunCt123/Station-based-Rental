@@ -6,9 +6,11 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import VehicleCard from "@/components/VehicleCard";
 import { GoogleMaps } from "@/components/GoogleMaps";
-import { stations } from "@/data/stations";
-// import { getVehicles } from "@/data/vehicles";
+import { LoadingWrapper, FadeIn, SlideIn, PageTransition } from "@/components/LoadingComponents";
 import { useTranslation } from "@/contexts/TranslationContext";
+import { useToast } from "@/hooks/use-toast";
+import { stationService, type Station } from "@/services/stationService";
+import type { Vehicle } from "@/types/vehicle";
 import {
   MapPin,
   Clock,
@@ -21,40 +23,143 @@ import {
   ArrowLeft,
   Navigation,
   CheckCircle,
+  AlertCircle,
+  RefreshCw,
 } from "lucide-react";
 
 const StationDetails = () => {
   const { id } = useParams<{ id: string }>();
-  const { t, language } = useTranslation();
+  const { t } = useTranslation();
+  const { toast } = useToast();
   const [selectedStation, setSelectedStation] = useState<string>("");
+  
+  // State for API data
+  const [station, setStation] = useState<Station | null>(null);
+  const [stationVehicles, setStationVehicles] = useState<Vehicle[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingVehicles, setIsLoadingVehicles] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const station = stations.find((s) => s.id === id);
-  const vehicles = getVehicles(language);
-
-  // Get vehicles available at this station
-  const stationVehicles = vehicles.filter(
-    (vehicle) => vehicle.location === station?.name
-  );
-
+  // Fetch station data from API
   useEffect(() => {
-    if (station) {
-      setSelectedStation(station.id);
-    }
-  }, [station]);
+    const fetchStationData = async () => {
+      if (!id) return;
+      
+      try {
+        setIsLoading(true);
+        setError(null);
+        
+        console.log('🏢 Fetching station data for ID:', id);
+        
+        // Test connection first
+        await stationService.testConnection();
+        
+        // Fetch station details
+        const stationData = await stationService.getStationById(id);
+        setStation(stationData);
+        setSelectedStation(stationData.id);
+        
+        console.log('✅ Station data loaded:', stationData);
+        
+      } catch (err: unknown) {
+        console.error('❌ Error fetching station:', err);
+        const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+        setError(`Failed to load station details: ${errorMessage}`);
+        toast({
+          title: "Error",
+          description: "Failed to load station details",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-  if (!station) {
+    fetchStationData();
+  }, [id, toast]);
+
+  // Fetch vehicles at this station
+  useEffect(() => {
+    const fetchStationVehicles = async () => {
+      if (!id || !station) return;
+      
+      try {
+        setIsLoadingVehicles(true);
+        
+        console.log('🚗 Fetching vehicles for station:', id);
+        
+        // Get available vehicles at this station
+        const vehiclesData = await stationService.getStationVehicles(id, 'AVAILABLE');
+        setStationVehicles(vehiclesData.vehicles);
+        
+        console.log('✅ Station vehicles loaded:', vehiclesData.vehicles);
+        
+      } catch (err: unknown) {
+        console.error('❌ Error fetching station vehicles:', err);
+        toast({
+          title: "Warning",
+          description: "Failed to load vehicles at this station",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoadingVehicles(false);
+      }
+    };
+
+    fetchStationVehicles();
+  }, [id, station, toast]);
+
+  // Function to retry loading station data
+  const handleRetry = () => {
+    window.location.reload();
+  };
+
+  // Function to get formatted operating hours
+  const getOperatingHoursDisplay = (operatingHours: Station['operatingHours']) => {
+    if (!operatingHours) return "Contact station for hours";
+    
+    if (operatingHours.weekday && operatingHours.weekday === operatingHours.weekend) {
+      return operatingHours.weekday;
+    }
+    
+    const parts = [];
+    if (operatingHours.weekday) parts.push(`Weekdays: ${operatingHours.weekday}`);
+    if (operatingHours.weekend) parts.push(`Weekends: ${operatingHours.weekend}`);
+    if (operatingHours.holiday) parts.push(`Holidays: ${operatingHours.holiday}`);
+    
+    return parts.length > 0 ? parts.join(', ') : "24/7";
+  };
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <LoadingWrapper isLoading={true}>
+        <div className="min-h-screen bg-background" />
+      </LoadingWrapper>
+    );
+  }
+
+  // Error state
+  if (error || !station) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
+        <div className="text-center max-w-md mx-auto p-6">
+          <AlertCircle className="h-16 w-16 text-destructive mx-auto mb-4" />
           <h1 className="text-2xl font-bold mb-4">
-            {t("common.vehicleNotFound")}
+            {error ? "Error Loading Station" : t("common.vehicleNotFound")}
           </h1>
           <p className="text-muted-foreground mb-6">
-            {t("common.vehicleNotFound")}
+            {error || "Station not found or may have been removed"}
           </p>
-          <Button asChild>
-            <Link to="/stations">{t("nav.stations")}</Link>
-          </Button>
+          <div className="space-y-3">
+            <Button onClick={handleRetry} className="w-full">
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Try Again
+            </Button>
+            <Button variant="outline" asChild className="w-full">
+              <Link to="/stations">{t("nav.stations")}</Link>
+            </Button>
+          </div>
         </div>
       </div>
     );
@@ -77,33 +182,38 @@ const StationDetails = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <div className="bg-gradient-hero py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-4 mb-4">
-            <Button
-              variant="ghost"
-              size="sm"
-              asChild
-              className="text-white hover:bg-white/20"
-            >
-              <Link to="/stations">
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                {t("nav.stations")}
-              </Link>
-            </Button>
+    <PageTransition>
+      <div className="min-h-screen bg-background">
+        {/* Header */}
+        <FadeIn>
+          <div className="bg-gradient-hero py-16">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="flex items-center gap-4 mb-4">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  asChild
+                  className="text-white hover:bg-white/20"
+                >
+                  <Link to="/stations">
+                    <ArrowLeft className="h-4 w-4 mr-2" />
+                    {t("nav.stations")}
+                  </Link>
+                </Button>
+              </div>
+              <SlideIn direction="top" delay={200}>
+                <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
+                  {station.name}
+                </h1>
+                <p className="text-xl text-white/90 max-w-2xl">
+                  {station.address}, {station.city}
+                </p>
+              </SlideIn>
+            </div>
           </div>
-          <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
-            {station.name}
-          </h1>
-          <p className="text-xl text-white/90 max-w-2xl">
-            {station.address}, {station.city}
-          </p>
-        </div>
-      </div>
+        </FadeIn>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Station Information */}
           <div className="lg:col-span-2 space-y-6">
@@ -131,7 +241,7 @@ const StationDetails = () => {
                     <div>
                       <p className="font-medium">{t("common.hour")}</p>
                       <p className="text-sm text-muted-foreground">
-                        {station.operatingHours}
+                        {getOperatingHoursDisplay(station.operatingHours)}
                       </p>
                     </div>
                   </div>
@@ -200,23 +310,47 @@ const StationDetails = () => {
             {/* Available Vehicles */}
             <Card>
               <CardHeader>
-                <CardTitle>{t("common.availableVehicles")}</CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle>{t("common.availableVehicles")}</CardTitle>
+                  {isLoadingVehicles && (
+                    <div className="flex items-center text-sm text-muted-foreground">
+                      <RefreshCw className="h-4 w-4 animate-spin mr-2" />
+                      Loading vehicles...
+                    </div>
+                  )}
+                </div>
               </CardHeader>
               <CardContent>
-                {stationVehicles.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {stationVehicles.map((vehicle) => (
-                      <VehicleCard key={vehicle.id} vehicle={vehicle} />
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <Car className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <p className="text-muted-foreground">
-                      {t("common.noVehiclesFound")}
-                    </p>
-                  </div>
-                )}
+                <LoadingWrapper
+                  isLoading={isLoadingVehicles}
+                  fallback={
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {[1, 2, 3, 4].map((i) => (
+                        <div key={i} className="h-64 bg-muted rounded-lg animate-pulse" />
+                      ))}
+                    </div>
+                  }
+                >
+                  {stationVehicles.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {stationVehicles.map((vehicle) => (
+                        <FadeIn key={vehicle.id} delay={100}>
+                          <VehicleCard vehicle={vehicle} />
+                        </FadeIn>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <Car className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                      <p className="text-muted-foreground">
+                        {t("common.noVehiclesFound")}
+                      </p>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Check back later or try another station
+                      </p>
+                    </div>
+                  )}
+                </LoadingWrapper>
               </CardContent>
             </Card>
           </div>
@@ -268,12 +402,12 @@ const StationDetails = () => {
                     <span className="text-sm">{t("common.hour")}</span>
                     <Badge
                       variant={
-                        station.operatingHours === "24/7"
+                        getOperatingHoursDisplay(station.operatingHours).includes("24/7")
                           ? "default"
                           : "secondary"
                       }
                     >
-                      {station.operatingHours}
+                      {getOperatingHoursDisplay(station.operatingHours)}
                     </Badge>
                   </div>
 
@@ -293,22 +427,29 @@ const StationDetails = () => {
               <CardContent>
                 <div className="h-64 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden">
                   <div className="w-full h-full relative">
-                    <GoogleMaps
-                      selectedStation={selectedStation}
-                      onStationSelect={setSelectedStation}
-                      height="100%"
-                      showControls={false}
-                      showLegend={false}
-                      showInfo={false}
-                    />
+                    {station ? (
+                      <GoogleMaps
+                        selectedStation={selectedStation}
+                        onStationSelect={setSelectedStation}
+                        height="100%"
+                        showControls={false}
+                        showLegend={false}
+                        showInfo={false}
+                      />
+                    ) : (
+                      <div className="flex items-center justify-center h-full">
+                        <p className="text-muted-foreground">Map loading...</p>
+                      </div>
+                    )}
                   </div>
                 </div>
               </CardContent>
             </Card>
           </div>
         </div>
+        </div>
       </div>
-    </div>
+    </PageTransition>
   );
 };
 

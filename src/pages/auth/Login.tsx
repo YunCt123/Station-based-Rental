@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Car, Eye, EyeOff, Mail, Lock } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "@/contexts/TranslationContext";
 import { login as loginApi } from "@/services/authService";
@@ -77,6 +77,7 @@ const LoginPage = ({ onLogin }: LoginProps) => {
           ? "/staff-dashboard"
           : "/"; // tùy chỉnh thêm nếu cần (staff -> '/staff-dashboard', v.v.)
       navigate(redirectPath);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       console.error("[Login] Auth error raw:", err);
       const message =

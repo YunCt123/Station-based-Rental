@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Header from "./layout/Header";
 import Footer from "./layout/Footer";
@@ -35,17 +35,12 @@ import Settings from "./pages/dashboard/Settings";
 import { TooltipProvider } from "./components/ui/tooltip";
 import { Toaster } from "./components/ui/toaster";
 import { Toaster as Sonner } from "./components/ui/sonner";
+import ProtectedRoute from "./components/auth/ProtectedRoute";
+import AccessDenied from "./components/auth/AccessDenied";
+import { clearAuthData, getCurrentUser, type User } from "./utils/auth";
 
 // User interface for type safety
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: "customer" | "staff" | "admin";
-  phoneNumber?: string;
-  dateOfBirth?: string;
-  isVerified?: boolean;
-}
+// Note: Using the one from utils/auth.ts for consistency
 
 function App() {
   const [user, setUser] = useState<User | null>(() => {
@@ -53,6 +48,25 @@ function App() {
     const savedUser = localStorage.getItem("user");
     return savedUser ? JSON.parse(savedUser) : null;
   });
+
+  // Check token validity on app start
+  useEffect(() => {
+    const checkAuthStatus = () => {
+      const token = localStorage.getItem("access_token");
+      const savedUser = getCurrentUser();
+      
+      if (!token && savedUser) {
+        // Token không tồn tại nhưng user có -> clear user
+        handleLogout();
+      } else if (token && !savedUser) {
+        // Token tồn tại nhưng user không có -> clear token
+        localStorage.removeItem("access_token");
+        localStorage.removeItem("refresh_token");
+      }
+    };
+
+    checkAuthStatus();
+  }, []);
 
   const handleLogin = (userData: User) => {
     setUser(userData);
@@ -62,8 +76,8 @@ function App() {
 
   const handleLogout = () => {
     setUser(null);
-    // Remove user from localStorage
-    localStorage.removeItem("user");
+    // Use utility function to clear all auth data
+    clearAuthData();
   };
 
   return (
@@ -174,83 +188,109 @@ function App() {
               <Route
                 path="/booking/:vehicleId?"
                 element={
-                  <>
+                  <ProtectedRoute user={user} requireAuth={true}>
                     <Header user={user} onLogout={handleLogout} />
                     <main className="min-h-screen">
                       <BookingPage />
                     </main>
                     <Footer />
-                  </>
+                  </ProtectedRoute>
                 }
               />
 
               {/* Dashboard routes without Header/Footer */}
-              <Route path="/dashboard" element={<RoleSwitcher />} />
+              <Route 
+                path="/dashboard" 
+                element={
+                  <ProtectedRoute user={user} requireAuth={true}>
+                    <RoleSwitcher />
+                  </ProtectedRoute>
+                } 
+              />
+              
+              {/* Admin Only Routes */}
               <Route
                 path="/admin/dashboard"
                 element={
-                  <DashboardLayout>
-                    <AdminDashboard />
-                  </DashboardLayout>
+                  <ProtectedRoute user={user} requireAuth={true} allowedRoles={["admin"]}>
+                    <DashboardLayout>
+                      <AdminDashboard />
+                    </DashboardLayout>
+                  </ProtectedRoute>
                 }
               />
               <Route
                 path="/admin/fleet/overview"
                 element={
-                  <DashboardLayout>
-                    <FleetOverview />
-                  </DashboardLayout>
+                  <ProtectedRoute user={user} requireAuth={true} allowedRoles={["admin"]}>
+                    <DashboardLayout>
+                      <FleetOverview />
+                    </DashboardLayout>
+                  </ProtectedRoute>
                 }
               />
               <Route
                 path="/admin/fleet/distribution"
                 element={
-                  <DashboardLayout>
-                    <VehicleDistribution />
-                  </DashboardLayout>
+                  <ProtectedRoute user={user} requireAuth={true} allowedRoles={["admin"]}>
+                    <DashboardLayout>
+                      <VehicleDistribution />
+                    </DashboardLayout>
+                  </ProtectedRoute>
                 }
               />
               <Route
                 path="/admin/customers/customer_management"
                 element={
-                  <DashboardLayout>
-                    <CustomerManagement />
-                  </DashboardLayout>
+                  <ProtectedRoute user={user} requireAuth={true} allowedRoles={["admin"]}>
+                    <DashboardLayout>
+                      <CustomerManagement />
+                    </DashboardLayout>
+                  </ProtectedRoute>
                 }
               />
+              {/* Staff Only Routes */}
               <Route
                 path="/staff/dashboard"
                 element={
-                  <DashboardLayout>
-                    <StaffDashboard />
-                  </DashboardLayout>
+                  <ProtectedRoute user={user} requireAuth={true} allowedRoles={["staff", "admin"]}>
+                    <DashboardLayout>
+                      <StaffDashboard />
+                    </DashboardLayout>
+                  </ProtectedRoute>
                 }
               />
 
               <Route
                 path="/staff/vehicles/available"
                 element={
-                  <DashboardLayout>
-                    <VehicleAvailable />
-                  </DashboardLayout>
+                  <ProtectedRoute user={user} requireAuth={true} allowedRoles={["staff", "admin"]}>
+                    <DashboardLayout>
+                      <VehicleAvailable />
+                    </DashboardLayout>
+                  </ProtectedRoute>
                 }
               />
 
               <Route
                 path="/staff/vehicles/booked"
                 element={
-                  <DashboardLayout>
-                    <VehicleReserved />
-                  </DashboardLayout>
+                  <ProtectedRoute user={user} requireAuth={true} allowedRoles={["staff", "admin"]}>
+                    <DashboardLayout>
+                      <VehicleReserved />
+                    </DashboardLayout>
+                  </ProtectedRoute>
                 }
               />
 
               <Route
                 path="/staff/vehicles/rented"
                 element={
-                  <DashboardLayout>
-                    <VehicleRented />
-                  </DashboardLayout>
+                  <ProtectedRoute user={user} requireAuth={true} allowedRoles={["staff", "admin"]}>
+                    <DashboardLayout>
+                      <VehicleRented />
+                    </DashboardLayout>
+                  </ProtectedRoute>
                 }
               />
 
@@ -258,9 +298,11 @@ function App() {
               <Route
                 path="/staff/delivery-procedures"
                 element={
-                  <DashboardLayout>
-                    <DeliveryProcedures />
-                  </DashboardLayout>
+                  <ProtectedRoute user={user} requireAuth={true} allowedRoles={["staff", "admin"]}>
+                    <DashboardLayout>
+                      <DeliveryProcedures />
+                    </DashboardLayout>
+                  </ProtectedRoute>
                 }
               />
 
@@ -268,36 +310,44 @@ function App() {
               <Route
                 path="/staff/verification/online"
                 element={
-                  <DashboardLayout>
-                    <OnlineVerification />
-                  </DashboardLayout>
+                  <ProtectedRoute user={user} requireAuth={true} allowedRoles={["staff", "admin"]}>
+                    <DashboardLayout>
+                      <OnlineVerification />
+                    </DashboardLayout>
+                  </ProtectedRoute>
                 }
               />
 
               <Route
                 path="/staff/verification/offline"
                 element={
-                  <DashboardLayout>
-                    <OfflineVerification />
-                  </DashboardLayout>
+                  <ProtectedRoute user={user} requireAuth={true} allowedRoles={["staff", "admin"]}>
+                    <DashboardLayout>
+                      <OfflineVerification />
+                    </DashboardLayout>
+                  </ProtectedRoute>
                 }
               />
 
               <Route
                 path="/staff/identity-verification"
                 element={
-                  <DashboardLayout>
-                    <IdentityVerification />
-                  </DashboardLayout>
+                  <ProtectedRoute user={user} requireAuth={true} allowedRoles={["staff", "admin"]}>
+                    <DashboardLayout>
+                      <IdentityVerification />
+                    </DashboardLayout>
+                  </ProtectedRoute>
                 }
               />
 
               <Route
                 path="/staff/vehicle-inspection"
                 element={
-                  <DashboardLayout>
-                    <VehicleInspection />
-                  </DashboardLayout>
+                  <ProtectedRoute user={user} requireAuth={true} allowedRoles={["staff", "admin"]}>
+                    <DashboardLayout>
+                      <VehicleInspection />
+                    </DashboardLayout>
+                  </ProtectedRoute>
                 }
               />
 
@@ -305,32 +355,53 @@ function App() {
               <Route
                 path="/staff/station-management/battery-status"
                 element={
-                  <DashboardLayout>
-                    <BatteryStatus />
-                  </DashboardLayout>
+                  <ProtectedRoute user={user} requireAuth={true} allowedRoles={["staff", "admin"]}>
+                    <DashboardLayout>
+                      <BatteryStatus />
+                    </DashboardLayout>
+                  </ProtectedRoute>
                 }
               />
 
               <Route
                 path="/staff/station-management/technical-status"
                 element={
-                  <DashboardLayout>
-                    <TechnicalStatus />
-                  </DashboardLayout>
+                  <ProtectedRoute user={user} requireAuth={true} allowedRoles={["staff", "admin"]}>
+                    <DashboardLayout>
+                      <TechnicalStatus />
+                    </DashboardLayout>
+                  </ProtectedRoute>
                 }
               />
 
               <Route
                 path="/staff/station-management/incident-report"
                 element={
-                  <DashboardLayout>
-                    <IncidentReport />
-                  </DashboardLayout>
+                  <ProtectedRoute user={user} requireAuth={true} allowedRoles={["staff", "admin"]}>
+                    <DashboardLayout>
+                      <IncidentReport />
+                    </DashboardLayout>
+                  </ProtectedRoute>
                 }
               />
 
+              {/* Settings Route - Available to all authenticated users */}
+              <Route 
+                path="/settings" 
+                element={
+                  <ProtectedRoute user={user} requireAuth={true}>
+                    <Settings />
+                  </ProtectedRoute>
+                } 
+              />
+
+              {/* Access Denied Route */}
+              <Route 
+                path="/access-denied" 
+                element={<AccessDenied user={user} />} 
+              />
+
               {/* 404 route */}
-              <Route path="/settings" element={<Settings />} />
               <Route path="*" element={<NotFoundPage />} />
             </Routes>
           </div>

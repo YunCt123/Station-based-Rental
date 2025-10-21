@@ -150,7 +150,7 @@ function App() {
                 }
               />
               <Route
-                path="/stations/:stationId"
+                path="/stations/:id"
                 element={
                   <>
                     <Header user={user} onLogout={handleLogout} />

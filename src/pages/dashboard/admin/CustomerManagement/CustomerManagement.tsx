@@ -6,7 +6,7 @@ import NewCustomer from './NewCustomer.tsx';
 import EditCustomer from './EditCustomer.tsx';
 import { getCustomers, findCustomer } from "../../../../data/customersStore.ts";
 import CustomerDetailsModal from './CustomerDetailsModal.tsx';
-import { DeleteOutlined,PlusOutlined, EyeOutlined,EditOutlined } from "@ant-design/icons";
+import { DeleteOutlined,PlusOutlined, EyeOutlined,EditOutlined ,UserOutlined} from "@ant-design/icons";
 import DeleteCustomer from './DeleteCustomer.tsx';
 
 export const CustomerManagement: React.FC = () => {
@@ -43,6 +43,7 @@ export const CustomerManagement: React.FC = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Content area */}
+        
         <main className="lg:col-span-8 space-y-6">
           <div className="bg-white rounded-lg shadow p-6">
             {/* Base list view at /admin/customers */}
@@ -67,6 +68,33 @@ export const CustomerManagement: React.FC = () => {
                     </button> 
                   </div>
                 </div>
+                {/* Stats cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                <div className="bg-white rounded-lg shadow p-6 flex items-center justify-between">
+                  <div>
+                    <div className="text-sm text-gray-500">Tổng số khách hàng</div>
+                    <div className="mt-2 text-2xl font-semibold text-gray-900">{list.length}</div>
+                    <div className="text-sm text-green-500 mt-1">+0% so với tháng trước</div>
+                  </div>
+                  <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
+                    <UserOutlined className="text-blue-600 text-lg" />
+                  </div>
+                </div>
+                {/* placeholder cards to match layout - optional */}
+                
+                  <div className="bg-white rounded-lg shadow p-6 flex items-center justify-between">
+                     <div>
+                    <div className="text-sm text-gray-500">Tổng số lượt thuê</div>
+                    <div className="mt-2 text-2xl font-semibold text-gray-900">{list.reduce((acc, c) => acc + c.totalRentals, 0)}</div>
+                    <div className="text-sm text-green-500 mt-1">+0% so với tháng trước</div>
+                  </div>
+                  <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
+                    <UserOutlined className="text-blue-600 text-lg" />
+                  </div>
+                  </div>
+                
+                
+              </div>
 
                 <div className="overflow-x-auto">
                   <table className="min-w-full divide-y divide-gray-200">
@@ -175,7 +203,7 @@ export const CustomerManagement: React.FC = () => {
           </Modal>
 
           {/* popup view  */}
-          <Modal open={detailOpen} onCancel={() => setDetailOpen(false)} footer={null} width={2000} centered bodyStyle={{ padding: 24 }}>
+          <Modal open={detailOpen} onCancel={() => setDetailOpen(false)} footer={null} width={800} centered bodyStyle={{ padding: 24 }}>
             <CustomerDetailsModal customer={selectedCustomerId ? findCustomer(selectedCustomerId) : null} />
           </Modal>
 

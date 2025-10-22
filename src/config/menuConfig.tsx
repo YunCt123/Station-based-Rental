@@ -5,8 +5,7 @@ import {
   CreditCardIcon,
   DocumentTextIcon,
   ChartBarIcon,
-  CogIcon,
-  BellIcon,
+  
   ExclamationTriangleIcon,
   ClipboardDocumentListIcon,
   WrenchScrewdriverIcon,
@@ -269,21 +268,7 @@ export const getMenuSections = (): SidebarSection[] => [
             path: '/admin/customers/history',
             roles: [UserRole.ADMIN]
           },
-          {
-            id: 'complaint-handling',
-            title: 'Xử lý khiếu nại',
-            icon: <ExclamationTriangleIcon className="w-4 h-4" />,
-            path: '/admin/customers/complaints',
-            roles: [UserRole.ADMIN]
-          },
-          {
-            id: 'blacklist-management',
-            title: 'Danh sách có rủi ro',
-            icon: <ExclamationTriangleIcon className="w-4 h-4" />,
-            path: '/admin/customers/blacklist',
-            roles: [UserRole.ADMIN],
-            badge: 'New'
-          }
+          
         ]
       },
       {
@@ -300,109 +285,10 @@ export const getMenuSections = (): SidebarSection[] => [
             path: '/admin/staff/list',
             roles: [UserRole.ADMIN]
           },
-          {
-            id: 'performance-tracking',
-            title: 'Theo dõi hiệu suất',
-            icon: <ChartBarIcon className="w-4 h-4" />,
-            path: '/admin/staff/performance',
-            roles: [UserRole.ADMIN]
-          }
+          
         ]
       }
     ]
   },
-
-  // Section for Admin - Reports and Analytics
-  {
-    id: 'admin-analytics',
-    title: 'Báo cáo & phân tích',
-    roles: [UserRole.ADMIN],
-    items: [
-      {
-        id: 'revenue-reports',
-        title: 'Báo cáo & phân tích',
-        icon: <ChartBarIcon className="w-5 h-5" />,
-        path: '/admin/reports',
-        roles: [UserRole.ADMIN],
-        children: [
-          {
-            id: 'revenue-by-station',
-            title: 'Doanh thu theo điểm thuê',
-            icon: <CurrencyDollarIcon className="w-4 h-4" />,
-            path: '/admin/reports/revenue-station',
-            roles: [UserRole.ADMIN]
-          },
-          {
-            id: 'usage-rate',
-            title: 'Tỷ lệ sử dụng xe',
-            icon: <ChartBarIcon className="w-4 h-4" />,
-            path: '/admin/reports/usage',
-            roles: [UserRole.ADMIN]
-          },
-          {
-            id: 'peak-hour-analysis',
-            title: 'Giờ cao điểm',
-            icon: <ChartBarIcon className="w-4 h-4" />,
-            path: '/admin/reports/peak-hours',
-            roles: [UserRole.ADMIN]
-          }
-        ]
-      },
-      {
-        id: 'upgrade-suggestions',
-        title: 'AI gợi ý đề báo nhu cầu thuê',
-        icon: <BellIcon className="w-5 h-5" />,
-        path: '/admin/ai-suggestions',
-        roles: [UserRole.ADMIN],
-        badge: '3',
-        children: [
-          {
-            id: 'demand-forecast',
-            title: 'Dự báo nhu cầu',
-            icon: <ChartBarIcon className="w-4 h-4" />,
-            path: '/admin/ai/demand-forecast',
-            roles: [UserRole.ADMIN]
-          },
-          {
-            id: 'fleet-optimization',
-            title: 'Tối ưu hóa đội xe',
-            icon: <TruckIcon className="w-4 h-4" />,
-            path: '/admin/ai/fleet-optimization',
-            roles: [UserRole.ADMIN]
-          }
-        ]
-      }
-    ]
-  },
-
-  // Shared sections for both roles
-  {
-    id: 'system-settings',
-    title: 'Cài đặt hệ thống',
-    roles: [UserRole.ADMIN, UserRole.STATION_STAFF],
-    items: [
-      {
-        id: 'profile-settings',
-        title: 'Thông tin cá nhân',
-        icon: <UserIcon className="w-5 h-5" />,
-        path: '/settings/profile',
-        roles: [UserRole.ADMIN, UserRole.STATION_STAFF]
-      },
-      {
-        id: 'notifications',
-        title: 'Thông báo',
-        icon: <BellIcon className="w-5 h-5" />,
-        path: '/settings/notifications',
-        roles: [UserRole.ADMIN, UserRole.STATION_STAFF],
-        badge: '2'
-      },
-      {
-        id: 'system-config',
-        title: 'Cấu hình hệ thống',
-        icon: <CogIcon className="w-5 h-5" />,
-        path: '/settings/system',
-        roles: [UserRole.ADMIN]
-      }
-    ]
-  }
+  
 ];

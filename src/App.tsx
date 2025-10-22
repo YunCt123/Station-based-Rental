@@ -42,6 +42,7 @@ import OnlineVerification from "./pages/dashboard/staff/customer_verification/On
 import OfflineVerification from "./pages/dashboard/staff/customer_verification/OfflineVerification";
 import CustomerManagement from "./pages/dashboard/admin/CustomerManagement/CustomerManagement";
 import RentalHistory from "./pages/dashboard/admin/RentalHistory/RentalHistory";
+import EmployeeManagement from "./pages/dashboard/admin/EmployeeManagement/EmployeeList/EmployeeManagement";
 
 function App() {
   return (
@@ -183,6 +184,14 @@ function App() {
               element={
                 <DashboardLayout>
                   <RentalHistory />
+                </DashboardLayout>
+              }
+            />
+            <Route
+              path="/admin/staff/list"
+              element={
+                <DashboardLayout>
+                  <EmployeeManagement />
                 </DashboardLayout>
               }
             />

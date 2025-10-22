@@ -133,6 +133,7 @@ const RentalHistory: React.FC = () => {
             <h1 className="text-2xl font-semibold text-gray-900">Lịch sử thuê</h1>
             <p className="text-sm text-gray-500">Xem lịch sử đặt/thuê xe theo khách hàng và trạng thái</p>
           </div>
+          
           <div className="flex items-center space-x-3">
             <Input.Search
               placeholder="Tìm theo tên, email hoặc số điện thoại"
@@ -165,6 +166,7 @@ const RentalHistory: React.FC = () => {
 
 
         <div className="overflow-x-auto">
+          
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-200">
               <tr>

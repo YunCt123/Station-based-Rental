@@ -1,46 +1,48 @@
-import { useState, useEffect } from "react";
+import { Suspense } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Header from "./layout/Header";
 import Footer from "./layout/Footer";
 import DashboardLayout from "./layout/DashboardLayout";
-import LoginPage from "./pages/auth/Login";
-import VehiclesPage from "./pages/shared/VehiclesPage";
-import HomePage from "./pages/shared/HomePage";
-import DetailsPage from "./pages/shared/DetailsPage";
-import HowItWorks from "./pages/shared/HowItWorks";
-import BookingPage from "./pages/shared/BookingPage";
-import Register from "./pages/auth/Register";
-import RoleSwitcher from "./pages/dashboard/RoleSwitcher";
-import AdminDashboard from "./pages/dashboard/admin/AdminDashboard";
-import StaffDashboard from "./pages/dashboard/staff/StaffDashboard";
-import FleetOverview from "./pages/dashboard/admin/FleetOverview";
-import VehicleDistribution from "./pages/dashboard/admin/VehicleDistribution";
-import Stations from "./pages/shared/Stations";
+import { PageLoadingFallback } from "./components/lazyload/LazyLoadingFallback";
+import {
+  LazyHomePage,
+  LazyVehiclesPage,
+  LazyBookingPage,
+  LazyDetailsPage,
+  LazyHowItWorks,
+  LazyStations,
+  LazyStationDetailPage,
+  LazyLogin,
+  LazyRegister,
+  LazyStaffDashboard,
+  LazyBatteryStatus,
+  LazyTechnicalStatus,
+  LazyIncidentReport,
+  LazyDeliveryProcedures,
+  LazyVehicleInspection,
+  LazyIdentityVerification,
+  LazyVehicleReserved,
+  LazyVehicleRented,
+  LazyVehicleAvailable,
+  LazyRentalPayment,
+  LazyDepositPayment,
+  LazyAdminDashboard,
+  LazyFleetOverview,
+  LazyVehicleDistribution,
+  LazyDeliveryHistory,
+  LazyReturnHistory,
+  LazyStaffSchedule,
+  LazyPeakHourManagement,
+  LazyRoleSwitcher,
+} from "./components/lazyload/LazyComponents";
+
+// Keep these as regular imports as they might not exist as separate files yet
 import NotFoundPage from "./pages/shared/NotFoundPage";
-import StationDetailPage from "./pages/shared/StationDetailPage";
-import { TranslationProvider } from "./contexts/TranslationContext";
-import DeliveryProcedures from "./pages/dashboard/staff/delivery_procedures/DeliveryProcedures";
-import CustomerManagement from "./pages/dashboard/admin/CustomerManagement";
-import VehicleReserved from "./pages/dashboard/staff/vehicle/VehicleReserved";
 import OnlineVerification from "./pages/dashboard/staff/customer_verification/OnlineVerification";
 import OfflineVerification from "./pages/dashboard/staff/customer_verification/OfflineVerification";
-import BatteryStatus from "./pages/dashboard/staff/manage_vehicles/BatteryStatus";
-import TechnicalStatus from "./pages/dashboard/staff/manage_vehicles/TechnicalStatus";
-import IncidentReport from "./pages/dashboard/staff/manage_vehicles/IncidentReport";
-import VehicleAvailable from "./pages/dashboard/staff/vehicle/VehicleAvailable";
-import VehicleRented from "./pages/dashboard/staff/vehicle/VehicleRented";
-import IdentityVerification from "./pages/dashboard/staff/delivery_procedures/IdentityVerification";
-import VehicleInspection from "./pages/dashboard/staff/delivery_procedures/VehicleInspection";
-import Settings from "./pages/dashboard/Settings";
-import { TooltipProvider } from "./components/ui/tooltip";
-import { Toaster } from "./components/ui/toaster";
-import { Toaster as Sonner } from "./components/ui/sonner";
-import ProtectedRoute from "./components/auth/ProtectedRoute";
-import AccessDenied from "./components/auth/AccessDenied";
-import { clearAuthData, getCurrentUser, type User } from "./utils/auth";
-
-// User interface for type safety
-// Note: Using the one from utils/auth.ts for consistency
+import CustomerManagement from "./pages/dashboard/admin/CustomerManagement/CustomerManagement";
+import RentalHistory from "./pages/dashboard/admin/RentalHistory/RentalHistory";
+import EmployeeManagement from "./pages/dashboard/admin/EmployeeManagement/EmployeeList/EmployeeManagement";
 
 function App() {
   const [user, setUser] = useState<User | null>(() => {
@@ -82,331 +84,338 @@ function App() {
 
   return (
     <Router>
-      <TranslationProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <div className="App">
-            <Routes>
-              {/* Public routes with Header/Footer */}
-              <Route
-                path="/"
-                element={
-                  <>
-                    <Header user={user} onLogout={handleLogout} />
-                    <main className="min-h-screen">
-                      <HomePage />
-                    </main>
-                    <Footer />
-                  </>
-                }
-              />
-              <Route
-                path="/vehicles"
-                element={
-                  <>
-                    <Header user={user} onLogout={handleLogout} />
-                    <main className="min-h-screen">
-                      <VehiclesPage />
-                    </main>
-                    <Footer />
-                  </>
-                }
-              />
-              <Route
-                path="/vehicles/:id"
-                element={
-                  <>
-                    <Header user={user} onLogout={handleLogout} />
-                    <main className="min-h-screen">
-                      <DetailsPage />
-                    </main>
-                    <Footer />
-                  </>
-                }
-              />
-              <Route
-                path="/login"
-                element={
-                  <>
-                    <Header user={user} onLogout={handleLogout} />
-                    <main className="min-h-screen">
-                      <LoginPage onLogin={handleLogin} />
-                    </main>
-                    <Footer />
-                  </>
-                }
-              />
-              <Route
-                path="/stations"
-                element={
-                  <>
-                    <Header user={user} onLogout={handleLogout} />
-                    <main className="min-h-screen">
-                      <Stations />
-                    </main>
-                    <Footer />
-                  </>
-                }
-              />
-              <Route
-                path="/stations/:id"
-                element={
-                  <>
-                    <Header user={user} onLogout={handleLogout} />
-                    <main className="min-h-screen">
-                      <StationDetailPage />
-                    </main>
-                    <Footer />
-                  </>
-                }
-              />
-              <Route
-                path="/how-it-works"
-                element={
-                  <>
-                    <Header user={user} onLogout={handleLogout} />
-                    <main className="min-h-screen">
-                      <HowItWorks />
-                    </main>
-                    <Footer />
-                  </>
-                }
-              />
-              <Route
-                path="/register"
-                element={
-                  <>
-                    <Header user={user} onLogout={handleLogout} />
-                    <main className="min-h-screen">
-                      <Register />
-                    </main>
-                    <Footer />
-                  </>
-                }
-              />
-              <Route
-                path="/booking/:vehicleId?"
-                element={
-                  <ProtectedRoute user={user} requireAuth={true}>
-                    <Header user={user} onLogout={handleLogout} />
-                    <main className="min-h-screen">
-                      <BookingPage />
-                    </main>
-                    <Footer />
-                  </ProtectedRoute>
-                }
-              />
+      <div className="App">
+        <Suspense fallback={<PageLoadingFallback />}>
+          <Routes>
+            {/* Public routes with Header/Footer */}
+            <Route
+              path="/"
+              element={
+                <>
+                  <Header />
+                  <main className="min-h-screen">
+                    <LazyHomePage />
+                  </main>
+                  <Footer />
+                </>
+              }
+            />
+            <Route
+              path="/vehicles"
+              element={
+                <>
+                  <Header />
+                  <main className="min-h-screen">
+                    <LazyVehiclesPage />
+                  </main>
+                  <Footer />
+                </>
+              }
+            />
+            <Route
+              path="/vehicle/:id"
+              element={
+                <>
+                  <Header />
+                  <main className="min-h-screen">
+                    <LazyDetailsPage />
+                  </main>
+                  <Footer />
+                </>
+              }
+            />
+            <Route
+              path="/login"
+              element={
+                <>
+                  <Header />
+                  <main className="min-h-screen">
+                    <LazyLogin />
+                  </main>
+                  <Footer />
+                </>
+              }
+            />
+            <Route
+              path="/stations"
+              element={
+                <>
+                  <Header />
+                  <main className="min-h-screen">
+                    <LazyStations />
+                  </main>
+                  <Footer />
+                </>
+              }
+            />
+            <Route
+              path="/stations/:stationId"
+              element={
+                <>
+                  <Header />
+                  <main className="min-h-screen">
+                    <LazyStationDetailPage />
+                  </main>
+                  <Footer />
+                </>
+              }
+            />
+            <Route
+              path="/how-it-works"
+              element={
+                <>
+                  <Header />
+                  <main className="min-h-screen">
+                    <LazyHowItWorks />
+                  </main>
+                  <Footer />
+                </>
+              }
+            />
+            <Route
+              path="/register"
+              element={
+                <>
+                  <Header />
+                  <main className="min-h-screen">
+                    <LazyRegister />
+                  </main>
+                  <Footer />
+                </>
+              }
+            />
+            <Route
+              path="/booking/:vehicleId?"
+              element={
+                <>
+                  <Header />
+                  <main className="min-h-screen">
+                    <LazyBookingPage />
+                  </main>
+                  <Footer />
+                </>
+              }
+            />
 
-              {/* Dashboard routes without Header/Footer */}
-              <Route 
-                path="/dashboard" 
-                element={
-                  <ProtectedRoute user={user} requireAuth={true}>
-                    <RoleSwitcher />
-                  </ProtectedRoute>
-                } 
-              />
-              
-              {/* Admin Only Routes */}
-              <Route
-                path="/admin/dashboard"
-                element={
-                  <ProtectedRoute user={user} requireAuth={true} allowedRoles={["admin"]}>
-                    <DashboardLayout>
-                      <AdminDashboard />
-                    </DashboardLayout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/admin/fleet/overview"
-                element={
-                  <ProtectedRoute user={user} requireAuth={true} allowedRoles={["admin"]}>
-                    <DashboardLayout>
-                      <FleetOverview />
-                    </DashboardLayout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/admin/fleet/distribution"
-                element={
-                  <ProtectedRoute user={user} requireAuth={true} allowedRoles={["admin"]}>
-                    <DashboardLayout>
-                      <VehicleDistribution />
-                    </DashboardLayout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/admin/customers/customer_management"
-                element={
-                  <ProtectedRoute user={user} requireAuth={true} allowedRoles={["admin"]}>
-                    <DashboardLayout>
-                      <CustomerManagement />
-                    </DashboardLayout>
-                  </ProtectedRoute>
-                }
-              />
-              {/* Staff Only Routes */}
-              <Route
-                path="/staff/dashboard"
-                element={
-                  <ProtectedRoute user={user} requireAuth={true} allowedRoles={["staff", "admin"]}>
-                    <DashboardLayout>
-                      <StaffDashboard />
-                    </DashboardLayout>
-                  </ProtectedRoute>
-                }
-              />
+            {/* Dashboard routes without Header/Footer */}
+            <Route path="/dashboard" element={<LazyRoleSwitcher />} />
+            <Route
+              path="/admin/dashboard"
+              element={
+                <DashboardLayout>
+                  <LazyAdminDashboard />
+                </DashboardLayout>
+              }
+            />
+            
+            <Route
+              path="/admin/customers/customer_management"
+              element={
+                <DashboardLayout>
+                  <CustomerManagement />
+                </DashboardLayout>
+              }
+            />
+            <Route
+              path="/admin/customers/history"
+              element={
+                <DashboardLayout>
+                  <RentalHistory />
+                </DashboardLayout>
+              }
+            />
+            <Route
+              path="/admin/staff/list"
+              element={
+                <DashboardLayout>
+                  <EmployeeManagement />
+                </DashboardLayout>
+              }
+            />
+            
+            <Route
+              path="/admin/fleet/overview"
+              element={
+                <DashboardLayout>
+                  <LazyFleetOverview />
+                </DashboardLayout>
+              }
+            />
+            <Route
+              path="/admin/fleet/distribution"
+              element={
+                <DashboardLayout>
+                  <LazyVehicleDistribution />
+                </DashboardLayout>
+              }
+            />
+            <Route
+              path="/admin/transactions/delivery"
+              element={
+                <DashboardLayout>
+                  <LazyDeliveryHistory />
+                </DashboardLayout>
+              }
+            />
+            <Route
+              path="/admin/transactions/return"
+              element={
+                <DashboardLayout>
+                  <LazyReturnHistory />
+                </DashboardLayout>
+              }
+            />
+            <Route
+              path="/admin/allocation/schedule"
+              element={
+                <DashboardLayout>
+                  <LazyStaffSchedule />
+                </DashboardLayout>
+              }
+            />
+            <Route
+              path="/admin/allocation/peak-hours"
+              element={
+                <DashboardLayout>
+                  <LazyPeakHourManagement />
+                </DashboardLayout>
+              }
+            />
+            <Route
+              path="/staff/dashboard"
+              element={
+                <DashboardLayout>
+                  <LazyStaffDashboard />
+                </DashboardLayout>
+              }
+            />
 
-              <Route
-                path="/staff/vehicles/available"
-                element={
-                  <ProtectedRoute user={user} requireAuth={true} allowedRoles={["staff", "admin"]}>
-                    <DashboardLayout>
-                      <VehicleAvailable />
-                    </DashboardLayout>
-                  </ProtectedRoute>
-                }
-              />
+            <Route
+              path="/staff/vehicles/available"
+              element={
+                <DashboardLayout>
+                  <LazyVehicleAvailable />
+                </DashboardLayout>
+              }
+            />
 
-              <Route
-                path="/staff/vehicles/booked"
-                element={
-                  <ProtectedRoute user={user} requireAuth={true} allowedRoles={["staff", "admin"]}>
-                    <DashboardLayout>
-                      <VehicleReserved />
-                    </DashboardLayout>
-                  </ProtectedRoute>
-                }
-              />
+            <Route
+              path="/staff/vehicles/booked"
+              element={
+                <DashboardLayout>
+                  <LazyVehicleReserved />
+                </DashboardLayout>
+              }
+            />
 
-              <Route
-                path="/staff/vehicles/rented"
-                element={
-                  <ProtectedRoute user={user} requireAuth={true} allowedRoles={["staff", "admin"]}>
-                    <DashboardLayout>
-                      <VehicleRented />
-                    </DashboardLayout>
-                  </ProtectedRoute>
-                }
-              />
+            <Route
+              path="/staff/vehicles/rented"
+              element={
+                <DashboardLayout>
+                  <LazyVehicleRented />
+                </DashboardLayout>
+              }
+            />
 
-              {/* Staff Delivery Procedures Routes */}
-              <Route
-                path="/staff/delivery-procedures"
-                element={
-                  <ProtectedRoute user={user} requireAuth={true} allowedRoles={["staff", "admin"]}>
-                    <DashboardLayout>
-                      <DeliveryProcedures />
-                    </DashboardLayout>
-                  </ProtectedRoute>
-                }
-              />
+            {/* Staff Delivery Procedures Routes */}
+            <Route
+              path="/staff/delivery-procedures"
+              element={
+                <DashboardLayout>
+                  <LazyDeliveryProcedures />
+                </DashboardLayout>
+              }
+            />
 
-              {/* Staff Verification Routes */}
-              <Route
-                path="/staff/verification/online"
-                element={
-                  <ProtectedRoute user={user} requireAuth={true} allowedRoles={["staff", "admin"]}>
-                    <DashboardLayout>
-                      <OnlineVerification />
-                    </DashboardLayout>
-                  </ProtectedRoute>
-                }
-              />
+            {/* Staff Verification Routes */}
+            <Route
+              path="/staff/verification/online"
+              element={
+                <DashboardLayout>
+                  <OnlineVerification />
+                </DashboardLayout>
+              }
+            />
 
-              <Route
-                path="/staff/verification/offline"
-                element={
-                  <ProtectedRoute user={user} requireAuth={true} allowedRoles={["staff", "admin"]}>
-                    <DashboardLayout>
-                      <OfflineVerification />
-                    </DashboardLayout>
-                  </ProtectedRoute>
-                }
-              />
+            <Route
+              path="/staff/verification/offline"
+              element={
+                <DashboardLayout>
+                  <OfflineVerification />
+                </DashboardLayout>
+              }
+            />
 
-              <Route
-                path="/staff/identity-verification"
-                element={
-                  <ProtectedRoute user={user} requireAuth={true} allowedRoles={["staff", "admin"]}>
-                    <DashboardLayout>
-                      <IdentityVerification />
-                    </DashboardLayout>
-                  </ProtectedRoute>
-                }
-              />
+            <Route
+              path="/staff/identity-verification"
+              element={
+                <DashboardLayout>
+                  <LazyIdentityVerification />
+                </DashboardLayout>
+              }
+            />
 
-              <Route
-                path="/staff/vehicle-inspection"
-                element={
-                  <ProtectedRoute user={user} requireAuth={true} allowedRoles={["staff", "admin"]}>
-                    <DashboardLayout>
-                      <VehicleInspection />
-                    </DashboardLayout>
-                  </ProtectedRoute>
-                }
-              />
+            <Route
+              path="/staff/vehicle-inspection"
+              element={
+                <DashboardLayout>
+                  <LazyVehicleInspection />
+                </DashboardLayout>
+              }
+            />
 
-              {/* Station Management Routes */}
-              <Route
-                path="/staff/station-management/battery-status"
-                element={
-                  <ProtectedRoute user={user} requireAuth={true} allowedRoles={["staff", "admin"]}>
-                    <DashboardLayout>
-                      <BatteryStatus />
-                    </DashboardLayout>
-                  </ProtectedRoute>
-                }
-              />
+            {/* Station Management Routes */}
+            <Route
+              path="/staff/station-management/battery-status"
+              element={
+                <DashboardLayout>
+                  <LazyBatteryStatus />
+                </DashboardLayout>
+              }
+            />
+          {/* Staff Payment Routes */}
+          <Route path="/staff/payment/rental" element={
+            <DashboardLayout>
+              <LazyRentalPayment />
+            </DashboardLayout>
+          } />
 
-              <Route
-                path="/staff/station-management/technical-status"
-                element={
-                  <ProtectedRoute user={user} requireAuth={true} allowedRoles={["staff", "admin"]}>
-                    <DashboardLayout>
-                      <TechnicalStatus />
-                    </DashboardLayout>
-                  </ProtectedRoute>
-                }
-              />
+          <Route path="/staff/payment/deposit" element={
+            <DashboardLayout>
+              <LazyDepositPayment />
+            </DashboardLayout>
+          } />
 
-              <Route
-                path="/staff/station-management/incident-report"
-                element={
-                  <ProtectedRoute user={user} requireAuth={true} allowedRoles={["staff", "admin"]}>
-                    <DashboardLayout>
-                      <IncidentReport />
-                    </DashboardLayout>
-                  </ProtectedRoute>
-                }
-              />
+          {/* Station Management Routes */}
+          <Route path="/staff/station-management/battery-status" element={
+            <DashboardLayout>
+              <LazyBatteryStatus />
+            </DashboardLayout>
+          } />
 
-              {/* Settings Route - Available to all authenticated users */}
-              <Route 
-                path="/settings" 
-                element={
-                  <ProtectedRoute user={user} requireAuth={true}>
-                    <Settings />
-                  </ProtectedRoute>
-                } 
-              />
+            <Route
+              path="/staff/station-management/technical-status"
+              element={
+                <DashboardLayout>
+                  <LazyTechnicalStatus />
+                </DashboardLayout>
+              }
+            />
 
-              {/* Access Denied Route */}
-              <Route 
-                path="/access-denied" 
-                element={<AccessDenied user={user} />} 
-              />
+            <Route
+              path="/staff/station-management/incident-report"
+              element={
+                <DashboardLayout>
+                  <LazyIncidentReport />
+                </DashboardLayout>
+              }
+            />
 
-              {/* 404 route */}
-              <Route path="*" element={<NotFoundPage />} />
-            </Routes>
-          </div>
-        </TooltipProvider>
-      </TranslationProvider>
+            {/* 404 route */}
+            <Route path="*" element={<NotFoundPage />} />
+          </Routes>
+        </Suspense>
+      </div>
     </Router>
   );
 }

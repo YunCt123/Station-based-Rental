@@ -12,6 +12,9 @@ import {
   XCircleIcon as XCircleSolidIcon,
   ExclamationTriangleIcon as ExclamationTriangleSolidIcon
 } from '@heroicons/react/24/solid';
+import { TechnicalIssueModal } from '../../../../components/dashboard/staff/manage_vehicles/TechnicalIssueModal';
+import { MaintenanceScheduleModal } from '../../../../components/dashboard/staff/manage_vehicles/MaintenanceScheduleModal';
+import { MaintenanceHistoryModal } from '../../../../components/dashboard/staff/manage_vehicles/MaintenanceHistoryModal';
 
 interface MaintenanceRecord {
   id: string;
@@ -31,7 +34,7 @@ interface Vehicle {
   lastInspection: string;
   nextMaintenance: string;
   mileage: number;
-  location: string;
+  position: string; // Vị trí trong trạm
   maintenanceRecords: MaintenanceRecord[];
   issues: string[];
 }
@@ -45,7 +48,7 @@ const mockVehicles: Vehicle[] = [
     lastInspection: '2024-10-10',
     nextMaintenance: '2024-11-15',
     mileage: 25400,
-    location: 'Trạm A - Vị trí 1',
+    position: 'Vị trí 1',
     issues: [],
     maintenanceRecords: [
       {
@@ -75,7 +78,7 @@ const mockVehicles: Vehicle[] = [
     lastInspection: '2024-09-25',
     nextMaintenance: '2024-10-20',
     mileage: 18200,
-    location: 'Trạm B - Vị trí 3',
+    position: 'Vị trí 3',
     issues: ['Tiếng ồn nhẹ từ động cơ'],
     maintenanceRecords: [
       {
@@ -96,7 +99,7 @@ const mockVehicles: Vehicle[] = [
     lastInspection: '2024-08-15',
     nextMaintenance: '2024-10-16',
     mileage: 31500,
-    location: 'Trạm A - Vị trí 5',
+    position: 'Vị trí 7',
     issues: ['Phanh có tiếng kêu', 'Đèn báo lỗi ABS'],
     maintenanceRecords: [
       {
@@ -117,7 +120,7 @@ const mockVehicles: Vehicle[] = [
     lastInspection: '2024-10-05',
     nextMaintenance: '2024-10-15',
     mileage: 42300,
-    location: 'Xưởng bảo trì',
+    position: 'Xưởng bảo trì',
     issues: ['Hư hỏng hệ thống sạc', 'Cần thay pin phụ'],
     maintenanceRecords: [
       {
@@ -137,8 +140,79 @@ export const TechnicalStatus: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
+  
+  // Modal states
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [showMaintenanceModal, setShowMaintenanceModal] = useState(false);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [modalVehicle, setModalVehicle] = useState<Vehicle | null>(null);
+  
+  // Form states
+  const [issueDescription, setIssueDescription] = useState('');
+  const [issueSeverity, setIssueSeverity] = useState('low');
+  const [maintenanceType, setMaintenanceType] = useState('preventive');
+  const [maintenanceDescription, setMaintenanceDescription] = useState('');
 
+  // Modal handlers
+  const handleReportIssue = (vehicle: Vehicle) => {
+    setModalVehicle(vehicle);
+    setShowReportModal(true);
+  };
 
+  const handleScheduleMaintenance = (vehicle: Vehicle) => {
+    setModalVehicle(vehicle);
+    setShowMaintenanceModal(true);
+  };
+
+  const handleViewHistory = (vehicle: Vehicle) => {
+    setModalVehicle(vehicle);
+    setShowHistoryModal(true);
+  };
+
+  const handleSubmitIssue = () => {
+    if (!modalVehicle || !issueDescription.trim()) return;
+    
+    // Simulate API call
+    console.log('Báo cáo sự cố:', {
+      vehicleId: modalVehicle.id,
+      description: issueDescription,
+      severity: issueSeverity,
+      timestamp: new Date()
+    });
+    
+    setShowReportModal(false);
+    setIssueDescription('');
+    setIssueSeverity('low');
+    setModalVehicle(null);
+  };
+
+  const handleSubmitMaintenance = () => {
+    if (!modalVehicle || !maintenanceDescription.trim()) return;
+    
+    // Simulate API call
+    console.log('Lên lịch bảo trì:', {
+      vehicleId: modalVehicle.id,
+      type: maintenanceType,
+      description: maintenanceDescription,
+      scheduledDate: new Date()
+    });
+    
+    setShowMaintenanceModal(false);
+    setMaintenanceType('preventive');
+    setMaintenanceDescription('');
+    setModalVehicle(null);
+  };
+
+  const closeModals = () => {
+    setShowReportModal(false);
+    setShowMaintenanceModal(false);
+    setShowHistoryModal(false);
+    setModalVehicle(null);
+    setIssueDescription('');
+    setIssueSeverity('low');
+    setMaintenanceType('preventive');
+    setMaintenanceDescription('');
+  };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -174,7 +248,7 @@ export const TechnicalStatus: React.FC = () => {
   const filteredVehicles = mockVehicles.filter(vehicle => {
     const matchesSearch = vehicle.model.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          vehicle.licensePlate.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         vehicle.location.toLowerCase().includes(searchTerm.toLowerCase());
+                         vehicle.position.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesFilter = filterStatus === 'all' || vehicle.technicalStatus === filterStatus;
     
@@ -321,7 +395,7 @@ export const TechnicalStatus: React.FC = () => {
                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{vehicle.location}</div>
+                    <div className="text-sm text-gray-900">{vehicle.position}</div>
                     <div className="text-xs text-gray-500">{vehicle.mileage.toLocaleString()} km</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -339,9 +413,26 @@ export const TechnicalStatus: React.FC = () => {
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm font-medium transition-colors">
-                      Chi tiết
-                    </button>
+                    <div className="flex space-x-2">
+                      <button 
+                        onClick={() => handleReportIssue(vehicle)}
+                        className="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded text-xs font-medium transition-colors"
+                      >
+                        Báo sự cố
+                      </button>
+                      <button 
+                        onClick={() => handleScheduleMaintenance(vehicle)}
+                        className="bg-orange-600 hover:bg-orange-700 text-white px-3 py-1.5 rounded text-xs font-medium transition-colors"
+                      >
+                        Bảo trì
+                      </button>
+                      <button 
+                        onClick={() => handleViewHistory(vehicle)}
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded text-xs font-medium transition-colors"
+                      >
+                        Lịch sử
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -440,6 +531,36 @@ export const TechnicalStatus: React.FC = () => {
         </div>
       )}
 
+      {/* Technical Issue Modal */}
+      <TechnicalIssueModal
+        isOpen={showReportModal}
+        vehicle={modalVehicle}
+        issueDescription={issueDescription}
+        setIssueDescription={setIssueDescription}
+        issueSeverity={issueSeverity}
+        setIssueSeverity={setIssueSeverity}
+        onSubmit={handleSubmitIssue}
+        onClose={closeModals}
+      />
+
+      {/* Maintenance Schedule Modal */}
+      <MaintenanceScheduleModal
+        isOpen={showMaintenanceModal}
+        vehicle={modalVehicle}
+        maintenanceType={maintenanceType}
+        setMaintenanceType={setMaintenanceType}
+        maintenanceDescription={maintenanceDescription}
+        setMaintenanceDescription={setMaintenanceDescription}
+        onSubmit={handleSubmitMaintenance}
+        onClose={closeModals}
+      />
+
+      {/* Maintenance History Modal */}
+      <MaintenanceHistoryModal
+        isOpen={showHistoryModal}
+        vehicle={modalVehicle}
+        onClose={closeModals}
+      />
 
     </div>
   );

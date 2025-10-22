@@ -18,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Eye, EyeOff, Mail, Lock } from "lucide-react";
+import { Car, Eye, EyeOff, Mail, Lock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "@/contexts/TranslationContext";
 import { login as loginApi } from "@/services/authService";
@@ -37,7 +37,7 @@ interface LoginProps {
   onLogin: (userData: User) => void;
 }
 
-const LoginPage = ({ onLogin }: LoginProps) => {
+const Login = ({ onLogin }: LoginProps) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState<"user" | "staff" | "admin">("user");
@@ -77,7 +77,6 @@ const LoginPage = ({ onLogin }: LoginProps) => {
           ? "/staff-dashboard"
           : "/"; // tùy chỉnh thêm nếu cần (staff -> '/staff-dashboard', v.v.)
       navigate(redirectPath);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       console.error("[Login] Auth error raw:", err);
       const message =
@@ -99,6 +98,15 @@ const LoginPage = ({ onLogin }: LoginProps) => {
   return (
     <div className="min-h-screen bg-gradient-hero flex items-center justify-center p-4">
       <div className="w-full max-w-md">
+        {/* Logo */}
+        <div className="text-center mb-8">
+          <Link to="/" className="inline-flex items-center space-x-2 group">
+            <div className="p-3 bg-white rounded-xl group-hover:scale-105 transition-transform duration-200 shadow-lg">
+              <Car className="h-8 w-8 text-primary" />
+            </div>
+            <span className="text-2xl font-bold text-white">EVRentals</span>
+          </Link>
+        </div>
 
         {/* Login Card */}
         <Card className="shadow-premium">
@@ -257,4 +265,4 @@ const LoginPage = ({ onLogin }: LoginProps) => {
   );
 };
 
-export default LoginPage;
+export default Login;

@@ -1,9 +1,10 @@
-import { Suspense } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Header from "./layout/Header";
 import Footer from "./layout/Footer";
 import DashboardLayout from "./layout/DashboardLayout";
 import { PageLoadingFallback } from "./components/lazyload/LazyLoadingFallback";
+import { clearAuthData, getCurrentUser, type User } from "./utils/auth";
 import {
   LazyHomePage,
   LazyVehiclesPage,
@@ -45,6 +46,43 @@ import RentalHistory from "./pages/dashboard/admin/RentalHistory/RentalHistory";
 import EmployeeManagement from "./pages/dashboard/admin/EmployeeManagement/EmployeeList/EmployeeManagement";
 
 function App() {
+  const [_user, setUser] = useState<User | null>(() => {
+    // Try to load user from localStorage on app start
+    const savedUser = localStorage.getItem("user");
+    return savedUser ? JSON.parse(savedUser) : null;
+  });
+
+  // Check token validity on app start
+  useEffect(() => {
+    const checkAuthStatus = () => {
+      const token = localStorage.getItem("access_token");
+      const savedUser = getCurrentUser();
+      
+      if (!token && savedUser) {
+        // Token không tồn tại nhưng user có -> clear user
+        handleLogout();
+      } else if (token && !savedUser) {
+        // Token tồn tại nhưng user không có -> clear token
+        localStorage.removeItem("access_token");
+        localStorage.removeItem("refresh_token");
+      }
+    };
+
+    checkAuthStatus();
+  }, []);
+
+  const handleLogin = (userData: User) => {
+    setUser(userData);
+    // Save user to localStorage
+    localStorage.setItem("user", JSON.stringify(userData));
+  };
+
+  const handleLogout = () => {
+    setUser(null);
+    // Use utility function to clear all auth data
+    clearAuthData();
+  };
+
   return (
     <Router>
       <div className="App">
@@ -93,7 +131,7 @@ function App() {
                 <>
                   <Header />
                   <main className="min-h-screen">
-                    <LazyLogin />
+                    <LazyLogin onLogin={handleLogin} />
                   </main>
                   <Footer />
                 </>

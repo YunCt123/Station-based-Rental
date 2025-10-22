@@ -1,9 +1,10 @@
-import { Suspense } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Header from "./layout/Header";
 import Footer from "./layout/Footer";
 import DashboardLayout from "./layout/DashboardLayout";
 import { PageLoadingFallback } from "./components/lazyload/LazyLoadingFallback";
+import { clearAuthData, getCurrentUser, type User } from "./utils/auth";
 import {
   LazyHomePage,
   LazyVehiclesPage,
@@ -45,7 +46,7 @@ import RentalHistory from "./pages/dashboard/admin/RentalHistory/RentalHistory";
 import EmployeeManagement from "./pages/dashboard/admin/EmployeeManagement/EmployeeList/EmployeeManagement";
 
 function App() {
-  const [user, setUser] = useState<User | null>(() => {
+  const [_user, setUser] = useState<User | null>(() => {
     // Try to load user from localStorage on app start
     const savedUser = localStorage.getItem("user");
     return savedUser ? JSON.parse(savedUser) : null;
@@ -130,7 +131,7 @@ function App() {
                 <>
                   <Header />
                   <main className="min-h-screen">
-                    <LazyLogin />
+                    <LazyLogin onLogin={handleLogin} />
                   </main>
                   <Footer />
                 </>

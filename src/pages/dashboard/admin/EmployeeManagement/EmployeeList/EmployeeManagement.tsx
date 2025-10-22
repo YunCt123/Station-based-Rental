@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Button, Input, Modal, Form, Select } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined,EyeOutlined } from '@ant-design/icons';
+import { Button, Input, Modal } from 'antd';
+import { PlusOutlined, EditOutlined, DeleteOutlined,EyeOutlined, UserOutlined } from '@ant-design/icons';
 import {
   getEmployees,
   addEmployee,
@@ -9,17 +9,23 @@ import {
   deleteEmployee,
 } from '../../../../../data/employeesStore';
 import type { Employee } from '../../../../../data/employeesStore';
+import EmployeeDetail from './EmployeeDetail';
+import EditEmployee from './EditEmployee';
+import DeleteEmployee from './DeleteEmployee';
 
 const { Search } = Input;
 
 const EmployeeManagement: React.FC = () => {
   const [query, setQuery] = useState('');
   const [list, setList] = useState<Employee[]>(() => getEmployees());
-  const [loading, setLoading] = useState(false);
+  // loading state omitted (not needed for this simple local store)
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Employee | null>(null);
-  const [form] = Form.useForm();
+  const [viewOpen, setViewOpen] = useState(false);
+  const [viewing, setViewing] = useState<Employee | null>(null);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleting, setDeleting] = useState<Employee | null>(null);
 
   useEffect(() => {
     setList(getEmployees());
@@ -29,35 +35,37 @@ const EmployeeManagement: React.FC = () => {
 
   const openAdd = () => {
     setEditing(null);
-    form.resetFields();
     setModalOpen(true);
   };
 
   const openEdit = (record: Employee) => {
     setEditing(record);
-    form.setFieldsValue(record);
     setModalOpen(true);
   };
 
   const handleDelete = (id: string) => {
-    deleteEmployee(id);
+    // open delete confirmation modal
+    const emp = list.find((i) => i.id === id) || null;
+    setDeleting(emp);
+    setDeleteOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (!deleting) return;
+    deleteEmployee(deleting.id);
+    setDeleteOpen(false);
+    setDeleting(null);
     refresh();
   };
 
-  const handleSubmit = async () => {
-    try {
-      const values = await form.validateFields();
-      setLoading(true);
-      if (editing) {
-        updateEmployee(editing.id, values);
-      } else {
-        addEmployee(values);
-      }
-      setModalOpen(false);
-      refresh();
-    } finally {
-      setLoading(false);
+  const handleSave = (values: Partial<Employee>) => {
+    if (editing) {
+      updateEmployee(editing.id, values);
+    } else {
+      addEmployee(values as any);
     }
+    setModalOpen(false);
+    refresh();
   };
 
   const filtered = list.filter((e) => {
@@ -98,21 +106,53 @@ const EmployeeManagement: React.FC = () => {
                   </Button>
                 </div>
               </div>
+              {/* Stats cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                <div className="bg-white rounded-lg shadow p-6 flex items-center justify-between">
+                  <div>
+                    <div className="text-sm text-gray-500">Tổng số nhân viên</div>
+                    <div className="mt-2 text-2xl font-semibold text-gray-900">{list.length}</div>
+                    <div className="text-sm text-green-500 mt-1">+0% so với tháng trước</div>
+                  </div>
+                  <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
+                    <UserOutlined className="text-blue-600 text-lg" />
+                  </div>
+                </div>
+                {/* placeholder cards to match layout - optional */}
+                <div className="bg-white rounded-lg shadow p-6 hidden lg:flex items-center justify-between">
+                  <div className="bg-white rounded-lg shadow p-6 flex items-center justify-between">
+                     <div>
+                    <div className="text-sm text-gray-500">Số nhân viên hoạt động</div>
+                    <div className="mt-2 text-2xl font-semibold text-gray-900">{list.filter(emp => emp.status === 'active').length}</div>
+                    <div className="text-sm text-green-500 mt-1">+0% so với tháng trước</div>
+                  </div>
+                  <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
+                    <UserOutlined className="text-blue-600 text-lg" />
+                  </div>
+                  </div>
+                </div>
+                
+              </div>
+
+              
               <div>
                 <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-200">
                         <tr>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-800 uppercase tracking-wider !font-bold">ID</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-800 uppercase tracking-wider ">ID</th>
 
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-800 uppercase tracking-wider !font-bold">Tên nhân viên</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-800 uppercase tracking-wider !font-bold">Email</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-800 uppercase tracking-wider !font-bold">Phone</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-800 uppercase tracking-wider !font-bold">Role</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-800 uppercase tracking-wider ">Tên nhân viên</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-800 uppercase tracking-wider ">Email</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-800 uppercase tracking-wider ">Phone</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-800 uppercase tracking-wider ">Role</th>
                 
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-800 uppercase tracking-wider !font-bold"></th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-800 uppercase tracking-wider "></th>
                         </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
+      
+                
+                
                       {filtered.map((emp) => (
                         <tr key={emp.id}>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{emp.id}</td>
@@ -121,22 +161,19 @@ const EmployeeManagement: React.FC = () => {
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{emp.phone || '-'}</td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{emp.role}</td>
                            <td className="px-6 py-4 whitespace-nowrap text-sm text-right">
-                            <Button 
-                            type='text'
-                            
-                            >
-                              <EyeOutlined className='!text-blue-600' />
-                              </Button>
+                            <Button type='text' onClick={() => { setViewing(emp); setViewOpen(true); }}>
+                              <EyeOutlined className='!text-blue-600 text-lg' />
+                            </Button>
 
                             <Button type='text'>
-                              <EditOutlined className="ml-4" onClick={() => openEdit(emp)} />
+                              <EditOutlined className="ml-4 text-lg" onClick={() => openEdit(emp)} />
                             </Button>
 
                             <Button type='text'
                             
                             >
                               <DeleteOutlined
-                                className="ml-4 !text-red-600"
+                                className="ml-4 !text-red-600 text-lg"
                                 onClick={() => handleDelete(emp.id)}
                               />
                             </Button>
@@ -154,40 +191,41 @@ const EmployeeManagement: React.FC = () => {
         </div>
       </div>
 
+      
       <Modal
-        title={editing ? 'Chỉnh sửa nhân viên' : 'Thêm nhân viên'}
         open={modalOpen}
-        onOk={handleSubmit}
-        confirmLoading={loading}
+        footer={null}
+        width={700}
         onCancel={() => setModalOpen(false)}
       >
-        <Form form={form} layout="vertical" initialValues={{ role: 'staff', status: 'active' }}>
-          <Form.Item name="name" label="Tên" rules={[{ required: true }]}>
-            <Input />
-          </Form.Item>
-          <Form.Item name="email" label="Email">
-            <Input />
-          </Form.Item>
-          <Form.Item name="phone" label="Số điện thoại">
-            <Input />
-          </Form.Item>
-          <Form.Item name="role" label="Vai trò">
-            <Select>
-              <Select.Option value="admin">Admin</Select.Option>
-              <Select.Option value="manager">Manager</Select.Option>
-              <Select.Option value="staff">Staff</Select.Option>
-              <Select.Option value="support">Support</Select.Option>
-            </Select>
-          </Form.Item>
-          <Form.Item name="status" label="Trạng thái">
-            <Select>
-              <Select.Option value="active">Active</Select.Option>
-              <Select.Option value="inactive">Inactive</Select.Option>
-              <Select.Option value="suspended">Suspended</Select.Option>
-            </Select>
-          </Form.Item>
-        </Form>
+        <EditEmployee employee={editing} onCancel={() => setModalOpen(false)} onSave={handleSave} />
       </Modal>
+
+      <Modal
+        
+        open={viewOpen}
+        footer={null}
+        width={800}
+        onCancel={() => { setViewOpen(false); setViewing(null); }}
+      >
+        {/* Lazy render detail component */}
+        {viewing ? <EmployeeDetail employee={viewing} /> : null}
+      </Modal>
+
+      <Modal
+                  title="Xoá nhân viên"
+                  open={deleteOpen}
+                  footer={null}
+                  onCancel={() => { setDeleteOpen(false); setDeleting(null); }}
+                >
+                  {deleting ? (
+                    <DeleteEmployee
+                      employee={deleting}
+                      onCancel={() => { setDeleteOpen(false); setDeleting(null); }}
+                      onConfirm={confirmDelete}
+                    />
+                  ) : null}
+                </Modal>
     </div>
   );
 };

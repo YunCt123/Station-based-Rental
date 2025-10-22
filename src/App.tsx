@@ -35,6 +35,7 @@ import {
   LazyStaffSchedule,
   LazyPeakHourManagement,
   LazyRoleSwitcher,
+  LazySettings,
 } from "./components/lazyload/LazyComponents";
 
 // Keep these as regular imports as they might not exist as separate files yet
@@ -46,11 +47,23 @@ import RentalHistory from "./pages/dashboard/admin/RentalHistory/RentalHistory";
 import EmployeeManagement from "./pages/dashboard/admin/EmployeeManagement/EmployeeList/EmployeeManagement";
 
 function App() {
-  const [_user, setUser] = useState<User | null>(() => {
+  const [user, setUser] = useState<User | null>(() => {
     // Try to load user from localStorage on app start
     const savedUser = localStorage.getItem("user");
     return savedUser ? JSON.parse(savedUser) : null;
   });
+
+  const handleLogin = (userData: User) => {
+    setUser(userData);
+    // Save user to localStorage
+    localStorage.setItem("user", JSON.stringify(userData));
+  };
+
+  const handleLogout = () => {
+    setUser(null);
+    // Use utility function to clear all auth data
+    clearAuthData();
+  };
 
   // Check token validity on app start
   useEffect(() => {
@@ -65,23 +78,15 @@ function App() {
         // Token tồn tại nhưng user không có -> clear token
         localStorage.removeItem("access_token");
         localStorage.removeItem("refresh_token");
+      } else if (token && savedUser) {
+        // Both exist, sync state with localStorage
+        setUser(savedUser);
       }
     };
 
     checkAuthStatus();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  const handleLogin = (userData: User) => {
-    setUser(userData);
-    // Save user to localStorage
-    localStorage.setItem("user", JSON.stringify(userData));
-  };
-
-  const handleLogout = () => {
-    setUser(null);
-    // Use utility function to clear all auth data
-    clearAuthData();
-  };
 
   return (
     <Router>
@@ -93,7 +98,7 @@ function App() {
               path="/"
               element={
                 <>
-                  <Header />
+                  <Header user={user} onLogout={handleLogout} />
                   <main className="min-h-screen">
                     <LazyHomePage />
                   </main>
@@ -105,7 +110,7 @@ function App() {
               path="/vehicles"
               element={
                 <>
-                  <Header />
+                  <Header user={user} onLogout={handleLogout} />
                   <main className="min-h-screen">
                     <LazyVehiclesPage />
                   </main>
@@ -114,10 +119,10 @@ function App() {
               }
             />
             <Route
-              path="/vehicle/:id"
+              path="/vehicles/:id"
               element={
                 <>
-                  <Header />
+                  <Header user={user} onLogout={handleLogout} />
                   <main className="min-h-screen">
                     <LazyDetailsPage />
                   </main>
@@ -129,7 +134,7 @@ function App() {
               path="/login"
               element={
                 <>
-                  <Header />
+                  <Header user={user} onLogout={handleLogout} />
                   <main className="min-h-screen">
                     <LazyLogin onLogin={handleLogin} />
                   </main>
@@ -141,7 +146,7 @@ function App() {
               path="/stations"
               element={
                 <>
-                  <Header />
+                  <Header user={user} onLogout={handleLogout} />
                   <main className="min-h-screen">
                     <LazyStations />
                   </main>
@@ -153,7 +158,7 @@ function App() {
               path="/stations/:stationId"
               element={
                 <>
-                  <Header />
+                  <Header user={user} onLogout={handleLogout} />
                   <main className="min-h-screen">
                     <LazyStationDetailPage />
                   </main>
@@ -165,7 +170,7 @@ function App() {
               path="/how-it-works"
               element={
                 <>
-                  <Header />
+                  <Header user={user} onLogout={handleLogout} />
                   <main className="min-h-screen">
                     <LazyHowItWorks />
                   </main>
@@ -177,7 +182,7 @@ function App() {
               path="/register"
               element={
                 <>
-                  <Header />
+                  <Header user={user} onLogout={handleLogout} />
                   <main className="min-h-screen">
                     <LazyRegister />
                   </main>
@@ -189,9 +194,21 @@ function App() {
               path="/booking/:vehicleId?"
               element={
                 <>
-                  <Header />
+                  <Header user={user} onLogout={handleLogout} />
                   <main className="min-h-screen">
                     <LazyBookingPage />
+                  </main>
+                  <Footer />
+                </>
+              }
+            />
+            <Route
+              path="/settings"
+              element={
+                <>
+                  <Header user={user} onLogout={handleLogout} />
+                  <main className="min-h-screen">
+                    <LazySettings />
                   </main>
                   <Footer />
                 </>

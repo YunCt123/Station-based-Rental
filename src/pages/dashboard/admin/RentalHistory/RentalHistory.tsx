@@ -1,38 +1,43 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { getRentals, findRental, addRental, updateRental, deleteRental } from '../../../../data/rentalsStore';
+import { getRentals, findRental, addRental, updateRental, deleteRental, resetRentals } from '../../../../data/rentalsStore';
 import type { Rental as RentalType } from '../../../../data/rentalsStore';
 import { DeleteOutlined, EyeOutlined, EditOutlined, PlusOutlined } from "@ant-design/icons";
 import { Button, Input, Modal, Select, InputNumber } from 'antd';
-
-
-
-
-
 // Use Rental type from the store for consistent shape
 type Rental = RentalType;
-
-
 
 const formatDate = (iso?: string) => iso ? new Date(iso).toLocaleString('vi-VN') : '-';
 
 const RentalHistory: React.FC = () => {
-  
+
   const [query, setQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | Rental['status']>('all');
-  const [list, setList] = useState(() => getRentals());
+  const [allRentals, setAllRentals] = useState(() => getRentals());
   const [viewVisible, setViewVisible] = useState(false);
   const [selected, setSelected] = useState<Rental | null>(null);
-
   const [formVisible, setFormVisible] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formValues, setFormValues] = useState<Partial<Rental>>({});
-  // view modal moved to a dedicated page: RentalDetail
 
-   useEffect(() => {
-      setList(getRentals());
-    }, [window.location.pathname]); 
+  useEffect(() => {
+    setAllRentals(getRentals());
+  }, []);
+
+  // Apply filters to the rental list
+  const filteredList = allRentals.filter(rental => {
+    // Filter by search query
+    const matchesQuery = query === '' || 
+      rental.name?.toLowerCase().includes(query.toLowerCase()) ||
+      rental.customerId?.toLowerCase().includes(query.toLowerCase()) ||
+      rental.vehicleId?.toLowerCase().includes(query.toLowerCase());
+    
+    // Filter by status
+    const matchesStatus = statusFilter === 'all' || rental.status === statusFilter;
+    
+    return matchesQuery && matchesStatus;
+  });
 
   const openView = (id: string) => {
     const r = findRental(id);
@@ -99,7 +104,7 @@ const RentalHistory: React.FC = () => {
     } else {
       addRental(payload);
     }
-    setList(getRentals());
+    setAllRentals(getRentals());
     closeForm();
   };
 
@@ -109,7 +114,7 @@ const RentalHistory: React.FC = () => {
       content: 'Bạn có chắc muốn xoá bản ghi này không?',
       onOk() {
         deleteRental(id);
-        setList(getRentals());
+        setAllRentals(getRentals());
       }
     });
   };
@@ -119,24 +124,24 @@ const RentalHistory: React.FC = () => {
         <Button type="text" className="px-0">
           <Link to="/admin/dashboard" className="text-sm">← Back to dashboard</Link>
         </Button>
-        
+
       </div>
 
       <div className="bg-white rounded-lg shadow p-6">
-       <div className="flex items-center justify-between mb-4">
-        <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Lịch sử thuê</h1>
-          <p className="text-sm text-gray-500">Xem lịch sử đặt/thuê xe theo khách hàng và trạng thái</p>
-        </div>
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h1 className="text-2xl font-semibold text-gray-900">Lịch sử thuê</h1>
+            <p className="text-sm text-gray-500">Xem lịch sử đặt/thuê xe theo khách hàng và trạng thái</p>
+          </div>
+          <div className="flex items-center space-x-3">
             <Input.Search
-                      placeholder="Tìm theo tên, email hoặc số điện thoại"
-                      allowClear
-                      value={query}
-                      onChange={(e) => setQuery(e.target.value)}
-                      onSearch={(val) => setQuery(val)}
-                      style={{ width: 360 }}
-                    />
+              placeholder="Tìm theo tên, email hoặc số điện thoại"
+              allowClear
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onSearch={(val) => setQuery(val)}
+              style={{ width: 360 }}
+            />
             <select className="border rounded-md px-2 py-2" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as any)}>
               <option value="all">Tất cả</option>
               <option value="completed">Hoàn thành</option>
@@ -144,83 +149,86 @@ const RentalHistory: React.FC = () => {
               <option value="cancelled">Đã huỷ</option>
             </select>
             <button onClick={openAdd} className="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white rounded-md text-sm">
-                                  <PlusOutlined className="w-4 h-4 mr-2" /> Thêm khách hàng
-                                </button>
-            </div>
+              <PlusOutlined className="w-4 h-4 mr-2" /> Thêm khách hàng
+            </button>
+            <button 
+              onClick={() => {
+                resetRentals();
+                setAllRentals(getRentals());
+              }}
+              className="inline-flex items-center px-3 py-1.5 bg-red-600 text-white rounded-md text-sm"
+            >
+              Reset Data
+            </button>
           </div>
-        
+        </div>
+
 
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-200">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-800 uppercase tracking-wider !font-bold">ID</th>
-
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-800 uppercase tracking-wider !font-bold">Tên khách hàng</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-800 uppercase tracking-wider !font-bold">Xe</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-800 uppercase tracking-wider !font-bold">Bắt đầu</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-800 uppercase tracking-wider !font-bold">Kết thúc</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-800 uppercase tracking-wider !font-bold">Trạng thái</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-800 uppercase tracking-wider !font-bold">Giá thuê</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-800 uppercase tracking-wider !font-bold"></th>
-
-                
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-800 uppercase tracking-wider">ID</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-800 uppercase tracking-wider">Tên khách hàng</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-800 uppercase tracking-wider">Xe</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-800 uppercase tracking-wider">Bắt đầu</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-800 uppercase tracking-wider">Kết thúc</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-800 uppercase tracking-wider">Trạng thái</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-800 uppercase tracking-wider">Giá thuê</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-800 uppercase tracking-wider"></th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {list.map(r => {
-                
+              {filteredList.map((r: RentalType) => {
                 return (
-                <tr key={r.id} className="hover:bg-gray-50">
+                  <tr key={r.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{r.id}</td>
-                    
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{r.name}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{r.vehicleId}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatDate(r.startAt)}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatDate(r.endAt)}</td>
-                   <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{r.vehicleId}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatDate(r.startAt)}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatDate(r.endAt)}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
                     <span className={`px-2 py-0.5 rounded-full text-xs ${r.status === 'completed' ? 'bg-green-100 text-green-800' : r.status === 'ongoing' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'}`}>
-                      {r.status === 'completed' ? 'Hoàn thành' : r.status === 'ongoing' ? 'Đang chạy' : 'Đã huỷ'}
+                        {r.status === 'completed' ? 'Hoàn thành' : r.status === 'ongoing' ? 'Đang chạy' : r.status === 'cancelled' ? 'Đã huỷ' : 'cancelled'}
                     </span>
-                    {/* <span className={`px-2 py-0.5 rounded-full text-xs ${r.status === 'completed' ? 'bg-green-100 text-green-800' : r.status === 'ongoing' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'}`}>
+                      {/* <span className={`px-2 py-0.5 rounded-full text-xs ${r.status === 'completed' ? 'bg-green-100 text-green-800' : r.status === 'ongoing' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'}`}>
                       {r.status}
                     </span> */}
-                  </td> 
-                   
-                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{r.priceCents}</td>
-                   <td className="px-6 py-4 whitespace-nowrap text-sm text-right">
-                                               <Button
-                                                   type="text"
-                                                   onClick={() => openView(r.id)}
-                                                   className="inline-flex items-center text-sm !text-blue-700 mr-4 hover:text-blue-600"
-                                                 >
-                                                   <EyeOutlined className="mr-2 text-xl" />
-                                                 </Button>
-                                               <Button
-                                                 type="text"
-                                                 onClick={() => openEdit(r.id)}
-                                                 className="inline-flex items-center text-sm text-gray-600 mr-4"
-                                                
-                                               >
-                                                 <EditOutlined className="text-xl" />
-                                               </Button>
-                                               <Button
-                                                 type="text"
-                                                 className="inline-flex items-center text-sm text-red-600"
-                                                 onClick={() => handleDelete(r.id)}
-                                               >
-                                                 <DeleteOutlined className="mr-7 !text-red-600 text-xl" />
-                                               </Button>
-                                             </td>
-                    
-                    
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{r.priceCents}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-right">
+                      <Button
+                        type="text"
+                        onClick={() => openView(r.id)}
+                        className="inline-flex items-center text-sm !text-blue-700 mr-4 hover:text-blue-600"
+                      >
+                        <EyeOutlined className="mr-2 text-xl" />
+                      </Button>
+                      <Button
+                        type="text"
+                        onClick={() => openEdit(r.id)}
+                        className="inline-flex items-center text-sm text-gray-600 mr-4"
+
+                      >
+                        <EditOutlined className="text-xl" />
+                      </Button>
+                      <Button
+                        type="text"
+                        className="inline-flex items-center text-sm text-red-600"
+                        onClick={() => handleDelete(r.id)}
+                      >
+                        <DeleteOutlined className="mr-7 !text-red-600 text-xl" />
+                      </Button>
+                    </td>
+
+
                   </tr>
-                  );
-                })}
-              {list.length === 0 && (
-                  <tr>
-                    <td colSpan={10} className="px-6 py-8 text-center text-sm text-gray-500">Không tìm thấy bản ghi.</td>
-                  </tr>
+                );
+              })}
+              {filteredList.length === 0 && (
+                <tr>
+                  <td colSpan={8} className="px-6 py-8 text-center text-sm text-gray-500">Không tìm thấy bản ghi.</td>
+                </tr>
               )}
             </tbody>
           </table>

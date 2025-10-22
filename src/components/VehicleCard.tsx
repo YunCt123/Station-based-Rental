@@ -8,7 +8,6 @@ import {
   Clock,
   Zap,
   Users,
-  Fuel,
   Car,
   Bike,
   Bus,
@@ -108,105 +107,102 @@ const getBatteryColor = () => {
   };
 
   return (
-    <div className={`card-hover group ${className}`}>
-      {/* Image Container */}
-      <div className="relative mb-4 overflow-hidden rounded-lg">
-        <img
-          src={vehicle.image}
-          alt={`${vehicle.name} - ${t("common.electricVehicle")}`}
-          className="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-105"
-          loading="lazy"
-        />
-        <div className="absolute top-3 left-3">{getStatusBadge()}</div>
-        <div className="absolute top-3 right-3 bg-black/50 backdrop-blur-sm text-white px-2 py-1 rounded-md text-xs flex items-center">
-          <Star className="h-3 w-3 mr-1 fill-current text-yellow-400" />
-          {vehicle.rating} ({vehicle.reviewCount})
+  <div className={`card-hover group h-full flex flex-col ${className}`}>
+    {/* Image Container */}
+    <div className="relative mb-4 overflow-hidden rounded-lg">
+      <img
+        src={vehicle.image}
+        alt={`${vehicle.name} - ${t("common.electricVehicle")}`}
+        className="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-105"
+        loading="lazy"
+      />
+      <div className="absolute top-3 left-3">{getStatusBadge()}</div>
+      <div className="absolute top-3 right-3 bg-black/50 backdrop-blur-sm text-white px-2 py-1 rounded-md text-xs flex items-center">
+        <Star className="h-3 w-3 mr-1 fill-current text-yellow-400" />
+        {vehicle.rating} ({vehicle.reviewCount})
+      </div>
+    </div>
+
+    {/* Vehicle Info */}
+    <div className="space-y-3 flex-1 flex flex-col">
+      <div className="flex items-start gap-3">
+        <div className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg">
+          {getVehicleTypeIcon(vehicle.type)}
+        </div>
+        <div className="flex-1">
+          <h3 className="text-lg font-semibold text-foreground group-hover:text-primary transition-colors duration-200 line-clamp-2">
+            {vehicle.name}
+          </h3>
+          <p className="text-sm text-muted-foreground">
+            {vehicle.year} • {vehicle.brand} • {t(`vehicleTypes.${vehicle.type}`)}
+          </p>
         </div>
       </div>
 
-      {/* Vehicle Info */}
-      <div className="space-y-3">
-        <div className="flex items-start gap-3">
-          <div className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg">
-            {getVehicleTypeIcon(vehicle.type)}
-          </div>
-          <div className="flex-1">
-            <h3 className="text-lg font-semibold text-foreground group-hover:text-primary transition-colors duration-200">
-              {vehicle.name}
-            </h3>
-            <p className="text-sm text-muted-foreground">
-              {vehicle.year} • {vehicle.brand} •{" "}
-              {t(`vehicleTypes.${vehicle.type}`)}
-            </p>
-          </div>
+      {/* Quick Stats */}
+      <div className="grid grid-cols-2 gap-3 text-xs">
+        <div className="flex items-center text-muted-foreground">
+          <Battery className={`h-3 w-3 mr-1 ${getBatteryColor()}`} />
+          <span className={getBatteryColor()}>{vehicle.batteryLevel}%</span>
         </div>
-
-        {/* Quick Stats */}
-        <div className="grid grid-cols-2 gap-3 text-xs">
-          <div className="flex items-center text-muted-foreground">
-            <Battery className={`h-3 w-3 mr-1 ${getBatteryColor()}`} />
-            <span className={getBatteryColor()}>{vehicle.batteryLevel}%</span>
-          </div>
-          <div className="flex items-center text-muted-foreground">
-            <Zap className="h-3 w-3 mr-1" />
-            {vehicle.range} {t("common.kmRange")}
-          </div>
-          <div className="flex items-center text-muted-foreground">
-            <Users className="h-3 w-3 mr-1" />
-            {vehicle.seats} {t("common.seats")}
-          </div>
-          <div className="flex items-center text-muted-foreground">
-            <MapPin className="h-3 w-3 mr-1" />
-            {vehicle.location}
-          </div>
+        <div className="flex items-center text-muted-foreground">
+          <Zap className="h-3 w-3 mr-1" />
+          {vehicle.range} {t("common.kmRange")}
         </div>
-
-        {/* Condition and Maintenance Badges */}
-        <div className="flex flex-wrap gap-2">
-          {getConditionBadge()}
-          {getMaintenanceStatus()}
+        <div className="flex items-center text-muted-foreground">
+          <Users className="h-3 w-3 mr-1" />
+          {vehicle.seats} {t("common.seats")}
         </div>
+        <div className="flex items-center text-muted-foreground">
+          <MapPin className="h-3 w-3 mr-1" />
+          {vehicle.location}
+        </div>
+      </div>
 
-        {/* Pricing and Actions */}
-        <div className="pt-2 border-t border-border space-y-2">
-          {/* Pricing */}
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="flex items-center space-x-1">
-                <span className="text-lg font-bold text-primary">
-                  {formatPrice(vehicle.pricePerHour)}
-                </span>
-                <span className="text-sm text-muted-foreground">
-                  {t("common.perHour")}
-                </span>
-              </div>
-              <div className="text-xs text-muted-foreground">
-                {formatPrice(vehicle.pricePerDay)}
-                {t("common.perDay")}
-              </div>
+      {/* Condition and Maintenance Badges */}
+      <div className="flex flex-wrap gap-2">
+        {getConditionBadge()}
+        {getMaintenanceStatus()}
+      </div>
+
+      {/* Pricing and Actions */}
+      <div className="pt-2 border-t border-border space-y-2 mt-auto">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="flex items-center space-x-1">
+              <span className="text-lg font-bold text-primary">
+                {formatPrice(vehicle.pricePerHour)}
+              </span>
+              <span className="text-sm text-muted-foreground">
+                {t("common.perHour")}
+              </span>
+            </div>
+            <div className="text-xs text-muted-foreground">
+              {formatPrice(vehicle.pricePerDay)}
+              {t("common.perDay")}
             </div>
           </div>
+        </div>
 
-          {/* Action Buttons */}
-          <div className="flex flex-col gap-2 w-full">
-            <Button variant="outline" size="sm" className="w-full" asChild>
-              <Link to={`/vehicles/${vehicle.id}`}>
-                {t("common.viewDetails")}
+        <div className="flex flex-col gap-2 w-full">
+          <Button variant="outline" size="sm" className="w-full" asChild>
+            <Link to={`/vehicles/${vehicle.id}`}>
+              {t("common.viewDetails")}
+            </Link>
+          </Button>
+          {vehicle.availability === "available" && (
+            <Button size="sm" className="btn-success w-full" asChild>
+              <Link to={`/booking/${vehicle.id}`}>
+                <Clock className="h-3 w-3 mr-1" />
+                {t("common.bookNow")}
               </Link>
             </Button>
-            {vehicle.availability === "available" && (
-              <Button size="sm" className="btn-success w-full" asChild>
-                <Link to={`/book/${vehicle.id}`}>
-                  <Clock className="h-3 w-3 mr-1" />
-                  {t("common.bookNow")}
-                </Link>
-              </Button>
-            )}
-          </div>
+          )}
         </div>
       </div>
     </div>
-  );
+  </div>
+);
 };
 
 export default VehicleCard;

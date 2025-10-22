@@ -1,7 +1,7 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -30,7 +30,7 @@ import {
   type VehicleSearchFilters,
 } from "@/services/vehicleService";
 import type { Vehicle } from "@/types/vehicle";
-import { Search, Filter, Grid, List, SlidersHorizontal } from "lucide-react";
+import { Grid, List, SlidersHorizontal } from "lucide-react";
 import { useTranslation } from "@/contexts/TranslationContext";
 import HeroCarousel from "@/components/HeroCarousel";
 

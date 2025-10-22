@@ -1,15 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { ClockIcon } from "@heroicons/react/24/outline";
-import EyeOutlined from "@ant-design/icons/EyeOutlined";
-import EditOutlined from "@ant-design/icons/EditOutlined";
 import { Button, Input, Modal } from "antd";
 import NewCustomer from './NewCustomer.tsx';
-import EditCustomer from './EditCustomer';
-import { getCustomers, findCustomer } from "../../../data/customersStore";
-import CustomerDetailsModal from './CustomerDetailsModal';
-import { DeleteOutlined,PlusOutlined } from "@ant-design/icons";
-import DeleteCustomer from "./deleteCustomer.tsx";
+import EditCustomer from './EditCustomer.tsx';
+import { getCustomers, findCustomer } from "../../../../data/customersStore.ts";
+import CustomerDetailsModal from './CustomerDetailsModal.tsx';
+import { DeleteOutlined,PlusOutlined, EyeOutlined,EditOutlined } from "@ant-design/icons";
+import DeleteCustomer from './DeleteCustomer.tsx';
 
 export const CustomerManagement: React.FC = () => {
   const location = useLocation();
@@ -174,9 +172,9 @@ export const CustomerManagement: React.FC = () => {
               }}
               onClose={() => setCreateOpen(false)}
             />
-
-           {/* popup view  */}
           </Modal>
+
+          {/* popup view  */}
           <Modal open={detailOpen} onCancel={() => setDetailOpen(false)} footer={null} width={2000} centered bodyStyle={{ padding: 24 }}>
             <CustomerDetailsModal customer={selectedCustomerId ? findCustomer(selectedCustomerId) : null} />
           </Modal>

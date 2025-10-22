@@ -40,6 +40,8 @@ import {
 import NotFoundPage from "./pages/shared/NotFoundPage";
 import OnlineVerification from "./pages/dashboard/staff/customer_verification/OnlineVerification";
 import OfflineVerification from "./pages/dashboard/staff/customer_verification/OfflineVerification";
+import CustomerManagement from "./pages/dashboard/admin/CustomerManagement/CustomerManagement";
+import RentalHistory from "./pages/dashboard/admin/RentalHistory/RentalHistory";
 
 function App() {
   return (
@@ -167,6 +169,24 @@ function App() {
                 </DashboardLayout>
               }
             />
+            
+            <Route
+              path="/admin/customers/customer_management"
+              element={
+                <DashboardLayout>
+                  <CustomerManagement />
+                </DashboardLayout>
+              }
+            />
+            <Route
+              path="/admin/customers/history"
+              element={
+                <DashboardLayout>
+                  <RentalHistory />
+                </DashboardLayout>
+              }
+            />
+            
             <Route
               path="/admin/fleet/overview"
               element={

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { addCustomer } from '../../../data/customersStore';
-import type { Customer } from '../../../data/customersStore';
+import { addCustomer } from '../../../../data/customersStore';
+import type { Customer } from '../../../../data/customersStore';
 
 type Props = {
   onCreate?: (c: Customer) => void;

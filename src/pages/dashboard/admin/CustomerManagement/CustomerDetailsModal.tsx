@@ -1,5 +1,5 @@
 import React from 'react';
-import type { Customer } from '../../../data/customersStore';
+import type { Customer } from '../../../../data/customersStore';
 import { MailOutlined, PhoneOutlined } from '@ant-design/icons';
 
 type Props = {

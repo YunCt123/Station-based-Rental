@@ -97,3 +97,8 @@ export const LazyPeakHourManagement = lazy(
 export const LazyRoleSwitcher = lazy(
   () => import("../../pages/dashboard/RoleSwitcher")
 );
+
+// Settings
+export const LazySettings = lazy(
+  () => import("../../pages/dashboard/Settings")
+);

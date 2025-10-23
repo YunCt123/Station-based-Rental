@@ -1,12 +1,42 @@
 import React from 'react';
 import VehicleCard from '../components/VehicleCard';
-import { SAMPLE_VEHICLES } from '../data/vehicles';
+import { SAMPLE_VEHICLES, type VehicleData } from '../data/vehicles';
+import type { Vehicle } from '@/types/vehicle';
+
+// Helper function to convert VehicleData to Vehicle
+const convertToVehicle = (data: VehicleData): Vehicle => ({
+  id: data.id,
+  name: data.name,
+  year: data.year,
+  brand: data.brand,
+  model: data.name.split(' ').slice(1).join(' ') || data.name,
+  type: data.type as Vehicle['type'],
+  image: data.image,
+  batteryLevel: data.batteryLevel,
+  location: data.location,
+  availability: data.status === 'Available' ? 'available' : 'maintenance',
+  pricePerHour: data.hourlyRate,
+  pricePerDay: data.dailyRate,
+  rating: data.rating,
+  reviewCount: data.reviewCount,
+  trips: 0,
+  range: data.range,
+  seats: data.seats,
+  features: data.features || [],
+  condition: data.condition.toLowerCase() as Vehicle['condition'],
+  lastMaintenance: new Date().toISOString().split('T')[0],
+  mileage: 0,
+  fuelEfficiency: `${data.range} km`,
+  inspectionDate: new Date().toISOString().split('T')[0],
+  insuranceExpiry: new Date().toISOString().split('T')[0],
+  description: data.description || '',
+});
 
 const Content: React.FC = () => {
   // Use first 6 vehicles for homepage display
-  const vehicles = SAMPLE_VEHICLES.slice(0, 6);
+  const vehicles = SAMPLE_VEHICLES.slice(0, 6).map(convertToVehicle);
 
-  return (
+  return (  
     <div className="bg-gray-50 py-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section header */}

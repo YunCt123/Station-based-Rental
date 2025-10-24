@@ -3,7 +3,6 @@ import {
   WrenchScrewdriverIcon,
   ClockIcon,
   CheckCircleIcon,
-  ExclamationTriangleIcon,
   MagnifyingGlassIcon,
   CogIcon
 } from '@heroicons/react/24/outline';
@@ -12,9 +11,12 @@ import {
   XCircleIcon as XCircleSolidIcon,
   ExclamationTriangleIcon as ExclamationTriangleSolidIcon
 } from '@heroicons/react/24/solid';
-import { TechnicalIssueModal } from '../../../../components/dashboard/staff/manage_vehicles/TechnicalIssueModal';
 import { MaintenanceScheduleModal } from '../../../../components/dashboard/staff/manage_vehicles/MaintenanceScheduleModal';
 import { MaintenanceHistoryModal } from '../../../../components/dashboard/staff/manage_vehicles/MaintenanceHistoryModal';
+import { VehicleDetailsModal } from '../../../../components/dashboard/staff/manage_vehicles/VehicleDetailsModal';
+import { AddIncidentModal } from '../../../../components/dashboard/staff/manage_vehicles/AddIncidentModal';
+import { createIssue } from '@/services/issueService';
+import { toast } from 'sonner';
 
 interface MaintenanceRecord {
   id: string;
@@ -145,11 +147,10 @@ export const TechnicalStatus: React.FC = () => {
   const [showReportModal, setShowReportModal] = useState(false);
   const [showMaintenanceModal, setShowMaintenanceModal] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [modalVehicle, setModalVehicle] = useState<Vehicle | null>(null);
   
   // Form states
-  const [issueDescription, setIssueDescription] = useState('');
-  const [issueSeverity, setIssueSeverity] = useState('low');
   const [maintenanceType, setMaintenanceType] = useState('preventive');
   const [maintenanceDescription, setMaintenanceDescription] = useState('');
 
@@ -169,21 +170,21 @@ export const TechnicalStatus: React.FC = () => {
     setShowHistoryModal(true);
   };
 
-  const handleSubmitIssue = () => {
-    if (!modalVehicle || !issueDescription.trim()) return;
-    
-    // Simulate API call
-    console.log('Báo cáo sự cố:', {
-      vehicleId: modalVehicle.id,
-      description: issueDescription,
-      severity: issueSeverity,
-      timestamp: new Date()
-    });
-    
-    setShowReportModal(false);
-    setIssueDescription('');
-    setIssueSeverity('low');
-    setModalVehicle(null);
+  const handleSubmitIssue = async (incident: any) => {
+    try {
+      await createIssue({
+        vehicle_id: incident.vehicleId,
+        title: incident.title,
+        description: incident.description,
+        photos: incident.images || []
+      });
+      toast.success('Đã báo cáo sự cố thành công!');
+      setShowReportModal(false);
+      setModalVehicle(null);
+    } catch (error: any) {
+      console.error('Error reporting issue:', error);
+      toast.error('Không thể báo cáo sự cố');
+    }
   };
 
   const handleSubmitMaintenance = () => {
@@ -207,9 +208,8 @@ export const TechnicalStatus: React.FC = () => {
     setShowReportModal(false);
     setShowMaintenanceModal(false);
     setShowHistoryModal(false);
+    setShowDetailsModal(false);
     setModalVehicle(null);
-    setIssueDescription('');
-    setIssueSeverity('low');
     setMaintenanceType('preventive');
     setMaintenanceDescription('');
   };
@@ -233,15 +233,6 @@ export const TechnicalStatus: React.FC = () => {
       case 'maintenance': return 'Đang bảo trì';
       case 'out-of-service': return 'Ngừng hoạt động';
       default: return 'Không xác định';
-    }
-  };
-
-  const getMaintenanceStatusColor = (status: string) => {
-    switch (status) {
-      case 'completed': return 'bg-green-100 text-green-800';
-      case 'in-progress': return 'bg-blue-100 text-blue-800';
-      case 'scheduled': return 'bg-yellow-100 text-yellow-800';
-      default: return 'bg-gray-100 text-gray-800';
     }
   };
 
@@ -351,14 +342,15 @@ export const TechnicalStatus: React.FC = () => {
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-white divide-y divide-y-gray-200">
               {filteredVehicles.map((vehicle) => (
                 <tr 
                   key={vehicle.id} 
-                  className={`hover:bg-gray-50 cursor-pointer ${
-                    selectedVehicle?.id === vehicle.id ? 'bg-blue-50' : ''
-                  }`}
-                  onClick={() => setSelectedVehicle(vehicle)}
+                  className="hover:bg-gray-50 cursor-pointer transition-colors"
+                  onClick={() => {
+                    setSelectedVehicle(vehicle);
+                    setShowDetailsModal(true);
+                  }}
                 >
                   <td className="px-6 py-4 whitespace-nowrap">
                     <img 
@@ -415,19 +407,28 @@ export const TechnicalStatus: React.FC = () => {
                   <td className="px-6 py-4 whitespace-nowrap text-sm">
                     <div className="flex space-x-2">
                       <button 
-                        onClick={() => handleReportIssue(vehicle)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleReportIssue(vehicle);
+                        }}
                         className="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded text-xs font-medium transition-colors"
                       >
                         Báo sự cố
                       </button>
                       <button 
-                        onClick={() => handleScheduleMaintenance(vehicle)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleScheduleMaintenance(vehicle);
+                        }}
                         className="bg-orange-600 hover:bg-orange-700 text-white px-3 py-1.5 rounded text-xs font-medium transition-colors"
                       >
                         Bảo trì
                       </button>
                       <button 
-                        onClick={() => handleViewHistory(vehicle)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleViewHistory(vehicle);
+                        }}
                         className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded text-xs font-medium transition-colors"
                       >
                         Lịch sử
@@ -448,99 +449,26 @@ export const TechnicalStatus: React.FC = () => {
         </div>
       </div>
 
-      {/* Vehicle Details Section */}
-      {selectedVehicle && (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-900">Chi tiết xe</h3>
-            <p className="text-sm text-gray-600">{selectedVehicle.model} - {selectedVehicle.licensePlate}</p>
-          </div>
+      {/* Vehicle Details Modal */}
+      <VehicleDetailsModal
+        vehicle={selectedVehicle}
+        isOpen={showDetailsModal}
+        onClose={() => {
+          setShowDetailsModal(false);
+          setSelectedVehicle(null);
+        }}
+      />
 
-          <div className="p-6">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Status Overview */}
-              <div>
-                <h4 className="text-sm font-medium text-gray-900 mb-3">Tình trạng hiện tại</h4>
-                <div className="flex items-center gap-2 mb-4">
-                  {getStatusIcon(selectedVehicle.technicalStatus)}
-                  <span className="font-medium">{getStatusText(selectedVehicle.technicalStatus)}</span>
-                </div>
-
-                {/* Key Metrics */}
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Km đã đi:</span>
-                    <span className="font-medium">{selectedVehicle.mileage.toLocaleString()} km</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Kiểm tra cuối:</span>
-                    <span className="font-medium">{selectedVehicle.lastInspection}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Bảo trì tiếp:</span>
-                    <span className="font-medium">{selectedVehicle.nextMaintenance}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Issues */}
-              <div>
-                <h4 className="text-sm font-medium text-gray-900 mb-3">Vấn đề hiện tại</h4>
-                {selectedVehicle.issues.length > 0 ? (
-                  <div className="space-y-2">
-                    {selectedVehicle.issues.map((issue, index) => (
-                      <div key={index} className="flex items-start gap-2 text-sm text-red-600 bg-red-50 p-2 rounded">
-                        <ExclamationTriangleIcon className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                        <span>{issue}</span>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-sm text-gray-500">Không có vấn đề nào</p>
-                )}
-              </div>
-
-              {/* Maintenance History */}
-              <div>
-                <h4 className="text-sm font-medium text-gray-900 mb-3">Lịch sử bảo trì gần đây</h4>
-                <div className="space-y-3">
-                  {selectedVehicle.maintenanceRecords.slice(0, 3).map((record) => (
-                    <div key={record.id} className="border border-gray-200 rounded p-3">
-                      <div className="flex items-start justify-between mb-2">
-                        <span className={`px-2 py-1 text-xs font-medium rounded ${getMaintenanceStatusColor(record.status)}`}>
-                          {record.status === 'completed' ? 'Hoàn thành' :
-                           record.status === 'in-progress' ? 'Đang thực hiện' : 'Đã lên lịch'}
-                        </span>
-                        <span className="text-xs text-gray-500">{record.date}</span>
-                      </div>
-                      
-                      <p className="text-sm font-medium text-gray-900 mb-1">{record.description}</p>
-                      <p className="text-xs text-gray-600">Kỹ thuật viên: {record.technician}</p>
-                      
-                      {record.cost && (
-                        <p className="text-xs text-gray-600 mt-1">
-                          Chi phí: {record.cost.toLocaleString()} VNĐ
-                        </p>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Technical Issue Modal */}
-      <TechnicalIssueModal
+      {/* Add Incident Modal */}
+      <AddIncidentModal
         isOpen={showReportModal}
-        vehicle={modalVehicle}
-        issueDescription={issueDescription}
-        setIssueDescription={setIssueDescription}
-        issueSeverity={issueSeverity}
-        setIssueSeverity={setIssueSeverity}
-        onSubmit={handleSubmitIssue}
         onClose={closeModals}
+        onSubmit={handleSubmitIssue}
+        initialVehicle={modalVehicle ? {
+          id: modalVehicle.id,
+          model: modalVehicle.model,
+          licensePlate: modalVehicle.licensePlate
+        } : null}
       />
 
       {/* Maintenance Schedule Modal */}

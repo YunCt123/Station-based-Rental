@@ -444,6 +444,7 @@ function App() {
                 path="/settings" 
                 element={
                   <ProtectedRoute user={user} requireAuth={true}>
+                    <Header user={user} onLogout={handleLogout} />
                     <Settings />
                   </ProtectedRoute>
                 } 

@@ -1,9 +1,11 @@
-import React, { useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import { Form, message } from "antd";
+import React, { useState, useEffect, useCallback } from "react";
+import { useNavigate, useParams, useSearchParams, Link } from "react-router-dom";
+import { Form, message, Spin } from "antd";
 import dayjs from "dayjs";
-import { SAMPLE_VEHICLES, getVehicleById } from "../../data/vehicles";
 import type { UploadFile } from "antd/es/upload/interface";
+import { bookingService, type PriceBreakdown, type BookingFormData } from "../../services/bookingService";
+import { vehicleService } from "../../services/vehicleService";
+import type { Vehicle } from "../../types/vehicle";
 
 // Import components
 import BookingSteps from "../../components/booking/BookingSteps";
@@ -22,16 +24,19 @@ interface DocumentUploadStatus {
 }
 
 const BookingPage: React.FC = () => {
-  // Get vehicle ID from URL
+  // Get vehicle ID and station ID from URL
   const { vehicleId } = useParams<{ vehicleId: string }>();
+  const [searchParams] = useSearchParams();
+  const stationId = searchParams.get('stationId');
   const [form] = Form.useForm();
   const navigate = useNavigate();
 
-  // Find selected vehicle from vehicles data using the utility function
-  // Or fallback to the first vehicle if none specified
-  const selectedVehicle = vehicleId
-    ? getVehicleById(vehicleId) || SAMPLE_VEHICLES[0]
-    : SAMPLE_VEHICLES[0];
+  // State for booking
+  const [loading, setLoading] = useState(false);
+  const [priceBreakdown, setPriceBreakdown] = useState<PriceBreakdown | null>(null);
+  const [calculatingPrice, setCalculatingPrice] = useState(false);
+  const [vehicle, setVehicle] = useState<Vehicle | null>(null);
+  const [loadingVehicle, setLoadingVehicle] = useState(true);
 
   // Initialize file lists and upload statuses
   const [fileList, setFileList] = useState<{ [key: string]: UploadFile[] }>({
@@ -48,13 +53,92 @@ const BookingPage: React.FC = () => {
     [DOCUMENT_TYPES.NATIONAL_ID_BACK]: "not_started",
   });
 
-  const handleFinish = (values: any) => {
-    console.log("Form values:", values);
-    message.success("Booking information submitted successfully!");
-    navigate("/payment");
+  // Calculate price when rental period changes
+  const calculatePrice = useCallback(async (startAt: string, endAt: string, insurancePremium = false) => {
+    if (!vehicleId) return;
+
+    try {
+      setCalculatingPrice(true);
+      const priceRequest = {
+        vehicleId,
+        startAt,
+        endAt,
+        insurancePremium
+      };
+      
+      const pricing = await bookingService.calculatePrice(priceRequest);
+      setPriceBreakdown(pricing);
+    } catch (error) {
+      console.error("Price calculation error:", error);
+      // Keep existing price or show fallback
+    } finally {
+      setCalculatingPrice(false);
+    }
+  }, [vehicleId]);
+
+  // Load vehicle data from API
+  useEffect(() => {
+    const loadVehicle = async () => {
+      if (!vehicleId) {
+        message.error('Vehicle ID is required');
+        navigate('/vehicles');
+        return;
+      }
+
+      try {
+        setLoadingVehicle(true);
+        const vehicleData = await vehicleService.getVehicleById(vehicleId);
+        setVehicle(vehicleData);
+        console.log('Vehicle loaded:', vehicleData);
+        
+        // Calculate initial price with default values after vehicle is loaded
+        const now = dayjs();
+        const startAt = now.hour(9).minute(0).toISOString();
+        const endAt = now.add(3, 'day').hour(18).minute(0).toISOString();
+        calculatePrice(startAt, endAt, false);
+      } catch (error) {
+        console.error('Error loading vehicle:', error);
+        message.error('Failed to load vehicle information. Please try again.');
+        navigate('/vehicles');
+      } finally {
+        setLoadingVehicle(false);
+      }
+    };
+
+    loadVehicle();
+  }, [vehicleId, navigate, calculatePrice]);
+
+  const handleFinish = async (values: BookingFormData) => {
+    if (!stationId) {
+      message.error("Station ID is required for booking");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      console.log("Form values:", values);
+
+      // Format the booking request
+      const bookingRequest = bookingService.formatBookingRequest(values);
+      
+      // Create booking
+      const booking = await bookingService.createBooking(bookingRequest);
+      
+      message.success("Booking created successfully!");
+      console.log("Booking created:", booking);
+      
+      // Navigate to payment with booking ID
+      navigate(`/payment?bookingId=${booking._id}`);
+    } catch (error) {
+      console.error("Booking creation error:", error);
+      const errorMessage = error instanceof Error ? error.message : "Failed to create booking. Please try again.";
+      message.error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleUploadChange = (info: any, docType: string) => {
+  const handleUploadChange = (info: { file: { status?: string; name: string }; fileList: UploadFile[] }, docType: string) => {
     const { status } = info.file;
     const newFileList = [...info.fileList].slice(-1); // Keep only the latest file
 
@@ -101,7 +185,7 @@ const BookingPage: React.FC = () => {
     return {
       ...baseProps,
       fileList: fileList[docType],
-      onChange: (info: any) => handleUploadChange(info, docType),
+      onChange: (info: { file: { status?: string; name: string }; fileList: UploadFile[] }) => handleUploadChange(info, docType),
     };
   };
 
@@ -110,18 +194,53 @@ const BookingPage: React.FC = () => {
       {/* Header with steps */}
       <BookingSteps currentStep={1} />
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div className="md:col-span-2">
+      {loadingVehicle ? (
+        <div className="flex justify-center items-center h-64">
+          <Spin size="large" />
+          <span className="ml-3">Loading vehicle information...</span>
+        </div>
+      ) : !vehicle ? (
+        <div className="text-center p-8">
+          <p className="text-gray-500 mb-4">Vehicle not found</p>
+          <Link to="/vehicles" className="text-blue-500 hover:underline">
+            ← Back to Vehicle Selection
+          </Link>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div className="md:col-span-2">
           <Form
             form={form}
             layout="vertical"
             onFinish={handleFinish}
             requiredMark="optional"
             initialValues={{
+              vehicleId: vehicle?.id,
+              stationId: stationId || "default-station-id", // Use from URL params or default
               rental_type: "daily",
               rental_period: [dayjs(), dayjs().add(3, "day")],
               rental_start_time: dayjs("09:00:00", "HH:mm:ss"),
               rental_end_time: dayjs("18:00:00", "HH:mm:ss"),
+            }}
+            onValuesChange={(changedValues) => {
+              // Recalculate price when relevant fields change
+              if (changedValues.rental_period || 
+                  changedValues.rental_start_time || 
+                  changedValues.rental_end_time || 
+                  changedValues.insurance_premium !== undefined) {
+                
+                const currentValues = form.getFieldsValue();
+                if (currentValues.rental_period && currentValues.rental_period.length === 2) {
+                  const [startDate, endDate] = currentValues.rental_period;
+                  const startTime = currentValues.rental_start_time || dayjs("09:00:00", "HH:mm:ss");
+                  const endTime = currentValues.rental_end_time || dayjs("18:00:00", "HH:mm:ss");
+                  
+                  const startAt = startDate.hour(startTime.hour()).minute(startTime.minute()).toISOString();
+                  const endAt = endDate.hour(endTime.hour()).minute(endTime.minute()).toISOString();
+                  
+                  calculatePrice(startAt, endAt, currentValues.insurance_premium || false);
+                }
+              }
             }}
           >
             {/* Rental Period */}
@@ -164,15 +283,31 @@ const BookingPage: React.FC = () => {
             <UploadGuidelines />
 
             {/* Insurance & Terms */}
-            <InsuranceAndTermsForm />
+            <InsuranceAndTermsForm loading={loading} />
           </Form>
         </div>
 
         <div className="md:col-span-1">
           {/* Vehicle Summary */}
-          <VehicleSummary vehicle={selectedVehicle} />
+          {loadingVehicle ? (
+            <div className="flex justify-center items-center h-64">
+              <Spin size="large" />
+              <span className="ml-3">Loading vehicle information...</span>
+            </div>
+          ) : vehicle ? (
+            <VehicleSummary 
+              vehicle={vehicle} 
+              priceBreakdown={priceBreakdown}
+              loading={calculatingPrice}
+            />
+          ) : (
+            <div className="text-center p-8">
+              <p className="text-gray-500">Vehicle not found</p>
+            </div>
+          )}
         </div>
-      </div>
+        </div>
+      )}
     </div>
   );
 };

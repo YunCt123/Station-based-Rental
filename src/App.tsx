@@ -9,6 +9,7 @@ import HomePage from "./pages/shared/HomePage";
 import DetailsPage from "./pages/shared/DetailsPage";
 import HowItWorks from "./pages/shared/HowItWorks";
 import BookingPage from "./pages/shared/BookingPage";
+import { PaymentPage, PaymentSuccessPage, PaymentCancelPage } from "./pages/shared";
 import Register from "./pages/auth/Register";
 import RoleSwitcher from "./pages/dashboard/RoleSwitcher";
 import AdminDashboard from "./pages/dashboard/admin/AdminDashboard";
@@ -32,6 +33,7 @@ import VehicleRented from "./pages/dashboard/staff/vehicle/VehicleRented";
 import IdentityVerification from "./pages/dashboard/staff/delivery_procedures/IdentityVerification";
 import VehicleInspection from "./pages/dashboard/staff/delivery_procedures/VehicleInspection";
 import Settings from "./pages/dashboard/Settings";
+import BookingsPage from "./pages/dashboard/BookingsPage";
 import { TooltipProvider } from "./components/ui/tooltip";
 import { Toaster } from "./components/ui/toaster";
 import { Toaster as Sonner } from "./components/ui/sonner";
@@ -192,6 +194,58 @@ function App() {
                     <Header user={user} onLogout={handleLogout} />
                     <main className="min-h-screen">
                       <BookingPage />
+                    </main>
+                    <Footer />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Payment routes */}
+              <Route
+                path="/payment"
+                element={
+                  <ProtectedRoute user={user} requireAuth={true}>
+                    <Header user={user} onLogout={handleLogout} />
+                    <main className="min-h-screen">
+                      <PaymentPage />
+                    </main>
+                    <Footer />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/payment/success"
+                element={
+                  <ProtectedRoute user={user} requireAuth={true}>
+                    <Header user={user} onLogout={handleLogout} />
+                    <main className="min-h-screen">
+                      <PaymentSuccessPage />
+                    </main>
+                    <Footer />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/payment/cancel"
+                element={
+                  <ProtectedRoute user={user} requireAuth={true}>
+                    <Header user={user} onLogout={handleLogout} />
+                    <main className="min-h-screen">
+                      <PaymentCancelPage />
+                    </main>
+                    <Footer />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* User Bookings Route */}
+              <Route
+                path="/bookings"
+                element={
+                  <ProtectedRoute user={user} requireAuth={true}>
+                    <Header user={user} onLogout={handleLogout} />
+                    <main className="min-h-screen">
+                      <BookingsPage />
                     </main>
                     <Footer />
                   </ProtectedRoute>

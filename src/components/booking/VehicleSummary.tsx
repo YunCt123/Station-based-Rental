@@ -3,23 +3,9 @@ import { Card, Typography, Spin, Divider } from "antd";
 import { Link } from "react-router-dom";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 import type { Vehicle } from "../../types/vehicle";
+import type { PriceBreakdown } from "../../services/bookingService";
 
 const { Title, Text } = Typography;
-
-interface PriceBreakdown {
-  basePrice: number;
-  insurancePrice: number;
-  taxes: number;
-  deposit: number;
-  totalPrice: number;
-  currency: string;
-  details: {
-    rawBase: number;
-    peakMultiplier: number;
-    weekendMultiplier: number;
-    hours: number;
-  };
-}
 
 interface VehicleSummaryProps {
   vehicle: Vehicle;
@@ -28,6 +14,10 @@ interface VehicleSummaryProps {
 }
 
 const VehicleSummary: React.FC<VehicleSummaryProps> = ({ vehicle, priceBreakdown, loading }) => {
+  
+  // Debug log to see what priceBreakdown we receive
+  console.log('🏷️ [VehicleSummary] Received priceBreakdown:', priceBreakdown);
+  
   return (
     <>
       <Card className="sticky top-0">
@@ -73,41 +63,57 @@ const VehicleSummary: React.FC<VehicleSummaryProps> = ({ vehicle, priceBreakdown
               <Text className="ml-2">Calculating price...</Text>
             </div>
           ) : priceBreakdown ? (
-            <div className="space-y-2">
-              <div className="flex justify-between">
-                <Text>Base Price ({priceBreakdown.details.hours.toFixed(1)}h):</Text>
-                <Text>${priceBreakdown.basePrice}</Text>
-              </div>
-              {priceBreakdown.insurancePrice > 0 && (
-                <div className="flex justify-between">
-                  <Text>Insurance:</Text>
-                  <Text>${priceBreakdown.insurancePrice}</Text>
+            (() => {
+              // Calculate from new backend format (same logic as PaymentPage)
+              const hours = priceBreakdown.details?.hours || 0;
+              const basePrice = priceBreakdown.basePrice || 
+                (priceBreakdown.hourly_rate || 0) * hours;
+              const taxes = priceBreakdown.taxes || 
+                Math.round(basePrice * 0.1);
+              const insurance = priceBreakdown.insurancePrice || 0;
+              const totalPrice = priceBreakdown.totalPrice || 
+                (basePrice + taxes + insurance);
+              const deposit = priceBreakdown.deposit || 
+                Math.round(totalPrice * 0.2);
+              
+              return (
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <Text>Base Price ({hours.toFixed(1)}h):</Text>
+                    <Text>${basePrice.toFixed(2)}</Text>
+                  </div>
+                  {insurance > 0 && (
+                    <div className="flex justify-between">
+                      <Text>Insurance:</Text>
+                      <Text>${insurance.toFixed(2)}</Text>
+                    </div>
+                  )}
+                  <div className="flex justify-between">
+                    <Text>Taxes (10%):</Text>
+                    <Text>${taxes.toFixed(2)}</Text>
+                  </div>
+                  <Divider className="my-2" />
+                  <div className="flex justify-between font-semibold">
+                    <Text strong>Total:</Text>
+                    <Text strong>${totalPrice.toFixed(2)}</Text>
+                  </div>
+                  <div className="flex justify-between text-green-600">
+                    <Text>Required Deposit:</Text>
+                    <Text strong>${deposit.toFixed(2)}</Text>
+                  </div>
+                  {(priceBreakdown.details?.peakMultiplier || 0) > 1 && (
+                    <Text type="warning" className="text-xs">
+                      * Peak hours pricing applied ({priceBreakdown.details?.peakMultiplier}x)
+                    </Text>
+                  )}
+                  {(priceBreakdown.details?.weekendMultiplier || 0) > 1 && (
+                    <Text type="warning" className="text-xs">
+                      * Weekend pricing applied ({priceBreakdown.details?.weekendMultiplier}x)
+                    </Text>
+                  )}
                 </div>
-              )}
-              <div className="flex justify-between">
-                <Text>Taxes (10%):</Text>
-                <Text>${priceBreakdown.taxes}</Text>
-              </div>
-              <Divider className="my-2" />
-              <div className="flex justify-between font-semibold">
-                <Text strong>Total:</Text>
-                <Text strong>${priceBreakdown.totalPrice}</Text>
-              </div>
-              <div className="flex justify-between text-green-600">
-                <Text>Required Deposit:</Text>
-                <Text strong>${priceBreakdown.deposit}</Text>
-              </div>
-              {priceBreakdown.details.peakMultiplier > 1 && (
-                <Text type="warning" className="text-xs">
-                  * Peak hours pricing applied ({priceBreakdown.details.peakMultiplier}x)
-                </Text>
-              )}
-              {priceBreakdown.details.weekendMultiplier > 1 && (
-                <Text type="warning" className="text-xs">
-                  * Weekend pricing applied ({priceBreakdown.details.weekendMultiplier}x)
-                </Text>
-              )}
-            </div>
+              );
+            })()
           ) : (
             <Text type="secondary">Select rental period to see pricing</Text>
           )}

@@ -1,13 +1,21 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { useNavigate, useParams, useSearchParams, Link } from "react-router-dom";
-import { Form, message, Spin } from "antd";
-import dayjs from "dayjs";
+import {
+  useNavigate,
+  useParams,
+  useSearchParams,
+  useLocation,
+  Link,
+} from "react-router-dom";
+import { Form, message, Spin, Card, Button } from "antd";
+import { UserOutlined, LoginOutlined } from "@ant-design/icons";
+import dayjs, { Dayjs } from "dayjs";
 import type { UploadFile } from "antd/es/upload/interface";
-import { bookingService, type PriceBreakdown, type BookingFormData } from "../../services/bookingService";
+import { bookingService, type PriceBreakdown } from "../../services/bookingService";
 import { vehicleService } from "../../services/vehicleService";
 import type { Vehicle } from "../../types/vehicle";
+import { getCurrentUser } from "../../utils/auth";
 
-// Import components
+// Components
 import BookingSteps from "../../components/booking/BookingSteps";
 import RentalPeriodForm from "../../components/booking/RentalPeriodForm";
 import CustomerInformationForm from "../../components/booking/CustomerInformationForm";
@@ -18,27 +26,27 @@ import InsuranceAndTermsForm from "../../components/booking/InsuranceAndTermsFor
 import VehicleSummary from "../../components/booking/VehicleSummary";
 import { DOCUMENT_TYPES } from "../../components/booking/DocumentTypes";
 
-// Interface for document upload status
 interface DocumentUploadStatus {
   status: "not_started" | "uploading" | "success" | "error";
 }
 
 const BookingPage: React.FC = () => {
-  // Get vehicle ID and station ID from URL
   const { vehicleId } = useParams<{ vehicleId: string }>();
   const [searchParams] = useSearchParams();
-  const stationId = searchParams.get('stationId');
+  const stationId = searchParams.get("stationId") ?? undefined;
+
   const [form] = Form.useForm();
   const navigate = useNavigate();
+  const location = useLocation();
 
-  // State for booking
+  // State
   const [loading, setLoading] = useState(false);
   const [priceBreakdown, setPriceBreakdown] = useState<PriceBreakdown | null>(null);
   const [calculatingPrice, setCalculatingPrice] = useState(false);
   const [vehicle, setVehicle] = useState<Vehicle | null>(null);
   const [loadingVehicle, setLoadingVehicle] = useState(true);
+  const [user, setUser] = useState(() => getCurrentUser());
 
-  // Initialize file lists and upload statuses
   const [fileList, setFileList] = useState<{ [key: string]: UploadFile[] }>({
     [DOCUMENT_TYPES.DRIVERS_LICENSE]: [],
     [DOCUMENT_TYPES.NATIONAL_ID_FRONT]: [],
@@ -53,94 +61,151 @@ const BookingPage: React.FC = () => {
     [DOCUMENT_TYPES.NATIONAL_ID_BACK]: "not_started",
   });
 
-  // Calculate price when rental period changes
-  const calculatePrice = useCallback(async (startAt: string, endAt: string, insurancePremium = false) => {
-    if (!vehicleId) return;
-
-    try {
-      setCalculatingPrice(true);
-      const priceRequest = {
-        vehicleId,
-        startAt,
-        endAt,
-        insurancePremium
-      };
+  // ---- Pricing ----
+  const calculatePrice = useCallback(
+    async (startAt: string, endAt: string, insurancePremium = false) => {
+      console.log('🚀 [BookingPage] calculatePrice called with:', { vehicleId, startAt, endAt, insurancePremium });
       
-      const pricing = await bookingService.calculatePrice(priceRequest);
-      setPriceBreakdown(pricing);
-    } catch (error) {
-      console.error("Price calculation error:", error);
-      // Keep existing price or show fallback
-    } finally {
-      setCalculatingPrice(false);
-    }
-  }, [vehicleId]);
+      if (!vehicleId) {
+        console.warn('❌ [BookingPage] No vehicleId, skipping price calculation');
+        return;
+      }
+      
+      try {
+        setCalculatingPrice(true);
+        const priceRequest = { vehicleId, startAt, endAt, insurancePremium };
+        console.log('📤 [BookingPage] Sending price request:', priceRequest);
+        
+        const pricing = await bookingService.calculatePrice(priceRequest);
+        console.log('📥 [BookingPage] Received pricing response:', pricing);
+        
+        setPriceBreakdown(pricing);
+        console.log('✅ [BookingPage] Price breakdown set successfully');
+      } catch (error) {
+        console.error("💥 [BookingPage] Price calculation error:", error);
+      } finally {
+        setCalculatingPrice(false);
+        console.log('🏁 [BookingPage] Price calculation finished');
+      }
+    },
+    [vehicleId]
+  );
 
-  // Load vehicle data from API
+  // Auth watcher
+  useEffect(() => {
+    const checkAuthState = () => setUser(getCurrentUser());
+    checkAuthState();
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "user" || e.key === "access_token") checkAuthState();
+    };
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
+  }, []);
+
+  // Load vehicle + initial price
   useEffect(() => {
     const loadVehicle = async () => {
       if (!vehicleId) {
-        message.error('Vehicle ID is required');
-        navigate('/vehicles');
+        message.error("Vehicle ID is required");
+        navigate("/vehicles");
         return;
       }
-
       try {
         setLoadingVehicle(true);
         const vehicleData = await vehicleService.getVehicleById(vehicleId);
         setVehicle(vehicleData);
-        console.log('Vehicle loaded:', vehicleData);
-        
-        // Calculate initial price with default values after vehicle is loaded
+
+        // Initial price window (09:00 -> +3 days 18:00)
         const now = dayjs();
-        const startAt = now.hour(9).minute(0).toISOString();
-        const endAt = now.add(3, 'day').hour(18).minute(0).toISOString();
-        calculatePrice(startAt, endAt, false);
+        const startAt = now.hour(9).minute(0).second(0).millisecond(0).toISOString();
+        const endAt = now.add(3, "day").hour(18).minute(0).second(0).millisecond(0).toISOString();
+        
+        console.log('🔧 [BookingPage] Calculating initial price with:', { startAt, endAt });
+        await calculatePrice(startAt, endAt, false);
       } catch (error) {
-        console.error('Error loading vehicle:', error);
-        message.error('Failed to load vehicle information. Please try again.');
-        navigate('/vehicles');
+        console.error("Error loading vehicle:", error);
+        message.error("Failed to load vehicle information. Please try again.");
+        navigate("/vehicles");
       } finally {
         setLoadingVehicle(false);
       }
     };
-
     loadVehicle();
   }, [vehicleId, navigate, calculatePrice]);
 
-  const handleFinish = async (values: BookingFormData) => {
-    if (!stationId) {
-      message.error("Station ID is required for booking");
+  // ---- Submit ----
+  const handleFinish = async (values: Record<string, any>) => {
+    if (!user) {
+      message.error("Please log in to make a booking");
+      navigate("/login", { state: { from: location.pathname } });
+      return;
+    }
+    if (!vehicleId) {
+      message.error("Vehicle ID is required for booking");
       return;
     }
 
     try {
       setLoading(true);
-      console.log("Form values:", values);
 
-      // Format the booking request
-      const bookingRequest = bookingService.formatBookingRequest(values);
+      // Use station_id from vehicle data instead of URL parameter
+      const vehicleStationId = vehicle?.station_id || vehicle?.stationId;
+      const finalStationId: string = vehicleStationId || stationId || "default-station-id";
+
+      console.log("=== STATION DEBUG ===");
+      console.log("URL stationId:", stationId);
+      console.log("Vehicle station_id:", vehicle?.station_id);
+      console.log("Vehicle stationId:", vehicle?.stationId);
+      console.log("Final stationId:", finalStationId);
+
+      const formValues = {
+        ...values,
+        stationId: finalStationId,
+        vehicleId,
+      };
+
+      console.log("=== DEBUGGING FORM DATA ===");
+      console.log("Raw form values:", JSON.stringify(values, null, 2));
+      console.log("Final form values:", JSON.stringify(formValues, null, 2));
+
+      const bookingRequest = bookingService.formatBookingRequest(formValues);
+      console.log("Formatted booking request:", JSON.stringify(bookingRequest, null, 2));
       
-      // Create booking
       const booking = await bookingService.createBooking(bookingRequest);
-      
-      message.success("Booking created successfully!");
-      console.log("Booking created:", booking);
-      
-      // Navigate to payment with booking ID
+
+      message.success("Booking created successfully! Redirecting to payment...");
       navigate(`/payment?bookingId=${booking._id}`);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Booking creation error:", error);
-      const errorMessage = error instanceof Error ? error.message : "Failed to create booking. Please try again.";
-      message.error(errorMessage);
+      const e = error as { response?: { status?: number }; message?: string };
+      if (
+        e?.response?.status === 401 ||
+        (e?.message &&
+          (e.message.includes("unauthorized") ||
+            e.message.includes("authentication")))
+      ) {
+        message.error("Your session has expired. Please log in again.");
+        setUser(null);
+        localStorage.removeItem("access_token");
+        localStorage.removeItem("user");
+        navigate("/login", { state: { from: location.pathname } });
+        return;
+      }
+      message.error(
+        e?.message || "Failed to create booking. Please try again."
+      );
     } finally {
       setLoading(false);
     }
   };
 
-  const handleUploadChange = (info: { file: { status?: string; name: string }; fileList: UploadFile[] }, docType: string) => {
+  // ---- Upload ----
+  const handleUploadChange = (
+    info: { file: { status?: string; name: string }; fileList: UploadFile[] },
+    docType: string
+  ) => {
     const { status } = info.file;
-    const newFileList = [...info.fileList].slice(-1); // Keep only the latest file
+    const newFileList = [...info.fileList].slice(-1); // keep latest
 
     setFileList((prev) => ({ ...prev, [docType]: newFileList }));
 
@@ -148,18 +213,18 @@ const BookingPage: React.FC = () => {
       setUploadStatus((prev) => ({ ...prev, [docType]: "uploading" }));
     } else if (status === "done") {
       setUploadStatus((prev) => ({ ...prev, [docType]: "success" }));
-      message.success(`${info.file.name} file uploaded successfully.`);
+      message.success(`${info.file.name} uploaded successfully.`);
     } else if (status === "error") {
       setUploadStatus((prev) => ({ ...prev, [docType]: "error" }));
-      message.error(`${info.file.name} file upload failed.`);
+      message.error(`${info.file.name} upload failed.`);
     }
   };
 
-  // Create upload props
   const getUploadProps = () => ({
     name: "file",
     multiple: false,
-    action: "https://api.yourservice.com/upload", // Replace with your actual upload endpoint
+    action: "/api/upload", // TODO: replace with real endpoint
+    accept: ".jpg,.jpeg,.png,.pdf",
     beforeUpload(file: File) {
       const isValidFormat =
         file.type === "image/jpeg" ||
@@ -170,142 +235,167 @@ const BookingPage: React.FC = () => {
       if (!isValidFormat) {
         message.error("You can only upload JPG/PNG/PDF files!");
       }
-
       if (!isValidSize) {
         message.error("File must be smaller than 5MB!");
       }
-
       return isValidFormat && isValidSize;
     },
   });
 
-  // Create document upload props for each document type
   const createDocumentUploadProps = (docType: string) => {
     const baseProps = getUploadProps();
     return {
       ...baseProps,
       fileList: fileList[docType],
-      onChange: (info: { file: { status?: string; name: string }; fileList: UploadFile[] }) => handleUploadChange(info, docType),
+      onChange: (info: {
+        file: { status?: string; name: string };
+        fileList: UploadFile[];
+      }) => handleUploadChange(info, docType),
     };
   };
 
+  // ---- Login required ----
+  const LoginRequiredComponent = () => (
+    <div className="max-w-md mx-auto mt-8">
+      <Card className="text-center p-6">
+        <UserOutlined className="text-4xl text-blue-500 mb-4" />
+        <h2 className="text-xl font-semibold mb-4">Login Required</h2>
+        <p className="text-gray-600 mb-6">
+          You need to be logged in to make a booking. Please login or create an
+          account to continue.
+        </p>
+        <div className="space-x-4">
+          <Button
+            type="primary"
+            icon={<LoginOutlined />}
+            onClick={() => navigate("/login", { state: { from: location.pathname } })}
+          >
+            Login
+          </Button>
+          <Button onClick={() => navigate("/register", { state: { from: location.pathname } })}>
+            Create Account
+          </Button>
+        </div>
+      </Card>
+    </div>
+  );
+
+  // ---- Render ----
   return (
     <div className="max-w-4xl mx-auto p-4 bg-gray-50">
-      {/* Header with steps */}
-      <BookingSteps currentStep={1} />
-
-      {loadingVehicle ? (
-        <div className="flex justify-center items-center h-64">
-          <Spin size="large" />
-          <span className="ml-3">Loading vehicle information...</span>
-        </div>
-      ) : !vehicle ? (
-        <div className="text-center p-8">
-          <p className="text-gray-500 mb-4">Vehicle not found</p>
-          <Link to="/vehicles" className="text-blue-500 hover:underline">
-            ← Back to Vehicle Selection
-          </Link>
-        </div>
+      {!user ? (
+        <LoginRequiredComponent />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <div className="md:col-span-2">
-          <Form
-            form={form}
-            layout="vertical"
-            onFinish={handleFinish}
-            requiredMark="optional"
-            initialValues={{
-              vehicleId: vehicle?.id,
-              stationId: stationId || "default-station-id", // Use from URL params or default
-              rental_type: "daily",
-              rental_period: [dayjs(), dayjs().add(3, "day")],
-              rental_start_time: dayjs("09:00:00", "HH:mm:ss"),
-              rental_end_time: dayjs("18:00:00", "HH:mm:ss"),
-            }}
-            onValuesChange={(changedValues) => {
-              // Recalculate price when relevant fields change
-              if (changedValues.rental_period || 
-                  changedValues.rental_start_time || 
-                  changedValues.rental_end_time || 
-                  changedValues.insurance_premium !== undefined) {
-                
-                const currentValues = form.getFieldsValue();
-                if (currentValues.rental_period && currentValues.rental_period.length === 2) {
-                  const [startDate, endDate] = currentValues.rental_period;
-                  const startTime = currentValues.rental_start_time || dayjs("09:00:00", "HH:mm:ss");
-                  const endTime = currentValues.rental_end_time || dayjs("18:00:00", "HH:mm:ss");
-                  
-                  const startAt = startDate.hour(startTime.hour()).minute(startTime.minute()).toISOString();
-                  const endAt = endDate.hour(endTime.hour()).minute(endTime.minute()).toISOString();
-                  
-                  calculatePrice(startAt, endAt, currentValues.insurance_premium || false);
-                }
-              }
-            }}
-          >
-            {/* Rental Period */}
-            <RentalPeriodForm />
+        <div>
+          <BookingSteps currentStep={1} />
 
-            {/* Customer Information */}
-            <CustomerInformationForm />
-
-            {/* Document Upload Progress */}
-            <DocumentUploadProgress uploadStatus={uploadStatus} />
-
-            {/* Driver's License Upload */}
-            <DocumentUpload
-              title="Driver's License"
-              description="Please upload both sides of your driver's license"
-              uploadProps={createDocumentUploadProps(
-                DOCUMENT_TYPES.DRIVERS_LICENSE
-              )}
-            />
-
-            {/* National ID - Front */}
-            <DocumentUpload
-              title="National ID - Front"
-              description="Please upload front side of your national ID card (ensure text is visible, photo is clear, and ID covers)"
-              uploadProps={createDocumentUploadProps(
-                DOCUMENT_TYPES.NATIONAL_ID_FRONT
-              )}
-            />
-
-            {/* National ID - Back */}
-            <DocumentUpload
-              title="National ID - Back"
-              description="Please upload back side of your national ID card"
-              uploadProps={createDocumentUploadProps(
-                DOCUMENT_TYPES.NATIONAL_ID_BACK
-              )}
-            />
-
-            {/* Upload Guidelines */}
-            <UploadGuidelines />
-
-            {/* Insurance & Terms */}
-            <InsuranceAndTermsForm loading={loading} />
-          </Form>
-        </div>
-
-        <div className="md:col-span-1">
-          {/* Vehicle Summary */}
           {loadingVehicle ? (
             <div className="flex justify-center items-center h-64">
               <Spin size="large" />
               <span className="ml-3">Loading vehicle information...</span>
             </div>
-          ) : vehicle ? (
-            <VehicleSummary 
-              vehicle={vehicle} 
-              priceBreakdown={priceBreakdown}
-              loading={calculatingPrice}
-            />
-          ) : (
+          ) : !vehicle ? (
             <div className="text-center p-8">
-              <p className="text-gray-500">Vehicle not found</p>
+              <p className="text-gray-500 mb-4">Vehicle not found</p>
+              <Link to="/vehicles" className="text-blue-500 hover:underline">
+                ← Back to Vehicle Selection
+              </Link>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              <div className="md:col-span-2">
+                <Form
+                  form={form}
+                  layout="vertical"
+                  onFinish={handleFinish}
+                  requiredMark="optional"
+                  initialValues={{
+                    vehicleId: vehicle?.id ?? vehicleId,
+                    stationId: stationId ?? "default-station-id",
+                    rental_type: "daily",
+                    rental_period: [dayjs(), dayjs().add(3, "day")],
+                    rental_start_time: dayjs("09:00:00", "HH:mm:ss"),
+                    rental_end_time: dayjs("18:00:00", "HH:mm:ss"),
+                  }}
+                  onValuesChange={(changedValues) => {
+                    if (
+                      changedValues.rental_period ||
+                      changedValues.rental_start_time ||
+                      changedValues.rental_end_time ||
+                      changedValues.insurance_premium !== undefined
+                    ) {
+                      const current = form.getFieldsValue();
+                      const period: [Dayjs, Dayjs] | undefined = current.rental_period;
+                      if (period && period.length === 2) {
+                        const [startDate, endDate] = period;
+                        const startTime: Dayjs =
+                          current.rental_start_time || dayjs("09:00:00", "HH:mm:ss");
+                        const endTime: Dayjs =
+                          current.rental_end_time || dayjs("18:00:00", "HH:mm:ss");
+
+                        const startAt = startDate
+                          .hour(startTime.hour())
+                          .minute(startTime.minute())
+                          .second(0)
+                          .millisecond(0)
+                          .toISOString();
+
+                        const endAt = endDate
+                          .hour(endTime.hour())
+                          .minute(endTime.minute())
+                          .second(0)
+                          .millisecond(0)
+                          .toISOString();
+
+                        calculatePrice(startAt, endAt, current.insurance_premium || false);
+                      }
+                    }
+                  }}
+                >
+                  <RentalPeriodForm />
+                  <CustomerInformationForm />
+{/* 
+                  <DocumentUploadProgress uploadStatus={uploadStatus} />
+
+                  <DocumentUpload
+                    title="Driver's License"
+                    description="Please upload both sides of your driver's license"
+                    uploadProps={createDocumentUploadProps(DOCUMENT_TYPES.DRIVERS_LICENSE)}
+                  />
+
+                  <DocumentUpload
+                    title="National ID - Front"
+                    description="Please upload the front side of your national ID card"
+                    uploadProps={createDocumentUploadProps(DOCUMENT_TYPES.NATIONAL_ID_FRONT)}
+                  />
+
+                  <DocumentUpload
+                    title="National ID - Back"
+                    description="Please upload the back side of your national ID card"
+                    uploadProps={createDocumentUploadProps(DOCUMENT_TYPES.NATIONAL_ID_BACK)}
+                  />
+
+                  <UploadGuidelines /> */}
+                  <InsuranceAndTermsForm loading={loading} />
+                </Form>
+              </div>
+
+              <div className="md:col-span-1">
+                {loadingVehicle ? (
+                  <div className="flex justify-center items-center h-64">
+                    <Spin size="large" />
+                    <span className="ml-3">Loading vehicle information...</span>
+                  </div>
+                ) : (
+                  <VehicleSummary
+                    vehicle={vehicle}
+                    priceBreakdown={priceBreakdown}
+                    loading={calculatingPrice}
+                  />
+                )}
+              </div>
             </div>
           )}
-        </div>
         </div>
       )}
     </div>

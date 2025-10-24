@@ -19,8 +19,12 @@ export interface BookingRequest {
   stationId: string;
   startAt: string; // ISO date string
   endAt: string; // ISO date string
-  agreement: boolean;
-  insuranceOption?: boolean;
+  agreement: {
+    accepted: boolean;
+  };
+  insuranceOption?: {
+    premium: boolean;
+  };
 }
 
 export interface PriceCalculationRequest {
@@ -31,13 +35,19 @@ export interface PriceCalculationRequest {
 }
 
 export interface PriceBreakdown {
-  basePrice: number;
-  insurancePrice: number;
-  taxes: number;
-  deposit: number;
-  totalPrice: number;
+  // Backend fields (new format)
+  hourly_rate?: number;
+  daily_rate?: number;
   currency: string;
-  details: {
+  deposit: number;
+  policy_version?: string;
+  
+  // Legacy/calculated fields (for compatibility)
+  basePrice?: number;
+  insurancePrice?: number;
+  taxes?: number;
+  totalPrice?: number;
+  details?: {
     rawBase: number;
     peakMultiplier: number;
     weekendMultiplier: number;
@@ -116,36 +126,60 @@ export interface Payment {
 export interface PaymentCreateRequest {
   bookingId: string;
   amount: number;
+  currency?: string; // Optional currency field for VNPAY
   returnUrl: string;
   cancelUrl: string;
+  requestId?: string; // Optional unique identifier for duplicate prevention
 }
 
 export interface PaymentResponse {
-  paymentId: string;
-  paymentUrl: string;
-  providerPaymentId: string;
+  paymentId?: string;
+  paymentUrl?: string;
+  providerPaymentId?: string;
+  // VNPAY specific fields
+  checkoutUrl?: string;
+  transaction_ref?: string;
+  payment?: {
+    _id: string;
+    [key: string]: unknown;
+  };
 }
 
 // Frontend booking interface for forms
 export interface BookingFormData {
-  vehicleId: string;
-  stationId: string;
-  startDate: Date;
-  endDate: Date;
-  startTime: string;
-  endTime: string;
-  customerInfo: {
+  vehicleId?: string;
+  stationId?: string;
+  rental_period?: any[]; // Array of dayjs objects from DatePicker.RangePicker
+  rental_start_time?: any; // dayjs object from TimePicker
+  rental_end_time?: any; // dayjs object from TimePicker
+  // Fallback fields
+  startDate?: Date;
+  endDate?: Date;
+  startTime?: string;
+  endTime?: string;
+  // Customer info
+  full_name?: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  drivers_license?: string;
+  // Legacy structure
+  customerInfo?: {
     fullName: string;
     email: string;
     phone: string;
     address: string;
     driversLicense: string;
   };
-  insurance: {
+  // Insurance
+  insurance_premium?: boolean;
+  insurance?: {
     premium: boolean;
     note?: string;
   };
-  agreement: {
+  // Agreement
+  terms_agreement?: boolean;
+  agreement?: {
     accepted: boolean;
   };
   specialRequests?: string;
@@ -156,22 +190,22 @@ export class BookingService {
   // Calculate booking price before creating booking
   async calculatePrice(request: PriceCalculationRequest): Promise<PriceBreakdown> {
     try {
-      console.log('[BookingService] Calculating price:', request);
+      console.log('[BookingService] Calculating price via API:', request);
       
       const response = await api.post<ApiResponse<PriceBreakdown>>('/bookings/calculate-price', request);
       
       if (response.data.success && response.data.data) {
-        console.log('[BookingService] Price calculated:', response.data.data);
+        console.log('[BookingService] ✅ API Success - Price calculated:', response.data.data);
         return response.data.data;
       }
       
       throw new Error('Failed to calculate price');
     } catch (error: any) {
-      console.error('[BookingService] Price calculation error:', error);
+      console.warn('[BookingService] ❌ API Failed, using fallback calculation:', error.message);
       
       // Fallback price calculation for development
       const fallback = this.calculateFallbackPrice(request);
-      console.log('[BookingService] Using fallback price:', fallback);
+      console.log('[BookingService] 🔄 Fallback price:', fallback);
       return fallback;
     }
   }
@@ -188,8 +222,11 @@ export class BookingService {
         startAt: request.startAt,
         endAt: request.endAt,
         agreement: request.agreement,
-        insuranceOption: request.insuranceOption || false
+        insuranceOption: request.insuranceOption,
+        useTransaction: false // Disable transactions to avoid replica set error
       };
+      
+      console.log('[BookingService] Backend request:', JSON.stringify(backendRequest, null, 2));
       
       const response = await api.post<ApiResponse<Booking>>('/bookings', backendRequest);
       
@@ -199,9 +236,20 @@ export class BookingService {
       }
       
       throw new Error('Failed to create booking');
-    } catch (error: any) {
+        } catch (error: any) {
       console.error('[BookingService] Create booking error:', error);
-      throw new Error(error.response?.data?.message || error.message || 'Failed to create booking');
+      
+      // Handle specific MongoDB transaction error
+      if (error?.response?.data?.message?.includes('Transaction numbers are only allowed on a replica set member or mongos')) {
+        throw new Error('Database configuration error. Please contact support or try again later.');
+      }
+      
+      // Handle other validation errors
+      if (error?.response?.data?.message) {
+        throw new Error(error.response.data.message);
+      }
+      
+      throw new Error('Failed to create booking. Please try again.');
     }
   }
 
@@ -246,7 +294,7 @@ export class BookingService {
   // Create deposit payment for booking
   async createDepositPayment(request: PaymentCreateRequest): Promise<PaymentResponse> {
     try {
-      console.log('[BookingService] Creating deposit payment:', request);
+      console.log('[BookingService] Creating deposit payment (VNPAY):', request);
       
       const response = await api.post<ApiResponse<PaymentResponse>>(`/payments/${request.bookingId}/deposit`, {
         amount: request.amount,
@@ -254,15 +302,22 @@ export class BookingService {
         cancelUrl: request.cancelUrl
       });
       
+      console.log('[BookingService] Full VNPAY API response:', response);
+      console.log('[BookingService] Response data:', response.data);
+      console.log('[BookingService] Response data.data:', response.data.data);
+      
       if (response.data.success && response.data.data) {
-        console.log('[BookingService] Payment created:', response.data.data);
+        console.log('[BookingService] VNPAY payment created successfully:', response.data.data);
         return response.data.data;
       }
       
-      throw new Error('Failed to create payment');
-    } catch (error: any) {
-      console.error('[BookingService] Create payment error:', error);
-      throw new Error(error.response?.data?.message || error.message || 'Failed to create payment');
+      console.error('[BookingService] VNPAY API response missing success or data');
+      throw new Error('Failed to create payment - invalid response structure');
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } }; message?: string };
+      console.error('[BookingService] Create VNPAY payment error:', error);
+      console.error('[BookingService] Error response:', err.response);
+      throw new Error(err.response?.data?.message || err.message || 'Failed to create payment');
     }
   }
 
@@ -273,14 +328,23 @@ export class BookingService {
       
       const response = await api.post<ApiResponse<PaymentResponse>>('/payments/payos/create', request);
       
+      console.log('[BookingService] Full API response:', response);
+      console.log('[BookingService] Response data:', response.data);
+      console.log('[BookingService] Response data.data:', response.data.data);
+      console.log('[BookingService] Response status:', response.status);
+      
       if (response.data.success && response.data.data) {
-        console.log('[BookingService] PayOS payment created:', response.data.data);
+        console.log('[BookingService] PayOS payment created successfully:', response.data.data);
+        console.log('[BookingService] Payment URL received:', response.data.data.paymentUrl);
         return response.data.data;
       }
       
-      throw new Error('Failed to create PayOS payment');
+      console.error('[BookingService] API response missing success or data');
+      throw new Error('Failed to create PayOS payment - invalid response structure');
     } catch (error: any) {
       console.error('[BookingService] Create PayOS payment error:', error);
+      console.error('[BookingService] Error response:', error.response);
+      console.error('[BookingService] Error response data:', error.response?.data);
       throw new Error(error.response?.data?.message || error.message || 'Failed to create PayOS payment');
     }
   }
@@ -407,20 +471,66 @@ export class BookingService {
   }
 
   // Helper: Format booking request for API
-  formatBookingRequest(formData: BookingFormData): BookingRequest {
-    const startAt = new Date(formData.startDate);
-    startAt.setHours(parseInt(formData.startTime.split(':')[0]), parseInt(formData.startTime.split(':')[1]));
+  formatBookingRequest(formData: any): BookingRequest {
+    // Handle different field names from the form
+    const vehicleId = formData.vehicleId || formData.vehicle_id;
+    const stationId = formData.stationId || formData.station_id;
     
-    const endAt = new Date(formData.endDate);
-    endAt.setHours(parseInt(formData.endTime.split(':')[0]), parseInt(formData.endTime.split(':')[1]));
+    // Handle date and time - could be from rental_period array or separate fields
+    let startAt: Date;
+    let endAt: Date;
+    
+    if (formData.rental_period && Array.isArray(formData.rental_period)) {
+      // If using rental_period array from DatePicker.RangePicker
+      const [startDate, endDate] = formData.rental_period;
+      const startTime = formData.rental_start_time;
+      const endTime = formData.rental_end_time;
+      
+      startAt = new Date(startDate.toDate());
+      if (startTime) {
+        startAt.setHours(startTime.hour(), startTime.minute(), 0, 0);
+      }
+      
+      endAt = new Date(endDate.toDate());
+      if (endTime) {
+        endAt.setHours(endTime.hour(), endTime.minute(), 0, 0);
+      }
+    } else {
+      // Fallback to individual fields
+      startAt = new Date(formData.startDate);
+      if (formData.startTime) {
+        if (typeof formData.startTime === 'string') {
+          const [hours, minutes] = formData.startTime.split(':');
+          startAt.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+        } else if (formData.startTime.hour) {
+          // dayjs object
+          startAt.setHours(formData.startTime.hour(), formData.startTime.minute(), 0, 0);
+        }
+      }
+      
+      endAt = new Date(formData.endDate);
+      if (formData.endTime) {
+        if (typeof formData.endTime === 'string') {
+          const [hours, minutes] = formData.endTime.split(':');
+          endAt.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+        } else if (formData.endTime.hour) {
+          // dayjs object
+          endAt.setHours(formData.endTime.hour(), formData.endTime.minute(), 0, 0);
+        }
+      }
+    }
     
     return {
-      vehicleId: formData.vehicleId,
-      stationId: formData.stationId,
+      vehicleId,
+      stationId,
       startAt: startAt.toISOString(),
       endAt: endAt.toISOString(),
-      agreement: formData.agreement.accepted,
-      insuranceOption: formData.insurance.premium
+      agreement: {
+        accepted: formData.agreement?.accepted || formData.terms_agreement || false
+      },
+      insuranceOption: {
+        premium: formData.insurance?.premium || formData.insurance_premium || false
+      }
     };
   }
 
@@ -463,12 +573,13 @@ export class BookingService {
     const end = new Date(request.endAt);
     const hours = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60)));
     
-    const baseHourlyRate = 50; // $50/hour fallback
+    // Use realistic rates instead of hardcoded $50/hour
+    const baseHourlyRate = 19; // $19/hour to match the UI
     const basePrice = hours * baseHourlyRate;
     const insurancePrice = request.insurancePremium ? basePrice * 0.1 : 0;
-    const taxes = (basePrice + insurancePrice) * 0.1;
+    const taxes = (basePrice + insurancePrice) * 0.1; // 10% tax
     const total = basePrice + insurancePrice + taxes;
-    const deposit = total * 0.2;
+    const deposit = Math.round(total * 0.2); // 20% deposit
     
     return {
       basePrice: Number(basePrice.toFixed(2)),
@@ -477,6 +588,8 @@ export class BookingService {
       deposit: Number(deposit.toFixed(2)),
       totalPrice: Number(total.toFixed(2)),
       currency: 'USD',
+      daily_rate: 130, // Match UI display
+      hourly_rate: 19, // Match UI display
       details: {
         rawBase: basePrice,
         peakMultiplier: 1,

@@ -546,10 +546,12 @@ const StationDetails = () => {
                       name: station.name,
                       address: station.address,
                       city: station.city,
-                      coordinates: station.coordinates
+                      coordinates: station.coordinates,
+                      availableVehicles: station.availableVehicles
                     }}
-                    height="250px"
+                    height="280px"
                     showControls={true}
+                    showNearbyStations={true}
                   />
                 </div>
                 {/* Address below map */}

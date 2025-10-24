@@ -40,55 +40,6 @@ export const LeafletMap = ({
   const mapInstanceRef = useRef<L.Map | null>(null);
   const [nearbyStations, setNearbyStations] = useState<Station[]>([]);
 
-  // Helper function to create station icons
-  const createStationIcon = (isMain: boolean, availableVehicles: number) => {
-    const color = isMain ? '#3b82f6' : (availableVehicles > 0 ? '#10b981' : '#ef4444');
-    const size = isMain ? 35 : 25;
-    
-    return L.divIcon({
-      html: `
-        <div style="
-          background-color: ${color}; 
-          width: ${size}px; 
-          height: ${size}px; 
-          border-radius: 50%; 
-          border: 4px solid white; 
-          box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          position: relative;
-          ${isMain ? 'border-width: 5px;' : ''}
-        ">
-          <svg width="${size - 10}" height="${size - 10}" viewBox="0 0 24 24" fill="white">
-            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
-          </svg>
-          ${availableVehicles > 0 ? `
-            <div style="
-              position: absolute;
-              top: -8px;
-              right: -8px;
-              background: #10b981;
-              color: white;
-              border-radius: 50%;
-              width: 18px;
-              height: 18px;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              font-size: 10px;
-              font-weight: bold;
-              border: 2px solid white;
-            ">${availableVehicles}</div>
-          ` : ''}
-        </div>
-      `,
-      iconSize: [size, size],
-      iconAnchor: [size/2, size/2],
-      className: 'custom-station-icon'
-    });
-  };
-
   // Fetch nearby stations with real vehicle counts
   useEffect(() => {
     const fetchNearbyStations = async () => {

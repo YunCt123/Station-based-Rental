@@ -104,7 +104,7 @@ const Stations = () => {
     <PageTransition>
       <div className="min-h-screen bg-background">
         {/* Header */}
-        <FadeIn>
+        {/* <FadeIn> */}
           <div className="bg-gradient-hero py-16">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
               <SlideIn direction="top" delay={100}>
@@ -120,7 +120,7 @@ const Stations = () => {
               </SlideIn>
             </div>
           </div>
-        </FadeIn>
+        {/* </FadeIn> */}
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           {/* Error Display */}
@@ -283,7 +283,7 @@ const Stations = () => {
             ) : null}
           </LoadingWrapper>
 
-          {stations.length > 0 && (
+          {/* {stations.length > 0 && (
             <FadeIn delay={500}>
               <div className="mt-12 text-center">
                 <Card className="inline-block">
@@ -299,7 +299,7 @@ const Stations = () => {
                 </Card>
               </div>
             </FadeIn>
-          )}
+          )} */}
         </div>
       </div>
     </PageTransition>

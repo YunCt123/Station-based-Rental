@@ -4,14 +4,23 @@ export interface UserProfile {
   _id: string;
   name: string;
   email: string;
+  phoneNumber?: string;
   dateOfBirth?: string;
   role: "customer" | "admin" | "staff";
   isVerified: boolean;
   verificationStatus: "PENDING" | "APPROVED" | "REJECTED";
+  
+  // Driver's License Information
+  licenseNumber?: string;
+  licenseExpiry?: string;
+  licenseClass?: string;
+  
+  // Verification images
   idCardFront?: string;
   idCardBack?: string;
   driverLicense?: string;
   selfiePhoto?: string;
+  
   rejectionReason?: string;
   verifiedAt?: string;
   verifiedBy?: string;
@@ -34,7 +43,11 @@ export interface VerificationStatus {
 
 export interface UpdateUserPayload {
   name?: string;
+  phoneNumber?: string;
   dateOfBirth?: string;
+  licenseNumber?: string;
+  licenseExpiry?: string;
+  licenseClass?: string;
 }
 
 export interface UploadVerificationImagesPayload {
@@ -45,11 +58,11 @@ export interface UploadVerificationImagesPayload {
 }
 
 export const userService = {
-  // Get current user profile - use auth service since backend doesn't have /users/me
+  // Get current user profile via auth endpoint since backend doesn't have direct /users/me
   async getCurrentUser(): Promise<UserProfile> {
-    // Since backend doesn't have /users/me endpoint, we'll throw error
-    // and let the hook fallback to authService
-    throw new Error("Use authService getCurrentUser instead");
+    // Try to get current user info from auth endpoints
+    const response = await api.get("/auth/profile"); // or whatever the correct endpoint is
+    return response.data.data;
   },
 
   // Get user by ID (admin only)
@@ -61,6 +74,12 @@ export const userService = {
   // Update user profile (admin only for now)
   async updateUser(userId: string, payload: UpdateUserPayload): Promise<UserProfile> {
     const response = await api.patch(`/users/${userId}`, payload);
+    return response.data.data;
+  },
+
+  // Update current user's own profile
+  async updateSelf(payload: UpdateUserPayload): Promise<UserProfile> {
+    const response = await api.patch("/users/profile", payload);
     return response.data.data;
   },
 

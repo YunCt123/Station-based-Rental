@@ -10,6 +10,13 @@ export interface UserProfileData {
   dateOfBirth: string;
   licenseNumber: string;
   licenseExpiry: string;
+  licenseClass: string;
+  
+  // Verification document URLs
+  driverLicense?: string;
+  idCardFront?: string;
+  idCardBack?: string;
+  selfiePhoto?: string;
 }
 
 export interface UseUserProfileReturn {
@@ -47,11 +54,19 @@ export const useUserProfile = (): UseUserProfileReturn => {
       firstName,
       lastName,
       email: user.email || "",
-      phone: "", // Backend doesn't have phone field yet
+      phone: user.phoneNumber || "", // Use real phoneNumber from backend
       dateOfBirth: user.dateOfBirth ? 
         new Date(user.dateOfBirth).toISOString().split('T')[0] : "",
-      licenseNumber: "", // We'll need to add this to backend
-      licenseExpiry: "", // We'll need to add this to backend
+      licenseNumber: user.licenseNumber || "", // Use real licenseNumber from backend
+      licenseExpiry: user.licenseExpiry ? 
+        new Date(user.licenseExpiry).toISOString().split('T')[0] : "", // Use real licenseExpiry from backend
+      licenseClass: user.licenseClass || "", // Use real licenseClass from backend
+      
+      // Verification document URLs
+      driverLicense: user.driverLicense,
+      idCardFront: user.idCardFront,
+      idCardBack: user.idCardBack,
+      selfiePhoto: user.selfiePhoto,
     };
 
     console.log("📤 [convertUserToProfile] Result:", result);
@@ -144,32 +159,55 @@ export const useUserProfile = (): UseUserProfileReturn => {
     try {
       setError(null);
       
-      // Combine firstName and lastName if they're being updated
+      // Prepare update payload for backend
       const updatePayload: {
         name?: string;
+        phoneNumber?: string;
         dateOfBirth?: string;
+        licenseNumber?: string;
+        licenseExpiry?: string;
+        licenseClass?: string;
       } = {};
       
+      // Combine firstName and lastName if they're being updated
       if (data.firstName !== undefined || data.lastName !== undefined) {
         const firstName = data.firstName ?? profile.firstName;
         const lastName = data.lastName ?? profile.lastName;
         updatePayload.name = `${firstName} ${lastName}`.trim();
       }
       
+      if (data.phone !== undefined) {
+        updatePayload.phoneNumber = data.phone;
+      }
+      
       if (data.dateOfBirth !== undefined) {
         updatePayload.dateOfBirth = data.dateOfBirth;
       }
+      
+      if (data.licenseNumber !== undefined) {
+        updatePayload.licenseNumber = data.licenseNumber;
+      }
+      
+      if (data.licenseExpiry !== undefined) {
+        updatePayload.licenseExpiry = data.licenseExpiry;
+      }
+      
+      if (data.licenseClass !== undefined) {
+        updatePayload.licenseClass = data.licenseClass;
+      }
 
-      // Note: Backend currently requires admin role to update user
-      // For now, we'll just update local state
-      const updatedProfile = { ...profile, ...data };
+      console.log("🔄 [updateProfile] Sending update payload:", updatePayload);
+      
+      // Call backend API
+      const updatedUser = await userService.updateSelf(updatePayload);
+      console.log("✅ [updateProfile] Updated user:", updatedUser);
+      
+      // Convert and update local state
+      const updatedProfile = convertUserToProfile(updatedUser);
       setProfile(updatedProfile);
-
-      // TODO: When backend allows user self-update, uncomment:
-      // await userService.updateUser(userId, updatePayload);
       
     } catch (err) {
-      console.error("Error updating profile:", err);
+      console.error("💥 [updateProfile] Error updating profile:", err);
       setError(err instanceof Error ? err.message : "Failed to update profile");
       throw err;
     }

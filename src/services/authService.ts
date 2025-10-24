@@ -87,11 +87,17 @@ export async function register(payload: {
 export async function getCurrentUser() {
   console.log("🔍 [authService] getCurrentUser called");
   try {
-    const { data } = await api.get("/auth/me");
-    console.log("📡 [authService] API response:", data);
-    const result = normalize(data, { requireTokens: false });
-    console.log("📤 [authService] Normalized result:", result);
-    return result;
+    // Backend doesn't have /auth/me, so we'll need to get user from JWT or use a different approach
+    // For now, let's try to get from localStorage if available
+    const user = localStorage.getItem("user");
+    if (user) {
+      const userData = JSON.parse(user);
+      console.log("� [authService] Using cached user:", userData);
+      return { user: userData, tokens: { accessToken: "", refreshToken: "" } };
+    }
+    
+    // If no cached user, throw error to let hook fallback
+    throw new Error("No current user available");
   } catch (error) {
     console.error("💥 [authService] getCurrentUser error:", error);
     throw error;

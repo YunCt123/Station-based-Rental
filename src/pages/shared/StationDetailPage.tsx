@@ -56,10 +56,40 @@ const StationDetails = () => {
         
         // Fetch station details
         const stationData = await stationService.getStationById(id);
-        setStation(stationData);
-        setSelectedStation(stationData.id);
+        console.log('📊 Raw station data from API:', stationData);
+        console.log('🚗 Initial available vehicles:', stationData.availableVehicles);
+        console.log('🚗 Initial total vehicles:', stationData.totalVehicles);
         
-        console.log('✅ Station data loaded:', stationData);
+        // Fetch real vehicle counts like in Stations.tsx
+        try {
+          console.log('🔍 Fetching real vehicle counts...');
+          
+          // Get total vehicle count for station
+          const allVehiclesData = await stationService.getStationVehicles(id);
+          const realTotalVehicles = allVehiclesData.count;
+          console.log('📊 Real total vehicles from API:', realTotalVehicles);
+          
+          // Get available vehicle count for station
+          const availableVehiclesData = await stationService.getStationVehicles(id, 'AVAILABLE');
+          const realAvailableVehicles = availableVehiclesData.count;
+          console.log('📊 Real available vehicles from API:', realAvailableVehicles);
+          
+          // Update station data with real counts
+          const updatedStationData = {
+            ...stationData,
+            totalVehicles: realTotalVehicles,
+            availableVehicles: realAvailableVehicles
+          };
+          
+          console.log('✅ Updated station data with real counts:', updatedStationData);
+          setStation(updatedStationData);
+          
+        } catch (vehicleError) {
+          console.warn('⚠️ Could not fetch real vehicle counts, using backend data:', vehicleError);
+          setStation(stationData);
+        }
+        
+        setSelectedStation(stationData.id);
         
       } catch (err: unknown) {
         console.error('❌ Error fetching station:', err);
@@ -185,7 +215,7 @@ const StationDetails = () => {
     <PageTransition>
       <div className="min-h-screen bg-background">
         {/* Header */}
-        <FadeIn>
+        {/* <FadeIn>
           <div className="bg-gradient-hero py-16">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
               <div className="flex items-center gap-4 mb-4">
@@ -205,13 +235,33 @@ const StationDetails = () => {
                 <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
                   {station.name}
                 </h1>
-                <p className="text-xl text-white/90 max-w-2xl">
+                <p className="text-xl text-white/90 mb-6 max-w-2xl">
                   {station.address}, {station.city}
                 </p>
               </SlideIn>
+              <SlideIn direction="top" delay={300}>
+                <div className="flex flex-wrap justify-center lg:justify-start gap-4 text-white/80">
+                  <div className="flex items-center gap-2">
+                    <Zap className="h-5 w-5" />
+                    <span>Fast Charging</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <MapPin className="h-5 w-5" />
+                    <span>Premium Location</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-5 w-5" />
+                    <span>24/7 Available</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Car className="h-5 w-5" />
+                    <span>{station.availableVehicles} Vehicles Available</span>
+                  </div>
+                </div>
+              </SlideIn>
             </div>
           </div>
-        </FadeIn>
+        </FadeIn> */}
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -220,9 +270,12 @@ const StationDetails = () => {
             {/* Station Image */}
             <Card>
               <img
-                src={station.image}
+                src={station.image || "https://images.unsplash.com/photo-1571068316344-75bc76f77890?w=800&h=600&fit=crop&crop=center"}
                 alt={station.name}
                 className="w-full h-64 object-cover rounded-t-lg"
+                onError={(e) => {
+                  e.currentTarget.src = "https://images.unsplash.com/photo-1571068316344-75bc76f77890?w=800&h=600&fit=crop&crop=center";
+                }}
               />
             </Card>
 
@@ -237,11 +290,11 @@ const StationDetails = () => {
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="flex items-center gap-2">
-                    <Clock className="h-5 w-5 text-primary" />
+                    <MapPin className="h-5 w-5 text-primary" />
                     <div>
-                      <p className="font-medium">{t("common.hour")}</p>
+                      <p className="font-medium">Address</p>
                       <p className="text-sm text-muted-foreground">
-                        {getOperatingHoursDisplay(station.operatingHours)}
+                        {station.address}, {station.city}
                       </p>
                     </div>
                   </div>
@@ -251,7 +304,7 @@ const StationDetails = () => {
                     <div>
                       <p className="font-medium">{t("common.rating")}</p>
                       <p className="text-sm text-muted-foreground">
-                        {station.rating} {t("common.reviews")}
+                        {station.rating.toFixed(1)} ★ ({station.reviewCount} {t("common.reviews")})
                       </p>
                     </div>
                   </div>
@@ -263,7 +316,7 @@ const StationDetails = () => {
                         {t("common.availableVehicles")}
                       </p>
                       <p className="text-sm text-muted-foreground">
-                        {station.availableVehicles}/{station.totalSlots}
+                        {station.availableVehicles}/{station.totalVehicles} vehicles
                       </p>
                     </div>
                   </div>
@@ -271,18 +324,27 @@ const StationDetails = () => {
                   <div className="flex items-center gap-2">
                     <Zap className="h-5 w-5 text-green-600" />
                     <div>
-                      <p className="font-medium">
-                        {station.fastCharging
-                          ? t("common.hour")
-                          : t("common.day")}
-                      </p>
+                      <p className="font-medium">Charging Type</p>
                       <p className="text-sm text-muted-foreground">
                         {station.fastCharging
-                          ? "Fast Charging"
+                          ? "Fast Charging Available"
                           : "Standard Charging"}
                       </p>
                     </div>
                   </div>
+                </div>
+
+                <Separator />
+
+                {/* Operating Hours */}
+                <div>
+                  <h3 className="font-medium mb-3 flex items-center gap-2">
+                    <Clock className="h-4 w-4" />
+                    Operating Hours
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    {getOperatingHoursDisplay(station.operatingHours)}
+                  </p>
                 </div>
 
                 <Separator />

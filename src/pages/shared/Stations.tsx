@@ -76,6 +76,7 @@ const Stations = () => {
         
         setStations(stationsWithRealCounts);
         
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (error: any) {
         console.error('❌ Error fetching stations:', error);
         setError(`Failed to load stations: ${error.message || 'Unknown error'}`);

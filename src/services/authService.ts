@@ -25,8 +25,11 @@ function normalize(raw: any, opts: { requireTokens?: boolean } = {}): AuthRespon
   const unwrapped = unwrap(raw);
   console.debug("[authService] raw:", raw);
   console.debug("[authService] unwrapped:", unwrapped);
+  console.debug("[authService] unwrapped.data:", unwrapped?.data);
 
-  const user = unwrapped?.user || {};
+  const user = unwrapped?.user || unwrapped?.data || unwrapped || {};
+  console.debug("[authService] extracted user:", user);
+  
   const tokensObj = unwrapped?.tokens || {};
 
   const accessToken =
@@ -47,16 +50,20 @@ function normalize(raw: any, opts: { requireTokens?: boolean } = {}): AuthRespon
     throw new Error("Missing access token in server response");
   }
 
+  const normalizedUser = {
+    id: user.id || user._id || "",
+    name: user.name || "",
+    email: user.email || "",
+    role: user.role || "user",
+    phoneNumber: user.phoneNumber,
+    dateOfBirth: user.dateOfBirth,
+    isVerified: user.isVerified,
+  };
+  
+  console.debug("[authService] normalizedUser:", normalizedUser);
+
   return {
-    user: {
-      id: user.id || user._id || "",
-      name: user.name || "",
-      email: user.email || "",
-      role: user.role || "user",
-      phoneNumber: user.phoneNumber,
-      dateOfBirth: user.dateOfBirth,
-      isVerified: user.isVerified,
-    },
+    user: normalizedUser,
     tokens: { accessToken, refreshToken },
   };
 }
@@ -75,4 +82,18 @@ export async function register(payload: {
 }) {
   const { data } = await api.post("/auth/register", payload);
   return normalize(data, { requireTokens: false });
+}
+
+export async function getCurrentUser() {
+  console.log("🔍 [authService] getCurrentUser called");
+  try {
+    const { data } = await api.get("/auth/me");
+    console.log("📡 [authService] API response:", data);
+    const result = normalize(data, { requireTokens: false });
+    console.log("📤 [authService] Normalized result:", result);
+    return result;
+  } catch (error) {
+    console.error("💥 [authService] getCurrentUser error:", error);
+    throw error;
+  }
 }

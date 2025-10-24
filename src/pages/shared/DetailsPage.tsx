@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import {
-  ChevronLeftIcon,
   ChevronRightIcon,
   CheckIcon,
   MapPinIcon,
@@ -16,7 +15,7 @@ import type { Vehicle } from "@/types/vehicle";
 
 const DetailsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
+  // const navigate = useNavigate();
   const [selectedRental, setSelectedRental] = useState<"hourly" | "daily">(
     "daily"
   );

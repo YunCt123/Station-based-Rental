@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import VehicleCard from "@/components/VehicleCard";
 import { LeafletMap } from "@/components/LeafletMap";
-import { LoadingWrapper, FadeIn, SlideIn, PageTransition } from "@/components/LoadingComponents";
+import { LoadingWrapper, FadeIn, PageTransition } from "@/components/LoadingComponents";
 import { useTranslation } from "@/contexts/TranslationContext";
 import { useToast } from "@/hooks/use-toast";
 import { stationService, type Station } from "@/services/stationService";
@@ -20,7 +20,6 @@ import {
   Wifi,
   Coffee,
   Car,
-  ArrowLeft,
   Navigation,
   CheckCircle,
   AlertCircle,

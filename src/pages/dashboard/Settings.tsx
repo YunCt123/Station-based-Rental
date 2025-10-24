@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,17 +21,94 @@ import {
   FileText,
   Trash2,
   Globe,
+  Loader2,
+  CheckCircle,
+  AlertCircle,
+  Clock,
 } from "lucide-react";
 import { useTranslation } from "@/contexts/TranslationContext";
+import { useUserProfile } from "@/hooks/useUserProfile";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const Settings = () => {
   const { t, language, setLanguage } = useTranslation();
+  const { 
+    profile, 
+    verificationStatus, 
+    isLoading, 
+    error, 
+    updateProfile, 
+    refreshProfile 
+  } = useUserProfile();
+  
+  console.log("🖥️ [Settings] Component state:", {
+    profile,
+    verificationStatus,
+    isLoading,
+    error
+  });
+  
   const [notifications, setNotifications] = useState({
     emailBooking: true,
     emailPromotions: false,
     smsReminders: true,
     pushNotifications: true,
   });
+
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  const handleSaveProfile = async () => {
+    if (!profile) return;
+
+    try {
+      setIsUpdating(true);
+      
+      // Get form values
+      const firstName = (document.getElementById("firstName") as HTMLInputElement)?.value;
+      const lastName = (document.getElementById("lastName") as HTMLInputElement)?.value;
+      const dateOfBirth = (document.getElementById("dateOfBirth") as HTMLInputElement)?.value;
+      
+      await updateProfile({
+        firstName,
+        lastName,
+        dateOfBirth,
+      });
+      
+      // Show success message (you can add toast here)
+      console.log("Profile updated successfully");
+      
+    } catch (err) {
+      console.error("Failed to update profile:", err);
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const getVerificationStatusIcon = () => {
+    if (!verificationStatus) return <Clock className="h-4 w-4 text-gray-500" />;
+    
+    switch (verificationStatus.verificationStatus) {
+      case "APPROVED":
+        return <CheckCircle className="h-4 w-4 text-green-500" />;
+      case "REJECTED":
+        return <AlertCircle className="h-4 w-4 text-red-500" />;
+      default:
+        return <Clock className="h-4 w-4 text-yellow-500" />;
+    }
+  };
+
+  const getVerificationStatusText = () => {
+    if (!verificationStatus) return "Not verified";
+    
+    switch (verificationStatus.verificationStatus) {
+      case "APPROVED":
+        return "Verified";
+      case "REJECTED":
+        return "Verification rejected";
+      default:
+        return "Verification pending";
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -66,92 +143,151 @@ const Settings = () => {
                 <CardTitle className="flex items-center">
                   <User className="h-5 w-5 mr-2" />
                   {t("settings.personalInfo")}
+                  <div className="ml-auto flex items-center space-x-2">
+                    {getVerificationStatusIcon()}
+                    <span className="text-sm font-normal">
+                      {getVerificationStatusText()}
+                    </span>
+                  </div>
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="firstName">{t("settings.firstName")}</Label>
-                    <Input
-                      id="firstName"
-                      defaultValue="John"
-                      className="text-black"
-                    />
+                {error && (
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
+                )}
+
+                {isLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin mr-2" />
+                    <span>Loading profile...</span>
                   </div>
-                  <div>
-                    <Label htmlFor="lastName">{t("settings.lastName")}</Label>
-                    <Input
-                      id="lastName"
-                      defaultValue="Doe"
-                      className="text-black"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="email">{t("settings.email")}</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    defaultValue="john.doe@example.com"
-                    className="text-black"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="phone">{t("settings.phone")}</Label>
-                  <Input
-                    id="phone"
-                    type="tel"
-                    defaultValue="+84 901 234 567"
-                    className="text-black"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="dateOfBirth">
-                    {t("settings.dateOfBirth")}
-                  </Label>
-                  <Input
-                    id="dateOfBirth"
-                    type="date"
-                    defaultValue="1990-01-01"
-                    className="text-black"
-                  />
-                </div>
-
-                <Separator />
-
-                <div>
-                  <h3 className="text-lg font-semibold mb-4">
-                    {t("settings.driversLicense")}
-                  </h3>
-                  <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="licenseNumber">
-                        {t("settings.licenseNumber")}
-                      </Label>
-                      <Input
-                        id="licenseNumber"
-                        defaultValue="B1234567890"
-                        className="text-black"
-                      />
+                ) : profile ? (
+                  <>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="firstName">{t("settings.firstName")}</Label>
+                        <Input
+                          id="firstName"
+                          defaultValue={profile.firstName}
+                          className="text-black"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="lastName">{t("settings.lastName")}</Label>
+                        <Input
+                          id="lastName"
+                          defaultValue={profile.lastName}
+                          className="text-black"
+                        />
+                      </div>
                     </div>
+
                     <div>
-                      <Label htmlFor="licenseExpiry">
-                        {t("settings.expiryDate")}
+                      <Label htmlFor="email">{t("settings.email")}</Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        defaultValue={profile.email}
+                        className="text-black"
+                        disabled
+                      />
+                      <p className="text-sm text-gray-500 mt-1">
+                        Email cannot be changed
+                      </p>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="phone">{t("settings.phone")}</Label>
+                      <Input
+                        id="phone"
+                        type="tel"
+                        defaultValue={profile.phone}
+                        className="text-black"
+                        placeholder="Not provided"
+                      />
+                      <p className="text-sm text-gray-500 mt-1">
+                        Phone number feature coming soon
+                      </p>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="dateOfBirth">
+                        {t("settings.dateOfBirth")}
                       </Label>
                       <Input
-                        id="licenseExpiry"
+                        id="dateOfBirth"
                         type="date"
-                        defaultValue="2028-12-31"
+                        defaultValue={profile.dateOfBirth}
                         className="text-black"
                       />
                     </div>
-                  </div>
-                </div>
 
-                <Button>{t("settings.saveChanges")}</Button>
+                    <Separator />
+
+                    <div>
+                      <h3 className="text-lg font-semibold mb-4">
+                        {t("settings.driversLicense")}
+                      </h3>
+                      <div className="space-y-4">
+                        <div>
+                          <Label htmlFor="licenseNumber">
+                            {t("settings.licenseNumber")}
+                          </Label>
+                          <Input
+                            id="licenseNumber"
+                            defaultValue={profile.licenseNumber}
+                            className="text-black"
+                            placeholder="Not provided"
+                          />
+                          <p className="text-sm text-gray-500 mt-1">
+                            License management feature coming soon
+                          </p>
+                        </div>
+                        <div>
+                          <Label htmlFor="licenseExpiry">
+                            {t("settings.expiryDate")}
+                          </Label>
+                          <Input
+                            id="licenseExpiry"
+                            type="date"
+                            defaultValue={profile.licenseExpiry}
+                            className="text-black"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {verificationStatus?.rejectionReason && (
+                      <Alert variant="destructive">
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertDescription>
+                          <strong>Verification rejected:</strong> {verificationStatus.rejectionReason}
+                        </AlertDescription>
+                      </Alert>
+                    )}
+
+                    <Button onClick={handleSaveProfile} disabled={isUpdating}>
+                      {isUpdating ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                          Saving...
+                        </>
+                      ) : (
+                        t("settings.saveChanges")
+                      )}
+                    </Button>
+                  </>
+                ) : (
+                  <Alert>
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>
+                      Failed to load profile data. Please try refreshing the page.
+                    </AlertDescription>
+                  </Alert>
+                )}
               </CardContent>
             </Card>
           </TabsContent>

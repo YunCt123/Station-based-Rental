@@ -58,10 +58,9 @@ export interface UploadVerificationImagesPayload {
 }
 
 export const userService = {
-  // Get current user profile via auth endpoint since backend doesn't have direct /users/me
+  // Get current user profile using /users/me endpoint
   async getCurrentUser(): Promise<UserProfile> {
-    // Try to get current user info from auth endpoints
-    const response = await api.get("/auth/profile"); // or whatever the correct endpoint is
+    const response = await api.get("/users/me");
     return response.data.data;
   },
 

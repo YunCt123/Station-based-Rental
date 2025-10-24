@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
 import { userService, type UserProfile, type VerificationStatus } from "@/services/userService";
-import { getCurrentUser } from "@/services/authService";
 
 export interface UserProfileData {
   firstName: string;
@@ -92,7 +91,7 @@ export const useUserProfile = (): UseUserProfileReturn => {
       setIsLoading(true);
       setError(null);
 
-      // Try userService first, fallback to authService
+      // Load user profile from userService
       let userData: UserProfile | null = null;
       try {
         console.log("🔍 [useUserProfile] Trying userService.getCurrentUser()...");
@@ -100,28 +99,7 @@ export const useUserProfile = (): UseUserProfileReturn => {
         console.log("✅ [useUserProfile] userService success:", userData);
       } catch (userServiceError) {
         console.log("❌ [useUserProfile] userService failed:", userServiceError);
-        console.log("🔍 [useUserProfile] Falling back to authService...");
-        
-        // Fallback to auth service if userService fails
-        const authData = await getCurrentUser();
-        console.log("📋 [useUserProfile] authData:", authData);
-        
-        // Convert AuthUser to UserProfile format
-        const authUser = authData.user;
-        console.log("👤 [useUserProfile] authUser:", authUser);
-        
-        userData = {
-          _id: authUser.id,
-          name: authUser.name,
-          email: authUser.email,
-          role: authUser.role as "customer" | "admin" | "staff",
-          isVerified: authUser.isVerified || false,
-          verificationStatus: "PENDING",
-          dateOfBirth: authUser.dateOfBirth,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        };
-        console.log("🔄 [useUserProfile] Converted userData:", userData);
+        throw userServiceError; // Re-throw error instead of fallback
       }
 
       if (userData) {

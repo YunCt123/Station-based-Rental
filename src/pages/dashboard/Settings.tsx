@@ -39,17 +39,17 @@ import { userService } from "@/services/userService";
 
 const Settings = () => {
   const { t, language, setLanguage } = useTranslation();
-  const { 
-    profile, 
-    verificationStatus, 
-    isLoading, 
-    error, 
-    updateProfile, 
-    refreshProfile 
+  const {
+    profile,
+    verificationStatus,
+    isLoading,
+    error,
+    updateProfile,
+    refreshProfile,
   } = useUserProfile();
-  
+
   const { toast } = useToast();
-  
+
   const [notifications, setNotifications] = useState({
     emailBooking: true,
     emailPromotions: false,
@@ -58,7 +58,9 @@ const Settings = () => {
   });
 
   const [isUpdating, setIsUpdating] = useState(false);
-  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [validationErrors, setValidationErrors] = useState<
+    Record<string, string>
+  >({});
   const [isUploadingDoc, setIsUploadingDoc] = useState(false);
 
   const validateForm = (data: {
@@ -70,19 +72,23 @@ const Settings = () => {
     licenseClass?: string;
   }) => {
     const errors: Record<string, string> = {};
-    
-    if (!data.name || data.name.trim() === '') {
-      errors.name = 'Name is required';
+
+    if (!data.name || data.name.trim() === "") {
+      errors.name = "Name is required";
     }
-    
-    if (data.phone && data.phone.trim() !== '' && !/^[\d\s+\-()]+$/.test(data.phone)) {
-      errors.phone = 'Invalid phone number format';
+
+    if (
+      data.phone &&
+      data.phone.trim() !== "" &&
+      !/^[\d\s+\-()]+$/.test(data.phone)
+    ) {
+      errors.phone = "Invalid phone number format";
     }
-    
+
     if (data.dateOfBirth && new Date(data.dateOfBirth) > new Date()) {
-      errors.dateOfBirth = 'Date of birth cannot be in the future';
+      errors.dateOfBirth = "Date of birth cannot be in the future";
     }
-    
+
     return errors;
   };
 
@@ -92,19 +98,35 @@ const Settings = () => {
     try {
       setIsUpdating(true);
       setValidationErrors({});
-      
+
       // Get form values
       const name = (document.getElementById("name") as HTMLInputElement)?.value;
-      const phone = (document.getElementById("phone") as HTMLInputElement)?.value;
-      const dateOfBirth = (document.getElementById("dateOfBirth") as HTMLInputElement)?.value;
-      const licenseNumber = (document.getElementById("licenseNumber") as HTMLInputElement)?.value;
-      const licenseExpiry = (document.getElementById("licenseExpiry") as HTMLInputElement)?.value;
-      const licenseClass = (document.getElementById("licenseClass") as HTMLInputElement)?.value;
-      
+      const phone = (document.getElementById("phone") as HTMLInputElement)
+        ?.value;
+      const dateOfBirth = (
+        document.getElementById("dateOfBirth") as HTMLInputElement
+      )?.value;
+      const licenseNumber = (
+        document.getElementById("licenseNumber") as HTMLInputElement
+      )?.value;
+      const licenseExpiry = (
+        document.getElementById("licenseExpiry") as HTMLInputElement
+      )?.value;
+      const licenseClass = (
+        document.getElementById("licenseClass") as HTMLInputElement
+      )?.value;
+
       // Validate form
-      const formData = { name, phone, dateOfBirth, licenseNumber, licenseExpiry, licenseClass };
+      const formData = {
+        name,
+        phone,
+        dateOfBirth,
+        licenseNumber,
+        licenseExpiry,
+        licenseClass,
+      };
       const errors = validateForm(formData);
-      
+
       if (Object.keys(errors).length > 0) {
         setValidationErrors(errors);
         toast({
@@ -114,12 +136,12 @@ const Settings = () => {
         });
         return;
       }
-      
+
       // Update profile - split name into firstName and lastName for backend
-      const nameParts = name.trim().split(' ');
-      const firstName = nameParts[0] || '';
-      const lastName = nameParts.slice(1).join(' ') || '';
-      
+      const nameParts = name.trim().split(" ");
+      const firstName = nameParts[0] || "";
+      const lastName = nameParts.slice(1).join(" ") || "";
+
       await updateProfile({
         firstName,
         lastName,
@@ -129,12 +151,11 @@ const Settings = () => {
         licenseExpiry,
         licenseClass,
       });
-      
+
       toast({
         title: "Success",
         description: "Profile updated successfully!",
       });
-      
     } catch (err) {
       console.error("💥 Failed to update profile:", err);
       toast({
@@ -147,28 +168,30 @@ const Settings = () => {
     }
   };
 
-  const handleDocumentUpload = async (file: File, documentType: 'driverLicense' | 'idCardFront' | 'idCardBack' | 'selfiePhoto') => {
+  const handleDocumentUpload = async (
+    file: File,
+    documentType: "driverLicense" | "idCardFront" | "idCardBack" | "selfiePhoto"
+  ) => {
     try {
       setIsUploadingDoc(true);
-      
+
       // TODO: Upload file to server and get URL
       // For now, simulate upload
       const mockUrl = URL.createObjectURL(file);
-      
+
       // Update verification images
       const uploadData = { [documentType]: mockUrl };
       await userService.uploadVerificationImages(uploadData);
-      
+
       // Refresh verification status
       await refreshProfile();
-      
+
       toast({
         title: "Success",
         description: `${documentType} uploaded successfully!`,
       });
-      
     } catch (error) {
-      console.error('Document upload error:', error);
+      console.error("Document upload error:", error);
       toast({
         title: "Error",
         description: "Failed to upload document. Please try again.",
@@ -181,7 +204,7 @@ const Settings = () => {
 
   const getVerificationStatusIcon = () => {
     if (!verificationStatus) return <Clock className="h-4 w-4 text-gray-500" />;
-    
+
     switch (verificationStatus.verificationStatus) {
       case "APPROVED":
         return <CheckCircle className="h-4 w-4 text-green-500" />;
@@ -194,7 +217,7 @@ const Settings = () => {
 
   const getVerificationStatusText = () => {
     if (!verificationStatus) return "Not verified";
-    
+
     switch (verificationStatus.verificationStatus) {
       case "APPROVED":
         return "Verified";
@@ -267,10 +290,14 @@ const Settings = () => {
                         <Input
                           id="name"
                           defaultValue={`${profile.firstName} ${profile.lastName}`.trim()}
-                          className={`text-black ${validationErrors.name ? 'border-red-500' : ''}`}
+                          className={`text-black ${
+                            validationErrors.name ? "border-red-500" : ""
+                          }`}
                         />
                         {validationErrors.name && (
-                          <p className="text-sm text-red-500 mt-1">{validationErrors.name}</p>
+                          <p className="text-sm text-red-500 mt-1">
+                            {validationErrors.name}
+                          </p>
                         )}
                       </div>
                     </div>
@@ -295,11 +322,15 @@ const Settings = () => {
                         id="phone"
                         type="tel"
                         defaultValue={profile.phone}
-                        className={`text-black ${validationErrors.phone ? 'border-red-500' : ''}`}
+                        className={`text-black ${
+                          validationErrors.phone ? "border-red-500" : ""
+                        }`}
                         placeholder="Enter phone number"
                       />
                       {validationErrors.phone && (
-                        <p className="text-sm text-red-500 mt-1">{validationErrors.phone}</p>
+                        <p className="text-sm text-red-500 mt-1">
+                          {validationErrors.phone}
+                        </p>
                       )}
                     </div>
 
@@ -311,65 +342,29 @@ const Settings = () => {
                         id="dateOfBirth"
                         type="date"
                         defaultValue={profile.dateOfBirth}
-                        className={`text-black ${validationErrors.dateOfBirth ? 'border-red-500' : ''}`}
+                        className={`text-black ${
+                          validationErrors.dateOfBirth ? "border-red-500" : ""
+                        }`}
                       />
                       {validationErrors.dateOfBirth && (
-                        <p className="text-sm text-red-500 mt-1">{validationErrors.dateOfBirth}</p>
+                        <p className="text-sm text-red-500 mt-1">
+                          {validationErrors.dateOfBirth}
+                        </p>
                       )}
                     </div>
 
                     <Separator />
 
                     <div>
-                      <h3 className="text-lg font-semibold mb-4">
-                        {t("settings.driversLicense")}
-                      </h3>
-                      
-                      {/* License Information Fields */}
-                      <div className="space-y-4 mb-6">
-                        <div>
-                          <Label htmlFor="licenseNumber">
-                            {t("settings.licenseNumber")}
-                          </Label>
-                          <Input
-                            id="licenseNumber"
-                            defaultValue={profile.licenseNumber}
-                            className="text-black"
-                            placeholder="Enter license number"
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="licenseExpiry">
-                            {t("settings.expiryDate")}
-                          </Label>
-                          <Input
-                            id="licenseExpiry"
-                            type="date"
-                            defaultValue={profile.licenseExpiry}
-                            className="text-black"
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="licenseClass">
-                            License Class
-                          </Label>
-                          <Input
-                            id="licenseClass"
-                            defaultValue={profile.licenseClass}
-                            className="text-black"
-                            placeholder="B1, B2, C, etc."
-                          />
-                        </div>
-                      </div>
-
                       {/* Document Upload/View Section */}
                       <div className="space-y-4">
                         <h4 className="font-medium">Verification Documents</h4>
-                        
-                        {verificationStatus?.verificationStatus === "APPROVED" ? (
+
+                        {verificationStatus?.verificationStatus ===
+                        "APPROVED" ? (
                           // Show verified documents (read-only view)
                           <div className="space-y-4">
-                            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                            {/* <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                               <div className="flex items-center mb-3">
                                 <CheckCircle className="h-5 w-5 text-green-600 mr-2" />
                                 <span className="text-green-800 font-medium">
@@ -377,10 +372,11 @@ const Settings = () => {
                                 </span>
                               </div>
                               <p className="text-sm text-green-700">
-                                All your verification documents have been approved. 
-                                You can now make bookings without restrictions.
+                                All your verification documents have been
+                                approved. You can now make bookings without
+                                restrictions.
                               </p>
-                            </div>
+                            </div> */}
 
                             {/* Display verified documents */}
                             {profile.driverLicense && (
@@ -392,8 +388,8 @@ const Settings = () => {
                                   </CardTitle>
                                 </CardHeader>
                                 <CardContent>
-                                  <img 
-                                    src={profile.driverLicense} 
+                                  <img
+                                    src={profile.driverLicense}
                                     alt="Driver's License"
                                     className="w-full max-w-md h-48 object-cover border rounded-lg"
                                   />
@@ -410,8 +406,8 @@ const Settings = () => {
                                   </CardTitle>
                                 </CardHeader>
                                 <CardContent>
-                                  <img 
-                                    src={profile.idCardFront} 
+                                  <img
+                                    src={profile.idCardFront}
                                     alt="National ID Front"
                                     className="w-full max-w-md h-48 object-cover border rounded-lg"
                                   />
@@ -428,8 +424,8 @@ const Settings = () => {
                                   </CardTitle>
                                 </CardHeader>
                                 <CardContent>
-                                  <img 
-                                    src={profile.idCardBack} 
+                                  <img
+                                    src={profile.idCardBack}
                                     alt="National ID Back"
                                     className="w-full max-w-md h-48 object-cover border rounded-lg"
                                   />
@@ -446,8 +442,8 @@ const Settings = () => {
                                   </CardTitle>
                                 </CardHeader>
                                 <CardContent>
-                                  <img 
-                                    src={profile.selfiePhoto} 
+                                  <img
+                                    src={profile.selfiePhoto}
                                     alt="Selfie Photo"
                                     className="w-full max-w-md h-48 object-cover border rounded-lg"
                                   />
@@ -458,7 +454,8 @@ const Settings = () => {
                         ) : (
                           // Show upload forms (for pending/rejected/not started)
                           <div className="space-y-4">
-                            {verificationStatus?.verificationStatus === "REJECTED" && (
+                            {verificationStatus?.verificationStatus ===
+                              "REJECTED" && (
                               <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
                                 <div className="flex items-center mb-2">
                                   <AlertCircle className="h-5 w-5 text-red-600 mr-2" />
@@ -467,15 +464,18 @@ const Settings = () => {
                                   </span>
                                 </div>
                                 <p className="text-sm text-red-700 mb-2">
-                                  {verificationStatus.rejectionReason || "Your documents were rejected. Please upload new documents."}
+                                  {verificationStatus.rejectionReason ||
+                                    "Your documents were rejected. Please upload new documents."}
                                 </p>
                                 <p className="text-sm text-red-600">
-                                  Please upload new documents to complete verification.
+                                  Please upload new documents to complete
+                                  verification.
                                 </p>
                               </div>
                             )}
 
-                            {verificationStatus?.verificationStatus === "PENDING" && (
+                            {verificationStatus?.verificationStatus ===
+                              "PENDING" && (
                               <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
                                 <div className="flex items-center mb-2">
                                   <Clock className="h-5 w-5 text-yellow-600 mr-2" />
@@ -484,7 +484,8 @@ const Settings = () => {
                                   </span>
                                 </div>
                                 <p className="text-sm text-yellow-700">
-                                  Your documents are being reviewed. You can still upload additional documents if needed.
+                                  Your documents are being reviewed. You can
+                                  still upload additional documents if needed.
                                 </p>
                               </div>
                             )}
@@ -492,37 +493,57 @@ const Settings = () => {
                             <DocumentUpload
                               title="Driver's License"
                               description="Please upload your driver's license"
-                              onUpload={(file) => handleDocumentUpload(file, 'driverLicense')}
+                              onUpload={(file) =>
+                                handleDocumentUpload(file, "driverLicense")
+                              }
                               isUploading={isUploadingDoc}
-                              existingImageUrl={verificationStatus?.hasImages?.driverLicense ? 
-                                profile.driverLicense : undefined}
+                              existingImageUrl={
+                                verificationStatus?.hasImages?.driverLicense
+                                  ? profile.driverLicense
+                                  : undefined
+                              }
                             />
 
                             <DocumentUpload
                               title="National ID - Front"
                               description="Please upload the front side of your national ID card"
-                              onUpload={(file) => handleDocumentUpload(file, 'idCardFront')}
+                              onUpload={(file) =>
+                                handleDocumentUpload(file, "idCardFront")
+                              }
                               isUploading={isUploadingDoc}
-                              existingImageUrl={verificationStatus?.hasImages?.idCardFront ? 
-                                profile.idCardFront : undefined}
+                              existingImageUrl={
+                                verificationStatus?.hasImages?.idCardFront
+                                  ? profile.idCardFront
+                                  : undefined
+                              }
                             />
 
                             <DocumentUpload
                               title="National ID - Back"
                               description="Please upload the back side of your national ID card"
-                              onUpload={(file) => handleDocumentUpload(file, 'idCardBack')}
+                              onUpload={(file) =>
+                                handleDocumentUpload(file, "idCardBack")
+                              }
                               isUploading={isUploadingDoc}
-                              existingImageUrl={verificationStatus?.hasImages?.idCardBack ? 
-                                profile.idCardBack : undefined}
+                              existingImageUrl={
+                                verificationStatus?.hasImages?.idCardBack
+                                  ? profile.idCardBack
+                                  : undefined
+                              }
                             />
 
                             <DocumentUpload
                               title="Selfie Photo"
                               description="Please upload a clear selfie photo"
-                              onUpload={(file) => handleDocumentUpload(file, 'selfiePhoto')}
+                              onUpload={(file) =>
+                                handleDocumentUpload(file, "selfiePhoto")
+                              }
                               isUploading={isUploadingDoc}
-                              existingImageUrl={verificationStatus?.hasImages?.selfiePhoto ? 
-                                profile.selfiePhoto : undefined}
+                              existingImageUrl={
+                                verificationStatus?.hasImages?.selfiePhoto
+                                  ? profile.selfiePhoto
+                                  : undefined
+                              }
                             />
                           </div>
                         )}
@@ -544,7 +565,8 @@ const Settings = () => {
                   <Alert>
                     <AlertCircle className="h-4 w-4" />
                     <AlertDescription>
-                      Failed to load profile data. Please try refreshing the page.
+                      Failed to load profile data. Please try refreshing the
+                      page.
                     </AlertDescription>
                   </Alert>
                 )}

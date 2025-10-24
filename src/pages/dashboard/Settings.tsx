@@ -23,6 +23,7 @@ import {
   Globe,
 } from "lucide-react";
 import { useTranslation } from "@/contexts/TranslationContext";
+import DriverLicense from "@/components/documents/DriverLicense";
 
 const Settings = () => {
   const { t, language, setLanguage } = useTranslation();
@@ -38,10 +39,10 @@ const Settings = () => {
       {/* Header */}
       <div className="bg-gradient-hero py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
+          <h1 className="text-4xl md:text-5xl font-bold text-black mb-4">
             {t("settings.title")}
           </h1>
-          <p className="text-xl text-white/90 mb-8 max-w-2xl mx-auto">
+          <p className="text-xl text-black/90 mb-8 max-w-2xl mx-auto">
             {t("settings.subtitle")}
           </p>
         </div>
@@ -49,8 +50,9 @@ const Settings = () => {
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <Tabs defaultValue="profile" className="space-y-8">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="profile">{t("settings.profile")}</TabsTrigger>
+            <TabsTrigger value="documents">Documents</TabsTrigger>
             <TabsTrigger value="security">{t("settings.security")}</TabsTrigger>
             <TabsTrigger value="notifications">
               {t("settings.notifications")}
@@ -121,39 +123,14 @@ const Settings = () => {
                 </div>
 
                 <Separator />
-
-                <div>
-                  <h3 className="text-lg font-semibold mb-4">
-                    {t("settings.driversLicense")}
-                  </h3>
-                  <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="licenseNumber">
-                        {t("settings.licenseNumber")}
-                      </Label>
-                      <Input
-                        id="licenseNumber"
-                        defaultValue="B1234567890"
-                        className="text-black"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="licenseExpiry">
-                        {t("settings.expiryDate")}
-                      </Label>
-                      <Input
-                        id="licenseExpiry"
-                        type="date"
-                        defaultValue="2028-12-31"
-                        className="text-black"
-                      />
-                    </div>
-                  </div>
-                </div>
-
                 <Button>{t("settings.saveChanges")}</Button>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Documents Tab */}
+          <TabsContent value="documents">
+            <DriverLicense />
           </TabsContent>
 
           {/* Security Tab */}

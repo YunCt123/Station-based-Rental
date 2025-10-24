@@ -40,8 +40,7 @@ import {
 
 // Keep these as regular imports as they might not exist as separate files yet
 import NotFoundPage from "./pages/shared/NotFoundPage";
-import OnlineVerification from "./pages/dashboard/staff/customer_verification/OnlineVerification";
-import OfflineVerification from "./pages/dashboard/staff/customer_verification/OfflineVerification";
+import Verification from "./pages/dashboard/staff/customer_verification/Verification";
 import CustomerManagement from "./pages/dashboard/admin/CustomerManagement/CustomerManagement";
 import RentalHistory from "./pages/dashboard/admin/RentalHistory/RentalHistory";
 import EmployeeManagement from "./pages/dashboard/admin/EmployeeManagement/EmployeeList/EmployeeManagement";
@@ -347,19 +346,10 @@ function App() {
 
             {/* Staff Verification Routes */}
             <Route
-              path="/staff/verification/online"
+              path="/staff/customer-verification"
               element={
                 <DashboardLayout>
-                  <OnlineVerification />
-                </DashboardLayout>
-              }
-            />
-
-            <Route
-              path="/staff/verification/offline"
-              element={
-                <DashboardLayout>
-                  <OfflineVerification />
+                  <Verification />
                 </DashboardLayout>
               }
             />

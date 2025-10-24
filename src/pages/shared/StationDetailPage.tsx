@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import VehicleCard from "@/components/VehicleCard";
-import { GoogleMaps } from "@/components/GoogleMaps";
+import { LeafletMap } from "@/components/LeafletMap";
 import { LoadingWrapper, FadeIn, SlideIn, PageTransition } from "@/components/LoadingComponents";
 import { useTranslation } from "@/contexts/TranslationContext";
 import { useToast } from "@/hooks/use-toast";
@@ -31,7 +31,6 @@ const StationDetails = () => {
   const { id } = useParams<{ id: string }>();
   const { t } = useTranslation();
   const { toast } = useToast();
-  const [selectedStation, setSelectedStation] = useState<string>("");
   
   // State for API data
   const [station, setStation] = useState<Station | null>(null);
@@ -88,8 +87,6 @@ const StationDetails = () => {
           console.warn('⚠️ Could not fetch real vehicle counts, using backend data:', vehicleError);
           setStation(stationData);
         }
-        
-        setSelectedStation(stationData.id);
         
       } catch (err: unknown) {
         console.error('❌ Error fetching station:', err);
@@ -298,7 +295,7 @@ const StationDetails = () => {
                       </p>
                     </div>
                   </div>
-
+{/* 
                   <div className="flex items-center gap-2">
                     <Star className="h-5 w-5 text-yellow-500" />
                     <div>
@@ -307,7 +304,7 @@ const StationDetails = () => {
                         {station.rating.toFixed(1)} ★ ({station.reviewCount} {t("common.reviews")})
                       </p>
                     </div>
-                  </div>
+                  </div> */}
 
                   <div className="flex items-center gap-2">
                     <Car className="h-5 w-5 text-primary" />
@@ -321,7 +318,7 @@ const StationDetails = () => {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  {/* <div className="flex items-center gap-2">
                     <Zap className="h-5 w-5 text-green-600" />
                     <div>
                       <p className="font-medium">Charging Type</p>
@@ -331,7 +328,7 @@ const StationDetails = () => {
                           : "Standard Charging"}
                       </p>
                     </div>
-                  </div>
+                  </div> */}
                 </div>
 
                 <Separator />
@@ -419,64 +416,116 @@ const StationDetails = () => {
 
           {/* Sidebar */}
           <div className="space-y-6">
+            {/* Station Overview */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Car className="h-5 w-5" />
+                  Station Overview
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Availability Status */}
+                <div className="bg-gradient-to-r from-green-50 to-blue-50 p-4 rounded-lg border">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-gray-700">Available Now</span>
+                    <Badge variant="default" className="bg-green-600">
+                      {station.availableVehicles} Vehicles
+                    </Badge>
+                  </div>
+                  <div className="text-xs text-gray-600">
+                    {station.totalVehicles} total vehicles at this station
+                  </div>
+                </div>
+
+                {/* Operating Status */}
+                <div className="flex items-center justify-between py-2">
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-gray-500" />
+                    <span className="text-sm">Operating Hours</span>
+                  </div>
+                  <Badge
+                    variant={
+                      getOperatingHoursDisplay(station.operatingHours).includes("24/7")
+                        ? "default"
+                        : "secondary"
+                    }
+                    className="text-xs"
+                  >
+                    {getOperatingHoursDisplay(station.operatingHours).includes("24/7") 
+                      ? "24/7" 
+                      : "Limited Hours"}
+                  </Badge>
+                </div>
+
+                {/* Charging Type */}
+                <div className="flex items-center justify-between py-2">
+                  <div className="flex items-center gap-2">
+                    <Zap className="h-4 w-4 text-yellow-500" />
+                    <span className="text-sm">Charging</span>
+                  </div>
+                  <Badge variant={station.fastCharging ? "default" : "secondary"} className="text-xs">
+                    {station.fastCharging ? "Fast Charging" : "Standard"}
+                  </Badge>
+                </div>
+
+                {/* Rating */}
+                {station.rating > 0 && (
+                  <div className="flex items-center justify-between py-2">
+                    <div className="flex items-center gap-2">
+                      <Star className="h-4 w-4 text-yellow-500" />
+                      <span className="text-sm">Rating</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span className="text-sm font-medium">{station.rating.toFixed(1)}</span>
+                      <span className="text-yellow-500">★</span>
+                      <span className="text-xs text-gray-500">({station.reviewCount})</span>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
             {/* Quick Actions */}
             <Card>
               <CardHeader>
                 <CardTitle>{t("dashboard.quickActions")}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <Button className="w-full" asChild>
-                  <Link to={`/book?station=${station.id}`}>
+                {/* Primary Action - Book Now */}
+                {station.availableVehicles > 0 ? (
+                  <Button className="w-full" size="lg" asChild>
+                    <Link to={`/book?station=${station.id}`}>
+                      <Car className="h-4 w-4 mr-2" />
+                      Book Vehicle Now
+                    </Link>
+                  </Button>
+                ) : (
+                  <Button className="w-full" size="lg" disabled>
                     <Car className="h-4 w-4 mr-2" />
-                    {t("common.bookNow")}
-                  </Link>
-                </Button>
+                    No Vehicles Available
+                  </Button>
+                )}
 
-                <Button variant="outline" className="w-full">
-                  <Navigation className="h-4 w-4 mr-2" />
-                  {t("common.directions")}
-                </Button>
-
-                <Button variant="outline" className="w-full" asChild>
-                  <Link to="/contact">
-                    <Phone className="h-4 w-4 mr-2" />
-                    {t("nav.contact")}
-                  </Link>
-                </Button>
-              </CardContent>
-            </Card>
-
-            {/* Station Status */}
-            <Card>
-              <CardHeader>
-                <CardTitle>{t("common.availability")}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">
-                      {t("common.availableVehicles")}
-                    </span>
-                    <Badge variant="default">{station.availableVehicles}</Badge>
-                  </div>
-
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">{t("common.hour")}</span>
-                    <Badge
-                      variant={
-                        getOperatingHoursDisplay(station.operatingHours).includes("24/7")
-                          ? "default"
-                          : "secondary"
-                      }
-                    >
-                      {getOperatingHoursDisplay(station.operatingHours)}
-                    </Badge>
-                  </div>
-
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">{t("common.status")}</span>
-                    <Badge variant="default">{t("common.active")}</Badge>
-                  </div>
+                {/* Secondary Actions */}
+                <div className="grid grid-cols-2 gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => {
+                      const directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${station.coordinates.lat},${station.coordinates.lng}`;
+                      window.open(directionsUrl, '_blank');
+                    }}
+                  >
+                    <Navigation className="h-4 w-4 mr-1" />
+                    Directions
+                  </Button>
+                  <Button variant="outline" size="sm" asChild>
+                    <Link to="/contact">
+                      <Phone className="h-4 w-4 mr-1" />
+                      Contact
+                    </Link>
+                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -484,26 +533,31 @@ const StationDetails = () => {
             {/* Map Preview */}
             <Card>
               <CardHeader>
-                <CardTitle>{t("common.location")}</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  <MapPin className="h-5 w-5" />
+                  Location
+                </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="h-64 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden">
-                  <div className="w-full h-full relative">
-                    {station ? (
-                      <GoogleMaps
-                        selectedStation={selectedStation}
-                        onStationSelect={setSelectedStation}
-                        height="100%"
-                        showControls={false}
-                        showLegend={false}
-                        showInfo={false}
-                      />
-                    ) : (
-                      <div className="flex items-center justify-center h-full">
-                        <p className="text-muted-foreground">Map loading...</p>
-                      </div>
-                    )}
-                  </div>
+                <div className="overflow-hidden">
+                  <LeafletMap
+                    station={{
+                      id: station.id,
+                      name: station.name,
+                      address: station.address,
+                      city: station.city,
+                      coordinates: station.coordinates
+                    }}
+                    height="250px"
+                    showControls={true}
+                  />
+                </div>
+                {/* Address below map */}
+                <div className="mt-3 p-3 bg-gray-50 rounded-lg">
+                  <p className="text-sm font-medium text-gray-900">{station.name}</p>
+                  <p className="text-xs text-gray-600 mt-1">
+                    {station.address}, {station.city}
+                  </p>
                 </div>
               </CardContent>
             </Card>

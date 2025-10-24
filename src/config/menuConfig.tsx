@@ -5,7 +5,6 @@ import {
   CreditCardIcon,
   DocumentTextIcon,
   ChartBarIcon,
-  
   ExclamationTriangleIcon,
   ClipboardDocumentListIcon,
   WrenchScrewdriverIcon,
@@ -74,22 +73,6 @@ export const getMenuSections = (): SidebarSection[] => [
         icon: <UserIcon className="w-5 h-5" />,
         path: '/staff/customer-verification',
         roles: [UserRole.STATION_STAFF],
-        children: [
-          {
-            id: 'online-verification',
-            title: 'Xác thực tài khoản online',
-            icon: <UserIcon className="w-4 h-4" />,
-            path: '/staff/verification/online',
-            roles: [UserRole.STATION_STAFF]
-          },
-          {
-            id: 'offline-verification',
-            title: 'Xác thực trực tiếp',
-            icon: <DocumentTextIcon className="w-4 h-4" />,
-            path: '/staff/verification/offline',
-            roles: [UserRole.STATION_STAFF]
-          },
-        ]
       }
     ]
   },

@@ -106,7 +106,7 @@ const Stations = () => {
       <div className="min-h-screen bg-background">
         {/* Header */}
         {/* <FadeIn> */}
-          <div className="bg-gradient-hero py-16">
+          {/* <div className="bg-gradient-hero py-16">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
               <SlideIn direction="top" delay={100}>
                 <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
@@ -120,7 +120,7 @@ const Stations = () => {
                 </p>
               </SlideIn>
             </div>
-          </div>
+          </div> */}
         {/* </FadeIn> */}
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">

@@ -224,7 +224,7 @@ const Settings = () => {
       case "REJECTED":
         return "Verification rejected";
       default:
-        return "Verification pending";
+        return "Not Verified";
     }
   };
 
@@ -476,16 +476,17 @@ const Settings = () => {
 
                             {verificationStatus?.verificationStatus ===
                               "PENDING" && (
+                                
                               <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                                
                                 <div className="flex items-center mb-2">
                                   <Clock className="h-5 w-5 text-yellow-600 mr-2" />
                                   <span className="text-yellow-800 font-medium">
-                                    Verification Pending
+                                    Not Verified
                                   </span>
                                 </div>
                                 <p className="text-sm text-yellow-700">
-                                  Your documents are being reviewed. You can
-                                  still upload additional documents if needed.
+                                  You need to upload verification documents to use serverices.
                                 </p>
                               </div>
                             )}

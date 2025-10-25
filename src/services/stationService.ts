@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import api from "./api";
-import type { Vehicle } from "@/types/vehicle";
+import type { Vehicle, BackendVehicle } from "@/types/vehicle";
 
 // Types for API responses
 export interface ApiResponse<T> {
@@ -153,6 +153,58 @@ function mapBackendStatusToFrontend(backendStatus: string): "active" | "inactive
       return 'maintenance';
     default:
       return 'active';
+  }
+}
+
+// Mapping function to convert backend vehicle data to frontend format
+function mapBackendVehicleToFrontend(backendVehicle: BackendVehicle): Vehicle {
+  console.log('🔄 Mapping backend vehicle:', backendVehicle);
+  
+  const mapped: Vehicle = {
+    id: backendVehicle._id || backendVehicle.id || "",
+    name: backendVehicle.name || "",
+    year: backendVehicle.year || new Date().getFullYear(),
+    brand: backendVehicle.brand || "Unknown",
+    model: backendVehicle.model || "",
+    type: (backendVehicle.type as Vehicle['type']) || "SUV",
+    image: backendVehicle.image || "https://images.unsplash.com/photo-1571068316344-75bc76f77890?w=800&h=600&fit=crop&crop=center",
+    batteryLevel: backendVehicle.batteryLevel || backendVehicle.battery_soc || 80,
+    location: backendVehicle.station_name || "Unknown Station",
+    stationId: backendVehicle.station_id,
+    availability: mapBackendVehicleStatus(backendVehicle.status),
+    pricePerHour: backendVehicle.pricePerHour || backendVehicle.pricing?.hourly || 50000,
+    pricePerDay: backendVehicle.pricePerDay || backendVehicle.pricing?.daily || 400000,
+    rating: backendVehicle.rating || 4.5,
+    reviewCount: backendVehicle.reviewCount || 0,
+    trips: backendVehicle.trips || 0,
+    range: backendVehicle.range || 300,
+    seats: backendVehicle.seats || 4,
+    features: backendVehicle.features || [],
+    condition: (backendVehicle.condition as Vehicle['condition']) || "good",
+    lastMaintenance: backendVehicle.lastMaintenance || new Date().toISOString(),
+    mileage: backendVehicle.mileage || backendVehicle.odo_km || 0,
+    fuelEfficiency: backendVehicle.fuelEfficiency || `${backendVehicle.consumption_wh_per_km || 150} Wh/km`,
+    inspectionDate: backendVehicle.inspectionDate || backendVehicle.inspection_due_at || new Date().toISOString(),
+    insuranceExpiry: backendVehicle.insuranceExpiry || backendVehicle.insurance_expiry_at || new Date().toISOString(),
+    description: backendVehicle.description || "",
+  };
+  
+  console.log('✅ Mapped vehicle:', mapped);
+  return mapped;
+}
+
+// Map backend vehicle status to frontend availability
+function mapBackendVehicleStatus(backendStatus: BackendVehicle['status']): Vehicle['availability'] {
+  switch (backendStatus) {
+    case 'AVAILABLE':
+      return 'available';
+    case 'RESERVED':
+    case 'RENTED':
+      return 'rented';
+    case 'MAINTENANCE':
+      return 'maintenance';
+    default:
+      return 'available';
   }
 }
 
@@ -319,10 +371,20 @@ export const stationService = {
       
       const response = await api.get<ApiResponse<{
         station: { id: string; name: string; address: string };
-        vehicles: Vehicle[];
+        vehicles: BackendVehicle[]; // Backend returns BackendVehicle[]
         count: number;
       }>>(url);
-      return response.data.data;
+      
+      console.log('📡 Raw API response vehicles:', response.data.data.vehicles);
+      
+      // Map backend vehicles to frontend format
+      const mappedVehicles = response.data.data.vehicles.map(mapBackendVehicleToFrontend);
+      
+      return {
+        station: response.data.data.station,
+        vehicles: mappedVehicles,
+        count: response.data.data.count
+      };
     } catch (error) {
       console.error('❌ Error getting station vehicles:', error);
       throw error;

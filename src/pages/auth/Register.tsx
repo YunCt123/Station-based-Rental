@@ -13,7 +13,6 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import {
-  Car,
   Eye,
   EyeOff,
   Mail,

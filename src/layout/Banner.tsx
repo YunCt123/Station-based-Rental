@@ -1,13 +1,113 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import img from '../assets/hero-ev-station.jpg';
+import { vehicleService } from '@/services/vehicleService';
+import { stationService } from '@/services/stationService';
+import { useToast } from '@/hooks/use-toast';
 
 const Banner: React.FC = () => {
   const [location, setLocation] = useState('');
   const [pickupDate, setPickupDate] = useState('');
   const [returnDate, setReturnDate] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
+  const [totalVehicles, setTotalVehicles] = useState<number>(0);
+  const [totalStations, setTotalStations] = useState<number>(0);
+  const navigate = useNavigate();
+  const { toast } = useToast();
 
-  const handleSearch = () => {
-    console.log('Searching for vehicles:', { location, pickupDate, returnDate });
+  // Load real stats on component mount
+  useEffect(() => {
+    const loadStats = async () => {
+      try {
+        // Get total available vehicles
+        const { vehicles } = await vehicleService.getAvailableVehicles({}, { limit: 1000 });
+        setTotalVehicles(vehicles.length);
+
+        // Get total stations
+        const stationsData = await stationService.getAllStations();
+        setTotalStations(stationsData.stations.length);
+        
+      } catch (error) {
+        console.error('Failed to load stats:', error);
+        // Keep default values if API fails
+        setTotalVehicles(50);
+        setTotalStations(8);
+      }
+    };
+
+    loadStats();
+  }, []);
+
+  const handleSearch = async () => {
+    if (!location.trim()) {
+      toast({
+        title: "Location Required",
+        description: "Please enter a pickup location to search.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!pickupDate || !returnDate) {
+      toast({
+        title: "Dates Required", 
+        description: "Please select both pickup and return dates.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (new Date(pickupDate) >= new Date(returnDate)) {
+      toast({
+        title: "Invalid Dates",
+        description: "Return date must be after pickup date.",
+        variant: "destructive", 
+      });
+      return;
+    }
+
+    try {
+      setIsSearching(true);
+      
+      console.log('🔍 Searching for vehicles:', { location, pickupDate, returnDate });
+      
+      // Search vehicles by location
+      const { vehicles } = await vehicleService.searchVehiclesByLocation(location);
+      
+      if (vehicles.length === 0) {
+        toast({
+          title: "No Vehicles Found",
+          description: `No available vehicles found in "${location}". Try a different location.`,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Navigate to vehicles page with search params
+      const searchParams = new URLSearchParams({
+        location: location,
+        pickup: pickupDate,
+        return: returnDate,
+      });
+      
+      navigate(`/vehicles?${searchParams.toString()}`);
+      
+      toast({
+        title: "Search Successful",
+        description: `Found ${vehicles.length} available vehicles in ${location}`,
+        variant: "default",
+      });
+      
+    } catch (error) {
+      console.error('Search failed:', error);
+      toast({
+        title: "Search Failed",
+        description: "Unable to search vehicles. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSearching(false);
+    }
   };
 
   return (
@@ -88,12 +188,24 @@ const Banner: React.FC = () => {
               
               <button
                 onClick={handleSearch}
-                className="w-full mt-6 bg-gradient-to-r from-blue-600 to-green-500 hover:from-blue-700 hover:to-green-600 text-white px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-200 flex items-center justify-center shadow-lg"
+                disabled={isSearching}
+                className="w-full mt-6 bg-gradient-to-r from-blue-600 to-green-500 hover:from-blue-700 hover:to-green-600 disabled:opacity-50 disabled:cursor-not-allowed text-white px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-200 flex items-center justify-center shadow-lg"
               >
-                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-                Find Available Vehicles
+                {isSearching ? (
+                  <>
+                    <svg className="w-5 h-5 mr-2 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    Searching...
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    Find Available Vehicles
+                  </>
+                )}
               </button>
             </div>
 
@@ -159,7 +271,9 @@ const Banner: React.FC = () => {
               />
               {/* Floating Stats Cards */}
               <div className="absolute top-6 right-6 bg-white/90 backdrop-blur-sm rounded-xl p-4 shadow-lg">
-                <div className="text-2xl font-bold text-blue-600">50+</div>
+                <div className="text-2xl font-bold text-blue-600">
+                  {totalVehicles > 0 ? `${totalVehicles}+` : '...'}
+                </div>
                 <div className="text-sm text-gray-600">Electric Vehicles</div>
               </div>
               
@@ -169,7 +283,9 @@ const Banner: React.FC = () => {
               </div>
               
               <div className="absolute top-1/2 -left-4 bg-white/90 backdrop-blur-sm rounded-xl p-4 shadow-lg">
-                <div className="text-2xl font-bold text-purple-600">8</div>
+                <div className="text-2xl font-bold text-purple-600">
+                  {totalStations > 0 ? totalStations : '...'}
+                </div>
                 <div className="text-sm text-gray-600">Charging Stations</div>
               </div>
             </div>

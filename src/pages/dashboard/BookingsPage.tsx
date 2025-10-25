@@ -8,6 +8,7 @@ import type { Booking } from "../../services/bookingService";
 const { Title } = Typography;
 
 const BookingsPage: React.FC = () => {
+  console.log('🎯 BookingsPage component rendering...');
   const navigate = useNavigate();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
@@ -148,8 +149,9 @@ const BookingsPage: React.FC = () => {
   ];
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
+    <div className="min-h-screen bg-gray-50">
+      <div className="p-6">
+        <div className="flex justify-between items-center mb-6">
         <Title level={2}>My Bookings</Title>
         <Button 
           type="primary" 
@@ -161,7 +163,7 @@ const BookingsPage: React.FC = () => {
         </Button>
       </div>
 
-      <Card>
+      <Card variant="outlined">
         <Table
           columns={columns}
           dataSource={bookings}
@@ -188,7 +190,7 @@ const BookingsPage: React.FC = () => {
 
       {/* Quick Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6">
-        <Card>
+        <Card variant="outlined">
           <div className="text-center">
             <div className="text-2xl font-bold text-orange-600">
               {bookings.filter(b => b.status === 'HELD').length}
@@ -196,7 +198,7 @@ const BookingsPage: React.FC = () => {
             <div className="text-sm text-gray-500">Pending Payment</div>
           </div>
         </Card>
-        <Card>
+        <Card variant="outlined">
           <div className="text-center">
             <div className="text-2xl font-bold text-green-600">
               {bookings.filter(b => b.status === 'CONFIRMED').length}
@@ -204,7 +206,7 @@ const BookingsPage: React.FC = () => {
             <div className="text-sm text-gray-500">Confirmed</div>
           </div>
         </Card>
-        <Card>
+        <Card variant="outlined">
           <div className="text-center">
             <div className="text-2xl font-bold text-gray-600">
               {bookings.filter(b => b.status === 'CANCELLED' || b.status === 'EXPIRED').length}
@@ -212,7 +214,7 @@ const BookingsPage: React.FC = () => {
             <div className="text-sm text-gray-500">Cancelled/Expired</div>
           </div>
         </Card>
-        <Card>
+        <Card variant="outlined">
           <div className="text-center">
             <div className="text-2xl font-bold text-blue-600">
               {bookings.length}
@@ -221,6 +223,7 @@ const BookingsPage: React.FC = () => {
           </div>
         </Card>
       </div>
+    </div>
     </div>
   );
 };

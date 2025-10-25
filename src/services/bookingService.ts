@@ -185,6 +185,42 @@ export interface BookingFormData {
   specialRequests?: string;
 }
 
+
+export interface PayOSCallbackParams {
+  transaction_ref: string;
+  status: "SUCCESS" | "FAILED";
+  provider: string;
+  amount: number;
+  provider_payment_id?: string | null;
+
+  // TOÀN BỘ PayOS params ở ROOT
+  id?: string;
+  orderCode?: string;
+  amount?: string;
+  status?: string;
+  code?: string;
+  cancel?: string;
+  bookingId?: string;
+  paymentLinkId?: string;
+  desc?: string;
+  counterAccountBankId?: string;
+  counterAccountBankName?: string;
+  counterAccountNumber?: string;
+  counterAccountName?: string;
+  virtualAccountNumber?: string;
+  virtualAccountName?: string;
+  transactionDate?: string;
+  paymentDate?: string;
+
+  [key: string]: any;
+}
+
+export interface PaymentCallbackResponse {
+  status: "SUCCESS" | "FAILED";
+  bookingId?: string;
+}
+
+
 // Main booking service class
 export class BookingService {
   // Calculate booking price before creating booking
@@ -349,6 +385,7 @@ export class BookingService {
     }
   }
 
+
   // Check payment status
   async checkPaymentStatus(paymentId: string): Promise<Payment> {
     try {
@@ -457,6 +494,102 @@ export class BookingService {
     }
   }
 
+  async handleVnpayCallback(params: {
+  transaction_ref: string;
+  status: "SUCCESS" | "FAILED";
+  provider: string;
+  amount: number;
+  provider_payment_id?: string | null;
+
+  // TOÀN BỘ vnp_* Ở ROOT
+  vnp_SecureHash: string;
+  vnp_TxnRef: string;
+  vnp_ResponseCode: string;
+  vnp_Amount: string;
+  vnp_TransactionNo?: string;
+  vnp_BankCode?: string;
+  vnp_OrderInfo?: string;
+  vnp_PayDate?: string;
+  vnp_TmnCode?: string;
+  vnp_TransactionStatus?: string;
+  vnp_CardType?: string;
+
+  [key: string]: any; // Cho phép tất cả vnp_*
+}): Promise<{
+  status: "SUCCESS" | "FAILED";
+  bookingId?: string;
+}> {
+  try {
+    console.log('[BookingService] handleVnpayCallback - Payload:', params);
+
+    const response = await api.post<ApiResponse<{
+      status: "SUCCESS" | "FAILED";
+      bookingId?: string;
+    }>>('/payments/vnpay/callback', params);
+
+    if (response.data.success && response.data.data) {
+      return response.data.data;
+    }
+
+    throw new Error(response.data.message || 'Xử lý thất bại');
+  } catch (error: any) {
+    console.error('[BookingService] Lỗi:', error);
+    throw new Error(
+      error.response?.data?.message ||
+      error.message ||
+      'Lỗi hệ thống'
+    );
+  }
+}
+
+ async handlePayOSCallback(
+  params: PayOSCallbackParams
+): Promise<PaymentCallbackResponse> {
+  try {
+    console.log('[BookingService] handlePayOSCallback - Payload:', params);
+
+    const response = await api.post<ApiResponse<PaymentCallbackResponse>>(
+      '/payments/payos/callback',
+      params
+    );
+
+    if (response.data.success && response.data.data) {
+      return response.data.data;
+    }
+
+    throw new Error(response.data.message || 'Xử lý thất bại');
+  } catch (error: any) {
+    console.error('[BookingService] Lỗi PayOS:', error);
+    throw new Error(
+      error.response?.data?.message ||
+      error.message ||
+      'Lỗi hệ thống'
+    );
+  }
+}
+
+  async checkVnpayPaymentStatus(txnRef: string): Promise<Payment> {
+    try {
+      console.log('[BookingService] Checking VNPAY payment status for txnRef:', txnRef);
+
+      const response = await api.get<ApiResponse<Payment>>(`/payments/vnpay/status/${txnRef}`);
+
+      if (response.data.success && response.data.data) {
+        console.log('[BookingService] VNPAY payment status:', response.data.data);
+        return response.data.data;
+      }
+
+      throw new Error('Payment not found or still pending');
+    } catch (error: any) {
+      console.error('[BookingService] Check VNPAY status error:', error);
+      throw new Error(
+        error.response?.data?.message ||
+        error.message ||
+        'Không thể kiểm tra trạng thái thanh toán'
+      );
+    }
+  }
+
   // Check vehicle availability for booking dates
   async checkVehicleAvailability(vehicleId: string, startAt: string, endAt: string): Promise<boolean> {
     try {
@@ -558,6 +691,7 @@ export class BookingService {
       canCancel: ['HELD', 'CONFIRMED'].includes(booking.status)
     };
   }
+  
 
   // Helper: Check if booking is still within hold period
   private isWithinHoldPeriod(booking: Booking): boolean {

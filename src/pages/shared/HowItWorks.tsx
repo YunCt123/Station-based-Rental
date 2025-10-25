@@ -17,14 +17,55 @@ import {
 } from "@ant-design/icons";
 
 const { Title, Text, Paragraph } = Typography;
-const { Panel } = Collapse;
 
 const HowItWorks: React.FC = () => {
+  const faqItems = [
+    {
+      key: '1',
+      label: 'What documents do I need to upload?',
+      children: (
+        <Paragraph type="secondary">
+          A valid government ID (front & back) and a driver's license.  
+          Please ensure photos are clear and information is readable.
+        </Paragraph>
+      ),
+    },
+    {
+      key: '2',
+      label: 'Is there a deposit?',
+      children: (
+        <Paragraph type="secondary">
+          Some vehicles/stations require a refundable security deposit.  
+          The amount is shown transparently during checkout.
+        </Paragraph>
+      ),
+    },
+    {
+      key: '3',
+      label: 'Can I change or cancel my booking?',
+      children: (
+        <Paragraph type="secondary">
+          Yes. Changes/cancellations follow each station's policy.  
+          You'll see exact terms before confirming your payment.
+        </Paragraph>
+      ),
+    },
+    {
+      key: '4',
+      label: 'Where do I pick up and return the vehicle?',
+      children: (
+        <Paragraph type="secondary">
+          At the station you chose during booking.  
+          Pick-up instructions and a map are included in your confirmation email.
+        </Paragraph>
+      ),
+    },
+  ];
   return (
     <div className="min-h-screen bg-gray-50">
       {/* ===== HERO ===== */}
       <header className="relative w-full overflow-hidden">
-        <div className="bg-gradient-to-r from-blue-600 via-blue-500 to-emerald-500">
+        <div className="bg-blue-500">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-20 text-white">
             <div className="text-center">
               <Tag color="gold" className="mb-3 text-[13px] px-3 py-1 rounded-full">
@@ -84,7 +125,6 @@ const HowItWorks: React.FC = () => {
             {/* Step 1 */}
             <Col xs={24} md={7}>
               <Card hoverable className="h-full">
-                <Badge count="1" color="#1677ff" style={{ boxShadow: "none" }} />
                 <Avatar size={60} icon={<SearchOutlined />} style={{ background: "#e6f4ff", color: "#1677ff", margin: "18px 0" }} />
                 <Title level={4}>Search & Select</Title>
                 <Paragraph type="secondary">
@@ -103,7 +143,6 @@ const HowItWorks: React.FC = () => {
             {/* Step 2 */}
             <Col xs={24} md={7}>
               <Card hoverable className="h-full">
-                <Badge count="2" color="#13c2c2" style={{ boxShadow: "none" }} />
                 <Avatar size={60} icon={<CalendarOutlined />} style={{ background: "#f6ffed", color: "#52c41a", margin: "18px 0" }} />
                 <Title level={4}>Book & Pay</Title>
                 <Paragraph type="secondary">
@@ -122,7 +161,6 @@ const HowItWorks: React.FC = () => {
             {/* Step 3 */}
             <Col xs={24} md={7}>
               <Card hoverable className="h-full">
-                <Badge count="3" color="#faad14" style={{ boxShadow: "none" }} />
                 <Avatar size={60} icon={<KeyOutlined />} style={{ background: "#fffbe6", color: "#faad14", margin: "18px 0" }} />
                 <Title level={4}>Pick up & go</Title>
                 <Paragraph type="secondary">
@@ -213,33 +251,13 @@ const HowItWorks: React.FC = () => {
             <Text type="secondary">Everything you need to know, before you go.</Text>
           </div>
           <Row gutter={[24, 24]}>
-            <Col xs={24} md={16} className="mx-auto">
-              <Collapse accordion bordered={false} defaultActiveKey={["1"]}>
-                <Panel header="What documents do I need to upload?" key="1">
-                  <Paragraph type="secondary">
-                    A valid government ID (front & back) and a driver’s license.  
-                    Please ensure photos are clear and information is readable.
-                  </Paragraph>
-                </Panel>
-                <Panel header="Is there a deposit?" key="2">
-                  <Paragraph type="secondary">
-                    Some vehicles/stations require a refundable security deposit.  
-                    The amount is shown transparently during checkout.
-                  </Paragraph>
-                </Panel>
-                <Panel header="Can I change or cancel my booking?" key="3">
-                  <Paragraph type="secondary">
-                    Yes. Changes/cancellations follow each station’s policy.  
-                    You’ll see exact terms before confirming your payment.
-                  </Paragraph>
-                </Panel>
-                <Panel header="Where do I pick up and return the vehicle?" key="4">
-                  <Paragraph type="secondary">
-                    At the station you chose during booking.  
-                    Pick-up instructions and a map are included in your confirmation email.
-                  </Paragraph>
-                </Panel>
-              </Collapse>
+                        <Col xs={24} md={16} className="mx-auto">
+              <Collapse 
+                accordion 
+                bordered={false} 
+                defaultActiveKey={["1"]}
+                items={faqItems}
+              />
             </Col>
           </Row>
         </section>

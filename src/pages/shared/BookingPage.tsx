@@ -26,9 +26,9 @@ import InsuranceAndTermsForm from "../../components/booking/InsuranceAndTermsFor
 import VehicleSummary from "../../components/booking/VehicleSummary";
 import { DOCUMENT_TYPES } from "../../components/booking/DocumentTypes";
 
-interface DocumentUploadStatus {
-  status: "not_started" | "uploading" | "success" | "error";
-}
+// interface DocumentUploadStatus {
+//   status: "not_started" | "uploading" | "success" | "error";
+// }
 
 const BookingPage: React.FC = () => {
   const { vehicleId } = useParams<{ vehicleId: string }>();
@@ -53,14 +53,14 @@ const BookingPage: React.FC = () => {
     [DOCUMENT_TYPES.NATIONAL_ID_BACK]: [],
   });
 
-  const [uploadStatus, setUploadStatus] = useState<{
-    [key: string]: DocumentUploadStatus["status"];
-  }>
-  ({
-    [DOCUMENT_TYPES.DRIVERS_LICENSE]: "not_started",
-    [DOCUMENT_TYPES.NATIONAL_ID_FRONT]: "not_started",
-    [DOCUMENT_TYPES.NATIONAL_ID_BACK]: "not_started",
-  });
+  // const [uploadStatus, setUploadStatus] = useState<{
+  //   [key: string]: DocumentUploadStatus["status"];
+  // }>
+  // ({
+  //   [DOCUMENT_TYPES.DRIVERS_LICENSE]: "not_started",
+  //   [DOCUMENT_TYPES.NATIONAL_ID_FRONT]: "not_started",
+  //   [DOCUMENT_TYPES.NATIONAL_ID_BACK]: "not_started",
+  // });
 
   // ---- Pricing ----
   const calculatePrice = useCallback(
@@ -135,6 +135,7 @@ const BookingPage: React.FC = () => {
   }, [vehicleId, navigate, calculatePrice]);
 
   // ---- Submit ----
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleFinish = async (values: Record<string, any>) => {
     if (!user) {
       message.error("Please log in to make a booking");
@@ -201,25 +202,25 @@ const BookingPage: React.FC = () => {
   };
 
   // ---- Upload ----
-  const handleUploadChange = (
-    info: { file: { status?: string; name: string }; fileList: UploadFile[] },
-    docType: string
-  ) => {
-    const { status } = info.file;
-    const newFileList = [...info.fileList].slice(-1); // keep latest
+  // const handleUploadChange = (
+  //   info: { file: { status?: string; name: string }; fileList: UploadFile[] },
+  //   docType: string
+  // ) => {
+  //   const { status } = info.file;
+  //   const newFileList = [...info.fileList].slice(-1); // keep latest
 
-    setFileList((prev) => ({ ...prev, [docType]: newFileList }));
+  //   setFileList((prev) => ({ ...prev, [docType]: newFileList }));
 
-    if (status === "uploading") {
-      setUploadStatus((prev) => ({ ...prev, [docType]: "uploading" }));
-    } else if (status === "done") {
-      setUploadStatus((prev) => ({ ...prev, [docType]: "success" }));
-      message.success(`${info.file.name} uploaded successfully.`);
-    } else if (status === "error") {
-      setUploadStatus((prev) => ({ ...prev, [docType]: "error" }));
-      message.error(`${info.file.name} upload failed.`);
-    }
-  };
+  //   if (status === "uploading") {
+  //     setUploadStatus((prev) => ({ ...prev, [docType]: "uploading" }));
+  //   } else if (status === "done") {
+  //     setUploadStatus((prev) => ({ ...prev, [docType]: "success" }));
+  //     message.success(`${info.file.name} uploaded successfully.`);
+  //   } else if (status === "error") {
+  //     setUploadStatus((prev) => ({ ...prev, [docType]: "error" }));
+  //     message.error(`${info.file.name} upload failed.`);
+  //   }
+  // };
 
   const getUploadProps = () => ({
     name: "file",
@@ -243,17 +244,17 @@ const BookingPage: React.FC = () => {
     },
   });
 
-  const createDocumentUploadProps = (docType: string) => {
-    const baseProps = getUploadProps();
-    return {
-      ...baseProps,
-      fileList: fileList[docType],
-      onChange: (info: {
-        file: { status?: string; name: string };
-        fileList: UploadFile[];
-      }) => handleUploadChange(info, docType),
-    };
-  };
+  // const createDocumentUploadProps = (docType: string) => {
+  //   const baseProps = getUploadProps();
+  //   return {
+  //     ...baseProps,
+  //     fileList: fileList[docType],
+  //     onChange: (info: {
+  //       file: { status?: string; name: string };
+  //       fileList: UploadFile[];
+  //     }) => handleUploadChange(info, docType),
+  //   };
+  // };
 
   // ---- Login required ----
   const LoginRequiredComponent = () => (

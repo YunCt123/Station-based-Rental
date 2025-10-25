@@ -14,7 +14,7 @@ import {
   ProgressBar,
   AlertCard,
   ActionButton,
-} from "../../../components/dashboard";
+} from "../../../../components/dashboard";
 
 interface VehicleStats {
   total: number;

@@ -1,4 +1,5 @@
-import { ReactNode, useState, useEffect } from "react";
+import { useState, useEffect } from "react";
+import type { ReactNode } from "react";
 import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -20,7 +21,7 @@ export const LoadingWrapper = ({
   const [showLoader, setShowLoader] = useState(false);
 
   useEffect(() => {
-    let timer: NodeJS.Timeout;
+    let timer: ReturnType<typeof setTimeout>;
 
     if (isLoading) {
       timer = setTimeout(() => {

@@ -25,11 +25,8 @@ import {
   ActiveFilters,
   type SearchSuggestion,
 } from "@/components/EnhancedSearch";
-import {
-  vehicleService,
-  type VehicleSearchFilters,
-} from "@/services/vehicleService";
-import type { Vehicle } from "@/types/vehicle";
+import { vehicleService } from "@/services/vehicleService";
+import type { Vehicle, VehicleSearchFilters } from "@/types/vehicle";
 import { Grid, List, SlidersHorizontal } from "lucide-react";
 import { useTranslation } from "@/contexts/TranslationContext";
 import HeroCarousel from "@/components/HeroCarousel";
@@ -41,7 +38,7 @@ const Vehicles = () => {
   // State for vehicles data
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [totalVehicles, setTotalVehicles] = useState(0);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage, _setCurrentPage] = useState(1);
 
   // Loading states
   const [isInitialLoading, setIsInitialLoading] = useState(true);

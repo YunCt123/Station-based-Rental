@@ -14,7 +14,7 @@ import {
   StatCard,
   AlertCard,
   ActionButton,
-} from "../../../components/dashboard";
+} from "../../../../components/dashboard";
 
 interface StationData {
   id: string;
@@ -217,7 +217,6 @@ const VehicleDistribution: React.FC = () => {
   const getUtilizationRate = (station: StationData) => {
     return ((station.currentVehicles / station.capacity) * 100).toFixed(1);
   };
-
 
   const getStatusColor = (status: string) => {
     switch (status) {

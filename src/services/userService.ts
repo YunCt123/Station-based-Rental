@@ -114,7 +114,6 @@ export const userService = {
 };
 
 export default userService;
-import api from './api';
 
 // User interfaces
 export interface User {

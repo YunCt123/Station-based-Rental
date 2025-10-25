@@ -578,7 +578,7 @@ const Settings = () => {
 
           {/* Documents Tab */}
           <TabsContent value="documents">
-            <DriverLicense />
+            {/* <DriverLicense /> */}
           </TabsContent>
 
           {/* Security Tab */}

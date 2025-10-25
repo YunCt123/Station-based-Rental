@@ -34,6 +34,7 @@ export interface Vehicle {
   image: string;
   batteryLevel: number;
   location: string;
+  stationId?: string; // Add station ID field
   availability: VehicleAvailability;
   pricePerHour: number;
   pricePerDay: number;

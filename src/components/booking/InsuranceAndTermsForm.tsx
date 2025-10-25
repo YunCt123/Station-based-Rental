@@ -2,7 +2,11 @@ import React from "react";
 import { Form, Checkbox, Card, Space, Button } from "antd";
 import { ShieldCheckIcon } from "@heroicons/react/24/outline";
 
-const InsuranceAndTermsForm: React.FC = () => {
+interface InsuranceAndTermsFormProps {
+  loading?: boolean;
+}
+
+const InsuranceAndTermsForm: React.FC<InsuranceAndTermsFormProps> = ({ loading }) => {
   return (
     <Card
       className="mb-4"
@@ -13,9 +17,9 @@ const InsuranceAndTermsForm: React.FC = () => {
         </Space>
       }
     >
-      <Form.Item name="insurance" valuePropName="checked">
+      <Form.Item name="insurance_premium" valuePropName="checked">
         <Checkbox>
-          Add collision insurance coverage ($20 / rental cost)
+          Add collision insurance coverage (+10% of rental cost)
         </Checkbox>
       </Form.Item>
 
@@ -49,9 +53,10 @@ const InsuranceAndTermsForm: React.FC = () => {
         type="primary"
         size="large"
         htmlType="submit"
+        loading={loading}
         className="bg-primary-500 hover:bg-primary-600 mt-4 w-full"
       >
-        Continue to Payment
+        {loading ? "Creating Booking..." : "Continue to Payment"}
       </Button>
     </Card>
   );

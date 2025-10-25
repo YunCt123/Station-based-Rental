@@ -112,7 +112,7 @@ const LoginPage = ({ onLogin }: LoginProps) => {
           </CardHeader>
           <CardContent className="space-y-6">
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
+              {/* <div className="space-y-2">
                 <Label htmlFor="role">{t("common.loginAs")}</Label>
                 <Select
                   value={role}
@@ -127,7 +127,7 @@ const LoginPage = ({ onLogin }: LoginProps) => {
                     <SelectItem value="admin">{t("common.administrator")}</SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
+              </div> */}
 
               {/* Email Field */}
               <div className="space-y-2">

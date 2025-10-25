@@ -76,6 +76,7 @@ const Stations = () => {
         
         setStations(stationsWithRealCounts);
         
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (error: any) {
         console.error('❌ Error fetching stations:', error);
         setError(`Failed to load stations: ${error.message || 'Unknown error'}`);
@@ -104,8 +105,8 @@ const Stations = () => {
     <PageTransition>
       <div className="min-h-screen bg-background">
         {/* Header */}
-        <FadeIn>
-          <div className="bg-gradient-hero py-16">
+        {/* <FadeIn> */}
+          {/* <div className="bg-gradient-hero py-16">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
               <SlideIn direction="top" delay={100}>
                 <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
@@ -119,8 +120,8 @@ const Stations = () => {
                 </p>
               </SlideIn>
             </div>
-          </div>
-        </FadeIn>
+          </div> */}
+        {/* </FadeIn> */}
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           {/* Error Display */}
@@ -158,8 +159,8 @@ const Stations = () => {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                   {stations.map((station, index) => (
                     <FadeIn key={station.id} delay={300 + index * 100}>
-                      <Card className="card-premium">
-                        <CardContent className="p-6">
+                      <Card className="card-premium h-full">
+                        <CardContent className="p-6 h-full flex flex-col">
                           <div className="flex justify-between items-start mb-4">
                             <h3 className="text-xl font-semibold">
                               {station.name}
@@ -167,7 +168,7 @@ const Stations = () => {
                             {getStatusBadge(station.status)}
                           </div>
 
-                          <div className="space-y-3 mb-6">
+                          <div className="space-y-3 mb-6 flex-1">
                             <div className="flex items-start space-x-2">
                               <MapPin className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
                               <div>
@@ -197,70 +198,83 @@ const Stations = () => {
                                 <p className="text-sm">Fast Charging Available</p>
                               </div>
                             )}
-                          </div>
 
-                          {/* Amenities */}
-                          {station.amenities.length > 0 && (
-                            <div className="mb-4">
+                            {/* Amenities - Always show section with minimum height */}
+                            <div className="mb-4 min-h-[60px]">
                               <p className="text-sm font-medium mb-2">Amenities:</p>
-                              <div className="flex flex-wrap gap-1">
-                                {station.amenities.slice(0, 3).map((amenity, i) => (
-                                  <Badge key={i} variant="outline" className="text-xs">
-                                    {amenity}
-                                  </Badge>
-                                ))}
-                                {station.amenities.length > 3 && (
-                                  <Badge variant="outline" className="text-xs">
-                                    +{station.amenities.length - 3} more
-                                  </Badge>
-                                )}
-                              </div>
-                            </div>
-                          )}
-
-                          <div className="grid grid-cols-2 gap-4 pt-4 border-t">
-                            <div className="text-center">
-                              <div className="text-2xl font-bold text-primary">
-                                {station.availableVehicles}
-                              </div>
-                              <div className="text-sm text-muted-foreground">
-                                Available
-                              </div>
-                            </div>
-                            <div className="text-center">
-                              <div className="text-2xl font-bold text-primary">
-                                {station.totalVehicles}
-                              </div>
-                              <div className="text-sm text-muted-foreground">
-                                Total
-                              </div>
+                              {station.amenities.length > 0 ? (
+                                <div className="flex flex-wrap gap-1">
+                                  {station.amenities.slice(0, 3).map((amenity, i) => (
+                                    <Badge key={i} variant="outline" className="text-xs">
+                                      {amenity}
+                                    </Badge>
+                                  ))}
+                                  {station.amenities.length > 3 && (
+                                    <Badge variant="outline" className="text-xs">
+                                      +{station.amenities.length - 3} more
+                                    </Badge>
+                                  )}
+                                </div>
+                              ) : (
+                                <p className="text-xs text-muted-foreground">
+                                  Basic facilities available
+                                </p>
+                              )}
                             </div>
                           </div>
 
-                          {/* Rating */}
-                          {station.rating > 0 && (
-                            <div className="pt-4 border-t mt-4">
-                              <div className="flex items-center justify-between">
-                                <span className="text-sm">Rating:</span>
-                                <div className="flex items-center space-x-1">
-                                  <span className="text-sm font-medium">
-                                    {station.rating.toFixed(1)}
-                                  </span>
-                                  <span className="text-yellow-500">★</span>
-                                  <span className="text-xs text-muted-foreground">
-                                    ({station.reviewCount} reviews)
-                                  </span>
+                          <div className="mt-auto space-y-4">
+                            <div className="grid grid-cols-2 gap-4 pt-4 border-t">
+                              <div className="text-center">
+                                <div className="text-2xl font-bold text-primary">
+                                  {station.availableVehicles}
+                                </div>
+                                <div className="text-sm text-muted-foreground">
+                                  Available
+                                </div>
+                              </div>
+                              <div className="text-center">
+                                <div className="text-2xl font-bold text-primary">
+                                  {station.totalVehicles}
+                                </div>
+                                <div className="text-sm text-muted-foreground">
+                                  Total
                                 </div>
                               </div>
                             </div>
-                          )}
 
-                          <div className="pt-4">
-                            <Button asChild className="w-full">
-                              <Link to={`/stations/${station.id}`}>
-                                {t("common.viewDetails")}
-                              </Link>
-                            </Button>
+                            {/* Rating - Always show section with minimum height */}
+                            <div className="pt-4 border-t min-h-[50px] flex items-center">
+                              {station.rating > 0 ? (
+                                <div className="flex items-center justify-between w-full">
+                                  <span className="text-sm">Rating:</span>
+                                  <div className="flex items-center space-x-1">
+                                    <span className="text-sm font-medium">
+                                      {station.rating.toFixed(1)}
+                                    </span>
+                                    <span className="text-yellow-500">★</span>
+                                    <span className="text-xs text-muted-foreground">
+                                      ({station.reviewCount} reviews)
+                                    </span>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="flex items-center justify-between w-full">
+                                  <span className="text-sm">Rating:</span>
+                                  <span className="text-xs text-muted-foreground">
+                                    No reviews yet
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="pt-4">
+                              <Button asChild className="w-full">
+                                <Link to={`/stations/${station.id}`}>
+                                  {t("common.viewDetails")}
+                                </Link>
+                              </Button>
+                            </div>
                           </div>
                         </CardContent>
                       </Card>
@@ -283,7 +297,7 @@ const Stations = () => {
             ) : null}
           </LoadingWrapper>
 
-          {stations.length > 0 && (
+          {/* {stations.length > 0 && (
             <FadeIn delay={500}>
               <div className="mt-12 text-center">
                 <Card className="inline-block">
@@ -299,7 +313,7 @@ const Stations = () => {
                 </Card>
               </div>
             </FadeIn>
-          )}
+          )} */}
         </div>
       </div>
     </PageTransition>

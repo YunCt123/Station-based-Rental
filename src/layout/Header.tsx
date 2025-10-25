@@ -10,6 +10,8 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { useTranslation } from "@/contexts/TranslationContext";
+import { useToast } from "@/hooks/use-toast";
+import { Toaster } from "@/components/ui/toaster";
 
 interface NavbarProps {
   user?: {
@@ -23,6 +25,7 @@ const Navbar = ({ user, onLogout }: NavbarProps) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
   const { t } = useTranslation();
+  const { toast } = useToast();
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -31,11 +34,19 @@ const Navbar = ({ user, onLogout }: NavbarProps) => {
   const handleLogout = () => {
     localStorage.removeItem("access_token");
     localStorage.removeItem("refresh_token");
+    
+    // Show success toast
+    toast({
+      title: "Logout Successful",
+      description: "You have successfully logged out!",
+    });
+    
     onLogout?.();
   };
 
   return (
-    <nav className="bg-background/95 backdrop-blur-md border-b border-border sticky top-0 z-50">
+    <>
+      <nav className="bg-background/95 backdrop-blur-md border-b border-border sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
@@ -276,6 +287,8 @@ const Navbar = ({ user, onLogout }: NavbarProps) => {
         )}
       </div>
     </nav>
+    <Toaster />
+    </>
   );
 };
 

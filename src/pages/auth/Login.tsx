@@ -72,9 +72,9 @@ const LoginPage = ({ onLogin }: LoginProps) => {
       });
       const redirectPath =
         res.user.role === "admin"
-          ? "/dashboard"
+          ? "/admin/dashboard"
           : res.user.role === "staff"
-          ? "/staff-dashboard"
+          ? "/staff/dashboard"
           : "/"; // tùy chỉnh thêm nếu cần (staff -> '/staff-dashboard', v.v.)
       navigate(redirectPath);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

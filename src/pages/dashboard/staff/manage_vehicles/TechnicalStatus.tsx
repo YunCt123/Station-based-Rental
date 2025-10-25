@@ -3,7 +3,6 @@ import {
   WrenchScrewdriverIcon,
   ClockIcon,
   CheckCircleIcon,
-  ExclamationTriangleIcon,
   MagnifyingGlassIcon,
   CogIcon
 } from '@heroicons/react/24/outline';
@@ -12,6 +11,12 @@ import {
   XCircleIcon as XCircleSolidIcon,
   ExclamationTriangleIcon as ExclamationTriangleSolidIcon
 } from '@heroicons/react/24/solid';
+import { MaintenanceScheduleModal } from '../../../../components/dashboard/staff/manage_vehicles/MaintenanceScheduleModal';
+import { MaintenanceHistoryModal } from '../../../../components/dashboard/staff/manage_vehicles/MaintenanceHistoryModal';
+import { VehicleDetailsModal } from '../../../../components/dashboard/staff/manage_vehicles/VehicleDetailsModal';
+import { AddIncidentModal } from '../../../../components/dashboard/staff/manage_vehicles/AddIncidentModal';
+import { createIssue } from '@/services/issueService';
+import { toast } from 'sonner';
 
 interface MaintenanceRecord {
   id: string;
@@ -31,7 +36,7 @@ interface Vehicle {
   lastInspection: string;
   nextMaintenance: string;
   mileage: number;
-  location: string;
+  position: string; // Vị trí trong trạm
   maintenanceRecords: MaintenanceRecord[];
   issues: string[];
 }
@@ -45,7 +50,7 @@ const mockVehicles: Vehicle[] = [
     lastInspection: '2024-10-10',
     nextMaintenance: '2024-11-15',
     mileage: 25400,
-    location: 'Trạm A - Vị trí 1',
+    position: 'Vị trí 1',
     issues: [],
     maintenanceRecords: [
       {
@@ -75,7 +80,7 @@ const mockVehicles: Vehicle[] = [
     lastInspection: '2024-09-25',
     nextMaintenance: '2024-10-20',
     mileage: 18200,
-    location: 'Trạm B - Vị trí 3',
+    position: 'Vị trí 3',
     issues: ['Tiếng ồn nhẹ từ động cơ'],
     maintenanceRecords: [
       {
@@ -96,7 +101,7 @@ const mockVehicles: Vehicle[] = [
     lastInspection: '2024-08-15',
     nextMaintenance: '2024-10-16',
     mileage: 31500,
-    location: 'Trạm A - Vị trí 5',
+    position: 'Vị trí 7',
     issues: ['Phanh có tiếng kêu', 'Đèn báo lỗi ABS'],
     maintenanceRecords: [
       {
@@ -117,7 +122,7 @@ const mockVehicles: Vehicle[] = [
     lastInspection: '2024-10-05',
     nextMaintenance: '2024-10-15',
     mileage: 42300,
-    location: 'Xưởng bảo trì',
+    position: 'Xưởng bảo trì',
     issues: ['Hư hỏng hệ thống sạc', 'Cần thay pin phụ'],
     maintenanceRecords: [
       {
@@ -137,8 +142,77 @@ export const TechnicalStatus: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
+  
+  // Modal states
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [showMaintenanceModal, setShowMaintenanceModal] = useState(false);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [modalVehicle, setModalVehicle] = useState<Vehicle | null>(null);
+  
+  // Form states
+  const [maintenanceType, setMaintenanceType] = useState('preventive');
+  const [maintenanceDescription, setMaintenanceDescription] = useState('');
 
+  // Modal handlers
+  const handleReportIssue = (vehicle: Vehicle) => {
+    setModalVehicle(vehicle);
+    setShowReportModal(true);
+  };
 
+  const handleScheduleMaintenance = (vehicle: Vehicle) => {
+    setModalVehicle(vehicle);
+    setShowMaintenanceModal(true);
+  };
+
+  const handleViewHistory = (vehicle: Vehicle) => {
+    setModalVehicle(vehicle);
+    setShowHistoryModal(true);
+  };
+
+  const handleSubmitIssue = async (incident: any) => {
+    try {
+      await createIssue({
+        vehicle_id: incident.vehicleId,
+        title: incident.title,
+        description: incident.description,
+        photos: incident.images || []
+      });
+      toast.success('Đã báo cáo sự cố thành công!');
+      setShowReportModal(false);
+      setModalVehicle(null);
+    } catch (error: any) {
+      console.error('Error reporting issue:', error);
+      toast.error('Không thể báo cáo sự cố');
+    }
+  };
+
+  const handleSubmitMaintenance = () => {
+    if (!modalVehicle || !maintenanceDescription.trim()) return;
+    
+    // Simulate API call
+    console.log('Lên lịch bảo trì:', {
+      vehicleId: modalVehicle.id,
+      type: maintenanceType,
+      description: maintenanceDescription,
+      scheduledDate: new Date()
+    });
+    
+    setShowMaintenanceModal(false);
+    setMaintenanceType('preventive');
+    setMaintenanceDescription('');
+    setModalVehicle(null);
+  };
+
+  const closeModals = () => {
+    setShowReportModal(false);
+    setShowMaintenanceModal(false);
+    setShowHistoryModal(false);
+    setShowDetailsModal(false);
+    setModalVehicle(null);
+    setMaintenanceType('preventive');
+    setMaintenanceDescription('');
+  };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -162,19 +236,10 @@ export const TechnicalStatus: React.FC = () => {
     }
   };
 
-  const getMaintenanceStatusColor = (status: string) => {
-    switch (status) {
-      case 'completed': return 'bg-green-100 text-green-800';
-      case 'in-progress': return 'bg-blue-100 text-blue-800';
-      case 'scheduled': return 'bg-yellow-100 text-yellow-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
   const filteredVehicles = mockVehicles.filter(vehicle => {
     const matchesSearch = vehicle.model.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          vehicle.licensePlate.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         vehicle.location.toLowerCase().includes(searchTerm.toLowerCase());
+                         vehicle.position.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesFilter = filterStatus === 'all' || vehicle.technicalStatus === filterStatus;
     
@@ -277,14 +342,15 @@ export const TechnicalStatus: React.FC = () => {
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-white divide-y divide-y-gray-200">
               {filteredVehicles.map((vehicle) => (
                 <tr 
                   key={vehicle.id} 
-                  className={`hover:bg-gray-50 cursor-pointer ${
-                    selectedVehicle?.id === vehicle.id ? 'bg-blue-50' : ''
-                  }`}
-                  onClick={() => setSelectedVehicle(vehicle)}
+                  className="hover:bg-gray-50 cursor-pointer transition-colors"
+                  onClick={() => {
+                    setSelectedVehicle(vehicle);
+                    setShowDetailsModal(true);
+                  }}
                 >
                   <td className="px-6 py-4 whitespace-nowrap">
                     <img 
@@ -321,7 +387,7 @@ export const TechnicalStatus: React.FC = () => {
                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{vehicle.location}</div>
+                    <div className="text-sm text-gray-900">{vehicle.position}</div>
                     <div className="text-xs text-gray-500">{vehicle.mileage.toLocaleString()} km</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -339,9 +405,35 @@ export const TechnicalStatus: React.FC = () => {
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm font-medium transition-colors">
-                      Chi tiết
-                    </button>
+                    <div className="flex space-x-2">
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleReportIssue(vehicle);
+                        }}
+                        className="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded text-xs font-medium transition-colors"
+                      >
+                        Báo sự cố
+                      </button>
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleScheduleMaintenance(vehicle);
+                        }}
+                        className="bg-orange-600 hover:bg-orange-700 text-white px-3 py-1.5 rounded text-xs font-medium transition-colors"
+                      >
+                        Bảo trì
+                      </button>
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleViewHistory(vehicle);
+                        }}
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded text-xs font-medium transition-colors"
+                      >
+                        Lịch sử
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -357,89 +449,46 @@ export const TechnicalStatus: React.FC = () => {
         </div>
       </div>
 
-      {/* Vehicle Details Section */}
-      {selectedVehicle && (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-900">Chi tiết xe</h3>
-            <p className="text-sm text-gray-600">{selectedVehicle.model} - {selectedVehicle.licensePlate}</p>
-          </div>
+      {/* Vehicle Details Modal */}
+      <VehicleDetailsModal
+        vehicle={selectedVehicle}
+        isOpen={showDetailsModal}
+        onClose={() => {
+          setShowDetailsModal(false);
+          setSelectedVehicle(null);
+        }}
+      />
 
-          <div className="p-6">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Status Overview */}
-              <div>
-                <h4 className="text-sm font-medium text-gray-900 mb-3">Tình trạng hiện tại</h4>
-                <div className="flex items-center gap-2 mb-4">
-                  {getStatusIcon(selectedVehicle.technicalStatus)}
-                  <span className="font-medium">{getStatusText(selectedVehicle.technicalStatus)}</span>
-                </div>
+      {/* Add Incident Modal */}
+      <AddIncidentModal
+        isOpen={showReportModal}
+        onClose={closeModals}
+        onSubmit={handleSubmitIssue}
+        initialVehicle={modalVehicle ? {
+          id: modalVehicle.id,
+          model: modalVehicle.model,
+          licensePlate: modalVehicle.licensePlate
+        } : null}
+      />
 
-                {/* Key Metrics */}
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Km đã đi:</span>
-                    <span className="font-medium">{selectedVehicle.mileage.toLocaleString()} km</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Kiểm tra cuối:</span>
-                    <span className="font-medium">{selectedVehicle.lastInspection}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Bảo trì tiếp:</span>
-                    <span className="font-medium">{selectedVehicle.nextMaintenance}</span>
-                  </div>
-                </div>
-              </div>
+      {/* Maintenance Schedule Modal */}
+      <MaintenanceScheduleModal
+        isOpen={showMaintenanceModal}
+        vehicle={modalVehicle}
+        maintenanceType={maintenanceType}
+        setMaintenanceType={setMaintenanceType}
+        maintenanceDescription={maintenanceDescription}
+        setMaintenanceDescription={setMaintenanceDescription}
+        onSubmit={handleSubmitMaintenance}
+        onClose={closeModals}
+      />
 
-              {/* Issues */}
-              <div>
-                <h4 className="text-sm font-medium text-gray-900 mb-3">Vấn đề hiện tại</h4>
-                {selectedVehicle.issues.length > 0 ? (
-                  <div className="space-y-2">
-                    {selectedVehicle.issues.map((issue, index) => (
-                      <div key={index} className="flex items-start gap-2 text-sm text-red-600 bg-red-50 p-2 rounded">
-                        <ExclamationTriangleIcon className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                        <span>{issue}</span>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-sm text-gray-500">Không có vấn đề nào</p>
-                )}
-              </div>
-
-              {/* Maintenance History */}
-              <div>
-                <h4 className="text-sm font-medium text-gray-900 mb-3">Lịch sử bảo trì gần đây</h4>
-                <div className="space-y-3">
-                  {selectedVehicle.maintenanceRecords.slice(0, 3).map((record) => (
-                    <div key={record.id} className="border border-gray-200 rounded p-3">
-                      <div className="flex items-start justify-between mb-2">
-                        <span className={`px-2 py-1 text-xs font-medium rounded ${getMaintenanceStatusColor(record.status)}`}>
-                          {record.status === 'completed' ? 'Hoàn thành' :
-                           record.status === 'in-progress' ? 'Đang thực hiện' : 'Đã lên lịch'}
-                        </span>
-                        <span className="text-xs text-gray-500">{record.date}</span>
-                      </div>
-                      
-                      <p className="text-sm font-medium text-gray-900 mb-1">{record.description}</p>
-                      <p className="text-xs text-gray-600">Kỹ thuật viên: {record.technician}</p>
-                      
-                      {record.cost && (
-                        <p className="text-xs text-gray-600 mt-1">
-                          Chi phí: {record.cost.toLocaleString()} VNĐ
-                        </p>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
+      {/* Maintenance History Modal */}
+      <MaintenanceHistoryModal
+        isOpen={showHistoryModal}
+        vehicle={modalVehicle}
+        onClose={closeModals}
+      />
 
     </div>
   );

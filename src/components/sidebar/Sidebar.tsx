@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ChevronLeftIcon, ChevronRightIcon, ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline';
 import type { SidebarProps, MenuItem, SidebarSection } from '../../types/sidebar';
 
-interface SidebarComponentProps extends SidebarProps {
+interface Sidebar extends SidebarProps {
   sections: SidebarSection[];
   logo?: React.ReactNode;
   userInfo?: {
@@ -12,7 +12,7 @@ interface SidebarComponentProps extends SidebarProps {
   };
 }
 
-export const Sidebar: React.FC<SidebarComponentProps> = ({
+export const Sidebar: React.FC<Sidebar> = ({
   currentRole,
   currentPath,
   isCollapsed = false,
@@ -26,32 +26,41 @@ export const Sidebar: React.FC<SidebarComponentProps> = ({
   const [openMenuItems, setOpenMenuItems] = useState<string[]>([]);
 
   // Filter sections and menu items based on current role
-  const filteredSections = useMemo(() => 
-    sections.filter(section => 
-      section.roles.includes(currentRole)
-    ).map(section => ({
-      ...section,
-      items: section.items.filter(item => item.roles.includes(currentRole))
-    })), [sections, currentRole]);
+  const filteredSections = sections.filter(section => 
+    section.roles.includes(currentRole)
+  ).map(section => ({
+    ...section,
+    items: section.items.filter(item => item.roles.includes(currentRole))
+  }));
 
   const toggleSection = (sectionId: string) => {
     if (isCollapsed) return;
     
-    setOpenSections(prev => 
-      prev.includes(sectionId) 
-        ? prev.filter(id => id !== sectionId)
-        : [...prev, sectionId]
-    );
+    setOpenSections(prev => {
+      // Accordion behavior: chỉ mở một section tại một thời điểm
+      if (prev.includes(sectionId)) {
+        // Nếu section đang mở thì đóng nó
+        return prev.filter(id => id !== sectionId);
+      } else {
+        // Nếu section đang đóng thì mở nó và đóng tất cả sections khác
+        return [sectionId];
+      }
+    });
   };
 
   const toggleMenuItem = (itemId: string) => {
     if (isCollapsed) return;
     
-    setOpenMenuItems(prev => 
-      prev.includes(itemId) 
-        ? prev.filter(id => id !== itemId)
-        : [...prev, itemId]
-    );
+    setOpenMenuItems(prev => {
+      // Accordion behavior: chỉ mở một menu item tại một thời điểm trong cùng section
+      if (prev.includes(itemId)) {
+        // Nếu menu đang mở thì đóng nó
+        return prev.filter(id => id !== itemId);
+      } else {
+        // Nếu menu đang đóng thì mở nó và đóng tất cả menus khác
+        return [itemId];
+      }
+    });
   };
 
   const handleItemClick = (item: MenuItem) => {
@@ -65,6 +74,29 @@ export const Sidebar: React.FC<SidebarComponentProps> = ({
   const isItemActive = (path: string) => {
     return currentPath === path || currentPath.startsWith(path + '/');
   };
+
+  // Tự động mở section chứa trang hiện tại khi component mount
+  useEffect(() => {
+    // Tìm section chứa trang hiện tại
+    const activeSection = filteredSections.find(section => 
+      section.items.some(item => {
+        if (currentPath === item.path || currentPath.startsWith(item.path + '/')) {
+          return true;
+        }
+        if (item.children) {
+          return item.children.some(child => 
+            currentPath === child.path || currentPath.startsWith(child.path + '/')
+          );
+        }
+        return false;
+      })
+    );
+    
+    // Chỉ mở section chứa trang hiện tại nếu chưa có section nào được mở
+    if (activeSection) {
+      setOpenSections(prev => prev.length === 0 ? [activeSection.id] : prev);
+    }
+  }, [currentPath, filteredSections]);
 
   const renderMenuItem = (item: MenuItem, level: number = 0) => {
     const hasChildren = item.children && item.children.length > 0;
@@ -80,13 +112,13 @@ export const Sidebar: React.FC<SidebarComponentProps> = ({
             ${level > 0 ? 'ml-4' : ''}
             ${isActive 
               ? 'bg-blue-600 text-white shadow-md border-l-4 border-blue-800' 
-              : 'text-gray-700 hover:bg-blue-50 hover:text-blue-800 hover:border-l-2 hover:border-blue-300'
+              : 'text-gray-700 hover:bg-blue-50 hover:text-blue-800'
             }
             ${isCollapsed ? 'justify-center' : 'justify-start'}
           `}
           title={isCollapsed ? item.title : undefined}
         >
-          <span className={`flex-shrink-0 w-5 h-5 ${isActive ? 'text-white' : 'text-blue-600'} transition-colors duration-200`}>
+          <span className={`flex-shrink-0 w-5 h-5 ${isActive ? 'text-white' : 'text-blue-600'}`}>
             {item.icon}
           </span>
           
@@ -95,13 +127,13 @@ export const Sidebar: React.FC<SidebarComponentProps> = ({
               <span className="ml-3 flex-1 text-left">{item.title}</span>
               
               {item.badge && (
-                <span className="ml-2 px-2 py-1 text-xs bg-red-500 text-white rounded-full shadow-sm">
+                <span className="ml-2 px-2 py-1 text-xs bg-red-500 text-white rounded-full">
                   {item.badge}
                 </span>
               )}
               
               {hasChildren && (
-                <span className={`ml-2 ${isActive ? 'text-white' : 'text-blue-500'} transition-colors duration-200`}>
+                <span className={`ml-2 ${isActive ? 'text-white' : 'text-blue-500'}`}>
                   {isOpen ? (
                     <ChevronUpIcon className="w-4 h-4" />
                   ) : (
@@ -150,43 +182,6 @@ export const Sidebar: React.FC<SidebarComponentProps> = ({
     );
   };
 
-  // Initialize sections to open on mount only
-  useEffect(() => {
-    let mounted = true;
-    
-    const initializeSections = () => {
-      const sectionsToOpen: string[] = [];
-      
-      filteredSections.forEach(section => {
-        const hasActiveItem = section.items.some(item => {
-          if (currentPath === item.path || currentPath.startsWith(item.path + '/')) {
-            return true;
-          }
-          if (item.children) {
-            return item.children.some(child => 
-              currentPath === child.path || currentPath.startsWith(child.path + '/')
-            );
-          }
-          return false;
-        });
-        
-        if (hasActiveItem) {
-          sectionsToOpen.push(section.id);
-        }
-      });
-      
-      if (mounted && sectionsToOpen.length > 0) {
-        setOpenSections(sectionsToOpen);
-      }
-    };
-    
-    initializeSections();
-    
-    return () => {
-      mounted = false;
-    };
-  }, []); // Run only once on mount
-
   return (
     <div className={`
       bg-white shadow-lg border-r border-gray-200 transition-all duration-300 ease-in-out
@@ -194,7 +189,6 @@ export const Sidebar: React.FC<SidebarComponentProps> = ({
       min-h-screen flex flex-col
     `}>
       {/* Header with Logo and Toggle */}
-            {/* Header with Logo and Toggle */}
       <div className="p-4 border-b border-gray-200 bg-blue-50">
         <div className="flex items-center justify-between">
           {!isCollapsed && logo && (

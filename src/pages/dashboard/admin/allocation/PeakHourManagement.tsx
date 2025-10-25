@@ -172,7 +172,7 @@ export const PeakHourManagement: React.FC = () => {
   };
 
   return (
-    <div className="p-6 space-y-6 bg-gradient-to-br from-orange-50 via-red-50 to-pink-50 min-h-screen">
+    <div className="p-6 space-y-6 bg-gradient-to-br from-orange-50 via-pink-50 to-rose-50 min-h-screen">
       {/* Page Header */}
       <PageHeader
         title="Quản Lý Giờ Cao Điểm"
@@ -183,74 +183,76 @@ export const PeakHourManagement: React.FC = () => {
 
       {/* Real-time Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-gradient-to-r from-red-500 to-pink-500 rounded-xl shadow-lg p-6 text-white">
+        <div className="bg-gradient-to-r from-blue-200 to-indigo-200 rounded-xl shadow-md p-6 text-gray-700">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-red-100 text-sm font-medium">
+              <p className="text-blue-600 text-sm font-medium">
                 Giờ cao điểm hiện tại
               </p>
-              <p className="text-2xl font-bold">07:00-09:00</p>
-              <p className="text-red-100 text-xs">Sáng rush hour</p>
+              <p className="text-2xl font-bold text-gray-800">07:00-09:00</p>
+              <p className="text-blue-500 text-xs">Sáng rush hour</p>
             </div>
-            <FireIcon className="w-8 h-8 text-red-200" />
+            <FireIcon className="w-8 h-8 text-blue-500" />
           </div>
         </div>
 
-        <div className="bg-gradient-to-r from-orange-500 to-red-500 rounded-xl shadow-lg p-6 text-white">
+        <div className="bg-gradient-to-r from-amber-200 to-yellow-200 rounded-xl shadow-md p-6 text-gray-700">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-orange-100 text-sm font-medium">
+              <p className="text-amber-600 text-sm font-medium">
                 Tỷ lệ sử dụng trung bình
               </p>
-              <p className="text-2xl font-bold">85.7%</p>
-              <div className="flex items-center text-orange-100 text-xs">
+              <p className="text-2xl font-bold text-gray-800">85.7%</p>
+              <div className="flex items-center text-amber-600 text-xs">
                 <ArrowTrendingUpIcon className="w-3 h-3 mr-1" />
                 +12% từ tuần trước
               </div>
             </div>
-            <ChartBarIcon className="w-8 h-8 text-orange-200" />
+            <ChartBarIcon className="w-8 h-8 text-amber-500" />
           </div>
         </div>
 
-        <div className="bg-gradient-to-r from-yellow-500 to-orange-500 rounded-xl shadow-lg p-6 text-white">
+        <div className="bg-gradient-to-r from-emerald-200 to-teal-200 rounded-xl shadow-md p-6 text-gray-700">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-yellow-100 text-sm font-medium">
+              <p className="text-emerald-600 text-sm font-medium">
                 Thời gian chờ TB
               </p>
-              <p className="text-2xl font-bold">11.7 phút</p>
-              <div className="flex items-center text-yellow-100 text-xs">
+              <p className="text-2xl font-bold text-gray-800">11.7 phút</p>
+              <div className="flex items-center text-emerald-600 text-xs">
                 <ArrowTrendingDownIcon className="w-3 h-3 mr-1" />
                 -3% từ tuần trước
               </div>
             </div>
-            <ClockIcon className="w-8 h-8 text-yellow-200" />
+            <ClockIcon className="w-8 h-8 text-emerald-500" />
           </div>
         </div>
 
-        <div className="bg-gradient-to-r from-pink-500 to-red-500 rounded-xl shadow-lg p-6 text-white">
+        <div className="bg-gradient-to-r from-rose-200 to-pink-200 rounded-xl shadow-md p-6 text-gray-700">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-pink-100 text-sm font-medium">
+              <p className="text-rose-600 text-sm font-medium">
                 Cảnh báo hoạt động
               </p>
-              <p className="text-2xl font-bold">{alerts.length}</p>
-              <p className="text-pink-100 text-xs">Cần xử lý ngay</p>
+              <p className="text-2xl font-bold text-gray-800">
+                {alerts.length}
+              </p>
+              <p className="text-rose-500 text-xs">Cần xử lý ngay</p>
             </div>
-            <BellAlertIcon className="w-8 h-8 text-pink-200" />
+            <BellAlertIcon className="w-8 h-8 text-rose-500" />
           </div>
         </div>
       </div>
 
       {/* Alerts Panel */}
-      <div className="bg-white rounded-xl shadow-lg border border-red-200 overflow-hidden">
-        <div className="bg-gradient-to-r from-red-600 to-pink-600 px-6 py-4">
+      <div className="bg-white rounded-xl shadow-md border border-rose-200 overflow-hidden">
+        <div className="bg-gradient-to-r from-rose-400 to-pink-400 px-6 py-4">
           <div className="flex items-center space-x-2">
             <BellAlertIcon className="w-5 h-5 text-white" />
             <h3 className="text-lg font-semibold text-white">
               Cảnh Báo Thời Gian Thực
             </h3>
-            <span className="bg-white bg-opacity-20 text-white text-xs px-2 py-1 rounded-full">
+            <span className="bg-white bg-opacity-30 text-white text-xs px-2 py-1 rounded-full">
               {alerts.length} cảnh báo
             </span>
           </div>
@@ -316,9 +318,9 @@ export const PeakHourManagement: React.FC = () => {
       />
 
       {/* Peak Hours Analysis */}
-      <div className="bg-white rounded-xl shadow-lg border border-orange-200 overflow-hidden">
-        <div className="bg-gradient-to-r from-orange-500 to-red-500 px-6 py-4">
-          <h3 className="text-lg font-semibold text-white">
+      <div className="bg-white rounded-xl shadow-md border border-orange-200 overflow-hidden">
+        <div className="bg-gradient-to-r from-orange-300 to-amber-300 px-6 py-4">
+          <h3 className="text-lg font-semibold text-gray-700">
             Phân Tích Giờ Cao Điểm
           </h3>
         </div>
@@ -327,25 +329,25 @@ export const PeakHourManagement: React.FC = () => {
           <table className="w-full">
             <thead className="bg-orange-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
                   Khung giờ
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
                   Trạm
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
                   Cung/Cầu
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
                   Tỷ lệ sử dụng
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
                   Doanh thu
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
                   Thời gian chờ
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
                   Ưu tiên
                 </th>
               </tr>
@@ -354,7 +356,7 @@ export const PeakHourManagement: React.FC = () => {
               {peakHourData.map((data) => (
                 <tr
                   key={data.id}
-                  className="hover:bg-orange-50 transition-colors"
+                  className="hover:bg-orange-25 transition-colors"
                 >
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
@@ -452,10 +454,10 @@ export const PeakHourManagement: React.FC = () => {
       </div>
 
       {/* Optimization Suggestions */}
-      <div className="bg-gradient-to-r from-pink-100 to-red-100 rounded-xl shadow-lg border border-pink-200 p-6">
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl shadow-md border border-blue-200 p-6">
         <div className="flex items-start space-x-4">
           <div className="flex-shrink-0">
-            <div className="bg-pink-500 rounded-full p-3">
+            <div className="bg-blue-400 rounded-full p-3">
               <FireIcon className="w-6 h-6 text-white" />
             </div>
           </div>

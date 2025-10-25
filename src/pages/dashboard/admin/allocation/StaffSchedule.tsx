@@ -7,17 +7,29 @@ import {
   XCircleIcon,
   PlusIcon,
   PencilIcon,
+  XMarkIcon,
 } from "@heroicons/react/24/outline";
 import {
   PageHeader,
   type FilterOption,
 } from "../../../../components/dashboard/shared";
+import { Modal } from "../../../../components/Modal";
 import type { StaffMember, Schedule } from "../../../../types/admin";
 
 export const StaffSchedule: React.FC = () => {
   const [selectedWeek, setSelectedWeek] = useState("this_week");
   const [selectedStation, setSelectedStation] = useState("all");
   const [viewMode, setViewMode] = useState<"calendar" | "list">("calendar");
+  const [isAddShiftModalOpen, setIsAddShiftModalOpen] = useState(false);
+  const [newShiftForm, setNewShiftForm] = useState({
+    staffId: "",
+    date: "",
+    shift: "morning",
+    startTime: "",
+    endTime: "",
+    station: "",
+    tasks: [""],
+  });
 
   // Mock data
   const staffMembers: StaffMember[] = useMemo(
@@ -159,6 +171,54 @@ export const StaffSchedule: React.FC = () => {
     }
   };
 
+  const handleAddTask = () => {
+    setNewShiftForm((prev) => ({
+      ...prev,
+      tasks: [...prev.tasks, ""],
+    }));
+  };
+
+  const handleRemoveTask = (index: number) => {
+    setNewShiftForm((prev) => ({
+      ...prev,
+      tasks: prev.tasks.filter((_, i) => i !== index),
+    }));
+  };
+
+  const handleTaskChange = (index: number, value: string) => {
+    setNewShiftForm((prev) => ({
+      ...prev,
+      tasks: prev.tasks.map((task, i) => (i === index ? value : task)),
+    }));
+  };
+
+  const handleSubmitShift = () => {
+    // TODO: Implement API call to add new shift
+    console.log("New shift data:", newShiftForm);
+    setIsAddShiftModalOpen(false);
+    setNewShiftForm({
+      staffId: "",
+      date: "",
+      shift: "morning",
+      startTime: "",
+      endTime: "",
+      station: "",
+      tasks: [""],
+    });
+  };
+
+  const resetForm = () => {
+    setNewShiftForm({
+      staffId: "",
+      date: "",
+      shift: "morning",
+      startTime: "",
+      endTime: "",
+      station: "",
+      tasks: [""],
+    });
+  };
+
   const days = ["Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7", "CN"];
   const hours = Array.from(
     { length: 24 },
@@ -287,7 +347,10 @@ export const StaffSchedule: React.FC = () => {
               </button>
             </div>
 
-            <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2">
+            <button
+              onClick={() => setIsAddShiftModalOpen(true)}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
+            >
               <PlusIcon className="w-4 h-4" />
               <span>Thêm ca</span>
             </button>
@@ -487,6 +550,206 @@ export const StaffSchedule: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Add Shift Modal */}
+      <Modal
+        isOpen={isAddShiftModalOpen}
+        onClose={() => {
+          setIsAddShiftModalOpen(false);
+          resetForm();
+        }}
+        title="Thêm Ca Làm Việc Mới"
+      >
+        <div className="space-y-6">
+          {/* Staff Selection */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Nhân viên *
+            </label>
+            <select
+              value={newShiftForm.staffId}
+              onChange={(e) =>
+                setNewShiftForm((prev) => ({
+                  ...prev,
+                  staffId: e.target.value,
+                }))
+              }
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              required
+            >
+              <option value="">Chọn nhân viên</option>
+              {staffMembers.map((staff) => (
+                <option key={staff.id} value={staff.id}>
+                  {staff.name} - {staff.position}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Date Selection */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Ngày làm việc *
+            </label>
+            <input
+              type="date"
+              value={newShiftForm.date}
+              onChange={(e) =>
+                setNewShiftForm((prev) => ({ ...prev, date: e.target.value }))
+              }
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              required
+            />
+          </div>
+
+          {/* Shift Type */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Loại ca *
+            </label>
+            <select
+              value={newShiftForm.shift}
+              onChange={(e) =>
+                setNewShiftForm((prev) => ({ ...prev, shift: e.target.value }))
+              }
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="morning">Ca sáng</option>
+              <option value="afternoon">Ca chiều</option>
+              <option value="night">Ca đêm</option>
+              <option value="full_day">Ca ngày</option>
+            </select>
+          </div>
+
+          {/* Time Range */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Giờ bắt đầu *
+              </label>
+              <input
+                type="time"
+                value={newShiftForm.startTime}
+                onChange={(e) =>
+                  setNewShiftForm((prev) => ({
+                    ...prev,
+                    startTime: e.target.value,
+                  }))
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Giờ kết thúc *
+              </label>
+              <input
+                type="time"
+                value={newShiftForm.endTime}
+                onChange={(e) =>
+                  setNewShiftForm((prev) => ({
+                    ...prev,
+                    endTime: e.target.value,
+                  }))
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                required
+              />
+            </div>
+          </div>
+
+          {/* Station Selection */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Trạm làm việc *
+            </label>
+            <select
+              value={newShiftForm.station}
+              onChange={(e) =>
+                setNewShiftForm((prev) => ({
+                  ...prev,
+                  station: e.target.value,
+                }))
+              }
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              required
+            >
+              <option value="">Chọn trạm</option>
+              <option value="Trạm Cầu Giấy">Trạm Cầu Giấy</option>
+              <option value="Trạm Hàng Xanh">Trạm Hàng Xanh</option>
+              <option value="Trạm Lotte Center">Trạm Lotte Center</option>
+            </select>
+          </div>
+
+          {/* Tasks */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Nhiệm vụ
+              </label>
+              <button
+                type="button"
+                onClick={handleAddTask}
+                className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center space-x-1"
+              >
+                <PlusIcon className="w-4 h-4" />
+                <span>Thêm nhiệm vụ</span>
+              </button>
+            </div>
+            <div className="space-y-2">
+              {newShiftForm.tasks.map((task, index) => (
+                <div key={index} className="flex items-center space-x-2">
+                  <input
+                    type="text"
+                    value={task}
+                    onChange={(e) => handleTaskChange(index, e.target.value)}
+                    placeholder={`Nhiệm vụ ${index + 1}`}
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                  {newShiftForm.tasks.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveTask(index)}
+                      className="text-red-600 hover:text-red-700 p-1"
+                    >
+                      <XMarkIcon className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+            <button
+              type="button"
+              onClick={() => {
+                setIsAddShiftModalOpen(false);
+                resetForm();
+              }}
+              className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+            >
+              Hủy
+            </button>
+            <button
+              type="button"
+              onClick={handleSubmitShift}
+              disabled={
+                !newShiftForm.staffId ||
+                !newShiftForm.date ||
+                !newShiftForm.startTime ||
+                !newShiftForm.endTime ||
+                !newShiftForm.station
+              }
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+            >
+              Tạo ca làm việc
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };

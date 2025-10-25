@@ -1,4 +1,4 @@
-import { Card, Row, Col, Typography, Button, Space, Avatar } from 'antd';
+import { Card, Row, Col, Typography, Button, Space, Avatar, Timeline, Divider } from 'antd';
 import { Link } from 'react-router-dom';
 import {
   SearchOutlined,

@@ -116,10 +116,10 @@ const BookingPage: React.FC = () => {
         const vehicleData = await vehicleService.getVehicleById(vehicleId);
         setVehicle(vehicleData);
 
-        // Initial price window (09:00 -> +3 days 18:00)
+        // Initial price window (09:00 -> +1 day 18:00)
         const now = dayjs();
         const startAt = now.hour(9).minute(0).second(0).millisecond(0).toISOString();
-        const endAt = now.add(3, "day").hour(18).minute(0).second(0).millisecond(0).toISOString();
+        const endAt = now.add(1, "day").hour(18).minute(0).second(0).millisecond(0).toISOString();
         
         console.log('🔧 [BookingPage] Calculating initial price with:', { startAt, endAt });
         await calculatePrice(startAt, endAt, false);
@@ -314,7 +314,7 @@ const BookingPage: React.FC = () => {
                     vehicleId: vehicle?.id ?? vehicleId,
                     stationId: stationId ?? "default-station-id",
                     rental_type: "daily",
-                    rental_period: [dayjs(), dayjs().add(3, "day")],
+                    rental_period: [dayjs(), dayjs().add(1, "day")],
                     rental_start_time: dayjs("09:00:00", "HH:mm:ss"),
                     rental_end_time: dayjs("18:00:00", "HH:mm:ss"),
                   }}

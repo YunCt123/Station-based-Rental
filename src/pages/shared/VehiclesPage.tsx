@@ -182,10 +182,10 @@ const Vehicles = () => {
           sortOption = "name";
       }
 
-      console.log("📡 Calling vehicleService.searchVehicles with:", {
-        filters,
-        options: { limit: 50, page: currentPage, sort: sortOption },
-      });
+      // console.log("📡 Calling vehicleService.searchVehicles with:", {
+      //   filters,
+      //   options: { limit: 50, page: currentPage, sort: sortOption },
+      // });
 
       const response = await vehicleService.searchVehicles(filters, {
         limit: 20, // Get more vehicles for better filtering
@@ -202,7 +202,7 @@ const Vehicles = () => {
       ];
       setLocations(uniqueLocations);
     } catch (error) {
-      console.error("❌ Error fetching vehicles:", error);
+      // console.error("❌ Error fetching vehicles:", error);
       setIsError("Failed to load vehicles. Please try again.");
       setVehicles([]);
     }

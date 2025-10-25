@@ -19,9 +19,9 @@ import { getCurrentUser } from "../../utils/auth";
 import BookingSteps from "../../components/booking/BookingSteps";
 import RentalPeriodForm from "../../components/booking/RentalPeriodForm";
 import CustomerInformationForm from "../../components/booking/CustomerInformationForm";
-import DocumentUploadProgress from "../../components/booking/DocumentUploadProgress";
-import DocumentUpload from "../../components/booking/DocumentUpload";
-import UploadGuidelines from "../../components/booking/UploadGuidelines";
+// import DocumentUploadProgress from "../../components/booking/DocumentUploadProgress";
+// import DocumentUpload from "../../components/booking/DocumentUpload";
+// import UploadGuidelines from "../../components/booking/UploadGuidelines";
 import InsuranceAndTermsForm from "../../components/booking/InsuranceAndTermsForm";
 import VehicleSummary from "../../components/booking/VehicleSummary";
 import { DOCUMENT_TYPES } from "../../components/booking/DocumentTypes";
@@ -55,7 +55,8 @@ const BookingPage: React.FC = () => {
 
   const [uploadStatus, setUploadStatus] = useState<{
     [key: string]: DocumentUploadStatus["status"];
-  }>({
+  }>
+  ({
     [DOCUMENT_TYPES.DRIVERS_LICENSE]: "not_started",
     [DOCUMENT_TYPES.NATIONAL_ID_FRONT]: "not_started",
     [DOCUMENT_TYPES.NATIONAL_ID_BACK]: "not_started",
@@ -149,12 +150,12 @@ const BookingPage: React.FC = () => {
       setLoading(true);
 
       // Use station_id from vehicle data instead of URL parameter
-      const vehicleStationId = vehicle?.station_id || vehicle?.stationId;
+      const vehicleStationId = vehicle?.stationId || vehicle?.stationId;
       const finalStationId: string = vehicleStationId || stationId || "default-station-id";
 
       console.log("=== STATION DEBUG ===");
       console.log("URL stationId:", stationId);
-      console.log("Vehicle station_id:", vehicle?.station_id);
+      console.log("Vehicle station_id:", vehicle?.stationId);
       console.log("Vehicle stationId:", vehicle?.stationId);
       console.log("Final stationId:", finalStationId);
 

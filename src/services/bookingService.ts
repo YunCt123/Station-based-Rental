@@ -223,26 +223,81 @@ export interface PaymentCallbackResponse {
 
 // Main booking service class
 export class BookingService {
+  // ✅ FIXED: Helper function to validate and debug price calculation
+  private validatePriceCalculation(request: PriceCalculationRequest, response: PriceBreakdown): void {
+    console.log('🔍 [Frontend] Validating price calculation:');
+    console.log('📤 Request:', request);
+    console.log('📥 Response:', response);
+    
+    // Basic validation
+    if (!response.basePrice || response.basePrice < 0) {
+      console.warn('⚠️ Invalid base price:', response.basePrice);
+    }
+    
+    if (!response.totalPrice || response.totalPrice < (response.basePrice || 0)) {
+      console.warn('⚠️ Invalid total price:', response.totalPrice);
+    }
+    
+    // Calculate time difference
+    const startTime = new Date(request.startAt);
+    const endTime = new Date(request.endAt);
+    const hours = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
+    const days = hours / 24;
+    
+    console.log(`⏰ Time analysis: ${hours.toFixed(2)}h (${days.toFixed(2)} days)`);
+    
+    // Expected pricing analysis
+    if (response.hourly_rate && response.daily_rate && response.basePrice) {
+      const expectedHourly = hours * response.hourly_rate;
+      const expectedDaily = Math.ceil(days) * response.daily_rate;
+      
+      console.log(`💰 Expected pricing:`);
+      console.log(`   Hourly: ${hours.toFixed(2)}h × $${response.hourly_rate} = $${expectedHourly.toFixed(2)}`);
+      console.log(`   Daily: ${Math.ceil(days)} days × $${response.daily_rate} = $${expectedDaily.toFixed(2)}`);
+      console.log(`   Actual base: $${response.basePrice}`);
+      
+      // Flag potential issues
+      const tolerance = 50; // $50 tolerance for multipliers
+      if (hours >= 24 && Math.abs(response.basePrice - expectedDaily) > tolerance) {
+        console.warn(`⚠️ Daily pricing mismatch: expected ~$${expectedDaily}, got $${response.basePrice}`);
+      } else if (hours < 24 && Math.abs(response.basePrice - expectedHourly) > tolerance) {
+        console.warn(`⚠️ Hourly pricing mismatch: expected ~$${expectedHourly}, got $${response.basePrice}`);
+      }
+    }
+  }
+
   // Calculate booking price before creating booking
   async calculatePrice(request: PriceCalculationRequest): Promise<PriceBreakdown> {
     try {
-      console.log('[BookingService] Calculating price via API:', request);
+      console.log('🚀 [Frontend] Sending calculate price request:', request);
       
       const response = await api.post<ApiResponse<PriceBreakdown>>('/bookings/calculate-price', request);
       
       if (response.data.success && response.data.data) {
-        console.log('[BookingService] ✅ API Success - Price calculated:', response.data.data);
-        return response.data.data;
+        const pricing = response.data.data;
+        
+        // ✅ Validate and debug pricing
+        this.validatePriceCalculation(request, pricing);
+        
+        console.log('✅ [Frontend] Price calculation successful:', pricing);
+        return pricing;
+      } else {
+        throw new Error('Price calculation failed: Invalid response');
+      }
+    } catch (error: any) {
+      console.error('💥 [Frontend] Price calculation error:', error);
+      
+      if (error.response?.status === 404) {
+        throw new Error('Vehicle not found');
+      } else if (error.response?.status === 400) {
+        throw new Error(error.response.data?.message || 'Invalid booking parameters');
       }
       
-      throw new Error('Failed to calculate price');
-    } catch (error: any) {
-      console.warn('[BookingService] ❌ API Failed, using fallback calculation:', error.message);
-      
-      // Fallback price calculation for development
-      const fallback = this.calculateFallbackPrice(request);
-      console.log('[BookingService] 🔄 Fallback price:', fallback);
-      return fallback;
+      // ✅ Fallback calculation for development
+      console.warn('⚠️ [Frontend] Using fallback price calculation');
+      const fallbackPrice = this.calculateFallbackPrice(request);
+      this.validatePriceCalculation(request, fallbackPrice);
+      return fallbackPrice;
     }
   }
 
@@ -831,38 +886,86 @@ export class BookingService {
     return new Date() < new Date(booking.hold_expires_at);
   }
 
-  // Fallback price calculation for development/offline mode
+  // ✅ IMPROVED: Fallback price calculation for development/offline mode
   private calculateFallbackPrice(request: PriceCalculationRequest): PriceBreakdown {
-    console.log('[BookingService] Using fallback price calculation');
+    console.log('🔧 [Frontend] Calculating fallback price for:', request);
     
-    const start = new Date(request.startAt);
-    const end = new Date(request.endAt);
-    const hours = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60)));
+    const startTime = new Date(request.startAt);
+    const endTime = new Date(request.endAt);
+    const hours = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
+    const days = hours / 24;
     
-    // Use realistic rates instead of hardcoded $50/hour
-    const baseHourlyRate = 19; // $19/hour to match the UI
-    const basePrice = hours * baseHourlyRate;
+    // Default rates (should match backend)
+    const defaultRates = {
+      hourly: 20,  // $20/hour
+      daily: 135,  // $135/day
+      currency: 'USD'
+    };
+    
+    let basePrice = 0;
+    
+    // ✅ Same logic as backend
+    if (hours >= 24) {
+      // Use daily pricing for 24+ hours
+      const totalDays = Math.ceil(days);
+      
+      // Apply weekend multiplier
+      for (let i = 0; i < totalDays; i++) {
+        const dayDate = new Date(startTime.getTime() + i * 24 * 60 * 60 * 1000);
+        const isWeekend = dayDate.getDay() === 0 || dayDate.getDay() === 6;
+        const weekendMultiplier = isWeekend ? 1.2 : 1.0;
+        basePrice += defaultRates.daily * weekendMultiplier;
+      }
+    } else {
+      // Use hourly pricing for < 24 hours
+      const totalHours = Math.ceil(hours);
+      
+      // Apply peak and weekend multipliers
+      for (let i = 0; i < totalHours; i++) {
+        const hourStart = new Date(startTime.getTime() + i * 60 * 60 * 1000);
+        const hour = hourStart.getHours();
+        const isWeekend = hourStart.getDay() === 0 || hourStart.getDay() === 6;
+        
+        // Peak hours: 7-9 AM and 5-7 PM
+        const isPeakHour = (hour >= 7 && hour < 9) || (hour >= 17 && hour < 19);
+        
+        const peakMultiplier = isPeakHour ? 1.5 : 1.0;
+        const weekendMultiplier = isWeekend ? 1.2 : 1.0;
+        
+        basePrice += defaultRates.hourly * peakMultiplier * weekendMultiplier;
+      }
+    }
+    
+    // Calculate additional costs
     const insurancePrice = request.insurancePremium ? basePrice * 0.1 : 0;
-    const taxes = (basePrice + insurancePrice) * 0.1; // 10% tax
-    const total = basePrice + insurancePrice + taxes;
-    const deposit = Math.round(total * 0.2); // 20% deposit
+    const subtotal = basePrice + insurancePrice;
+    const taxes = subtotal * 0.1;
+    const total = subtotal + taxes;
+    const deposit = total * 0.2;
     
-    return {
+    const breakdown: PriceBreakdown = {
+      // Backend format
+      hourly_rate: defaultRates.hourly,
+      daily_rate: defaultRates.daily,
+      currency: defaultRates.currency,
+      deposit: Number(deposit.toFixed(2)),
+      policy_version: 'fallback-v1.0',
+      
+      // Frontend format
       basePrice: Number(basePrice.toFixed(2)),
       insurancePrice: Number(insurancePrice.toFixed(2)),
       taxes: Number(taxes.toFixed(2)),
-      deposit: Number(deposit.toFixed(2)),
       totalPrice: Number(total.toFixed(2)),
-      currency: 'USD',
-      daily_rate: 130, // Match UI display
-      hourly_rate: 19, // Match UI display
       details: {
-        rawBase: basePrice,
+        rawBase: Number(basePrice.toFixed(2)),
         peakMultiplier: 1,
         weekendMultiplier: 1,
-        hours
+        hours: Number(hours.toFixed(2))
       }
     };
+    
+    console.log('✅ [Frontend] Fallback calculation result:', breakdown);
+    return breakdown;
   }
 }
 

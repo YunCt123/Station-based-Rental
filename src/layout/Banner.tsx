@@ -189,7 +189,7 @@ const Banner: React.FC = () => {
               <button
                 onClick={handleSearch}
                 disabled={isSearching}
-                className="w-full mt-6 bg-gradient-to-r from-blue-600 to-green-500 hover:from-blue-700 hover:to-green-600 disabled:opacity-50 disabled:cursor-not-allowed text-white px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-200 flex items-center justify-center shadow-lg"
+                className="w-full mt-6 bg-blue-600 hover:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed text-white px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-200 flex items-center justify-center shadow-lg"
               >
                 {isSearching ? (
                   <>

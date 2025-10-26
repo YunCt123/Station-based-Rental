@@ -193,11 +193,11 @@ export interface PayOSCallbackParams {
   amount: number;
   provider_payment_id?: string | null;
 
-  // TOÀN BỘ PayOS params ở ROOT
+  // PayOS specific params
   id?: string;
   orderCode?: string;
-  amount?: string;
-  status?: string;
+  paymentAmount?: string; // Renamed to avoid conflict
+  paymentStatus?: string; // Renamed to avoid conflict
   code?: string;
   cancel?: string;
   bookingId?: string;
@@ -603,57 +603,186 @@ export class BookingService {
     }
   }
 
-  // Helper: Format booking request for API
-  formatBookingRequest(formData: any): BookingRequest {
-    // Handle different field names from the form
+  // Helper: Format price calculation request from form data
+  formatPriceCalculationRequest(formData: any): PriceCalculationRequest {
+    console.log('💰 [formatPriceCalculationRequest] Processing form data:', formData);
+    
     const vehicleId = formData.vehicleId || formData.vehicle_id;
-    const stationId = formData.stationId || formData.station_id;
+    const rentalType = formData.rental_type;
     
-    // Handle date and time - could be from rental_period array or separate fields
-    let startAt: Date;
-    let endAt: Date;
+    let startAt: string;
+    let endAt: string;
     
-    if (formData.rental_period && Array.isArray(formData.rental_period)) {
-      // If using rental_period array from DatePicker.RangePicker
-      const [startDate, endDate] = formData.rental_period;
+    if (rentalType === "hourly") {
+      // For hourly rental: use current date + start/end times
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
       const startTime = formData.rental_start_time;
       const endTime = formData.rental_end_time;
       
-      startAt = new Date(startDate.toDate());
-      if (startTime) {
-        startAt.setHours(startTime.hour(), startTime.minute(), 0, 0);
+      if (!startTime || !endTime) {
+        throw new Error('Start time and end time are required for hourly rental');
       }
       
-      endAt = new Date(endDate.toDate());
-      if (endTime) {
-        endAt.setHours(endTime.hour(), endTime.minute(), 0, 0);
+      const startDateTime = new Date(today);
+      startDateTime.setHours(startTime.hour(), startTime.minute(), 0, 0);
+      
+      const endDateTime = new Date(today);
+      endDateTime.setHours(endTime.hour(), endTime.minute(), 0, 0);
+      
+      startAt = startDateTime.toISOString();
+      endAt = endDateTime.toISOString();
+      
+    } else if (rentalType === "daily") {
+      // For daily rental: use rental_period + pickup time
+      if (!formData.rental_period || !Array.isArray(formData.rental_period) || formData.rental_period.length !== 2) {
+        throw new Error('Rental period is required for daily rental');
       }
+      
+      const [startDate, endDate] = formData.rental_period;
+      const pickupTime = formData.rental_start_time;
+      
+      if (!pickupTime) {
+        throw new Error('Pickup time is required for daily rental');
+      }
+      
+      const startDateTime = new Date(startDate.toDate());
+      startDateTime.setHours(pickupTime.hour(), pickupTime.minute(), 0, 0);
+      
+      const endDateTime = new Date(endDate.toDate());
+      endDateTime.setHours(pickupTime.hour(), pickupTime.minute(), 0, 0);
+      
+      startAt = startDateTime.toISOString();
+      endAt = endDateTime.toISOString();
+      
     } else {
-      // Fallback to individual fields
-      startAt = new Date(formData.startDate);
-      if (formData.startTime) {
-        if (typeof formData.startTime === 'string') {
-          const [hours, minutes] = formData.startTime.split(':');
-          startAt.setHours(parseInt(hours), parseInt(minutes), 0, 0);
-        } else if (formData.startTime.hour) {
-          // dayjs object
-          startAt.setHours(formData.startTime.hour(), formData.startTime.minute(), 0, 0);
-        }
-      }
-      
-      endAt = new Date(formData.endDate);
-      if (formData.endTime) {
-        if (typeof formData.endTime === 'string') {
-          const [hours, minutes] = formData.endTime.split(':');
-          endAt.setHours(parseInt(hours), parseInt(minutes), 0, 0);
-        } else if (formData.endTime.hour) {
-          // dayjs object
-          endAt.setHours(formData.endTime.hour(), formData.endTime.minute(), 0, 0);
-        }
-      }
+      // Fallback - direct startAt/endAt if provided
+      startAt = formData.startAt;
+      endAt = formData.endAt;
     }
     
-    return {
+    const request = {
+      vehicleId,
+      startAt,
+      endAt,
+      insurancePremium: formData.insurance?.premium || formData.insurance_premium || false
+    };
+    
+    console.log('✅ [formatPriceCalculationRequest] Final request:', request);
+    return request;
+  }
+
+  // Helper: Format booking request for API
+  formatBookingRequest(formData: any): BookingRequest {
+    console.log('🔧 [formatBookingRequest] Processing form data:', formData);
+    
+    // Handle different field names from the form
+    const vehicleId = formData.vehicleId || formData.vehicle_id;
+    const stationId = formData.stationId || formData.station_id;
+    const rentalType = formData.rental_type;
+    
+    // Handle date and time based on rental type
+    let startAt: Date;
+    let endAt: Date;
+    
+    if (rentalType === "hourly") {
+      // For hourly rental: use current date + start/end times
+      const today = new Date();
+      today.setHours(0, 0, 0, 0); // Reset to start of day
+      
+      const startTime = formData.rental_start_time;
+      const endTime = formData.rental_end_time;
+      
+      if (!startTime || !endTime) {
+        throw new Error('Start time and end time are required for hourly rental');
+      }
+      
+      startAt = new Date(today);
+      startAt.setHours(startTime.hour(), startTime.minute(), 0, 0);
+      
+      endAt = new Date(today);
+      endAt.setHours(endTime.hour(), endTime.minute(), 0, 0);
+      
+      console.log('⏰ [formatBookingRequest] Hourly rental:', { startAt, endAt });
+      
+    } else if (rentalType === "daily") {
+      // For daily rental: use rental_period + pickup time
+      if (!formData.rental_period || !Array.isArray(formData.rental_period) || formData.rental_period.length !== 2) {
+        throw new Error('Rental period is required for daily rental');
+      }
+      
+      const [startDate, endDate] = formData.rental_period;
+      const pickupTime = formData.rental_start_time;
+      
+      if (!pickupTime) {
+        throw new Error('Pickup time is required for daily rental');
+      }
+      
+      startAt = new Date(startDate.toDate());
+      startAt.setHours(pickupTime.hour(), pickupTime.minute(), 0, 0);
+      
+      // For daily rental, end time is typically end of day or same pickup time on end date
+      endAt = new Date(endDate.toDate());
+      endAt.setHours(pickupTime.hour(), pickupTime.minute(), 0, 0);
+      
+      console.log('📅 [formatBookingRequest] Daily rental:', { startAt, endAt });
+      
+    } else {
+      // Fallback to original logic for backward compatibility
+      if (formData.rental_period && Array.isArray(formData.rental_period)) {
+        // If using rental_period array from DatePicker.RangePicker
+        const [startDate, endDate] = formData.rental_period;
+        const startTime = formData.rental_start_time;
+        const endTime = formData.rental_end_time || formData.rental_start_time; // Fallback to start time
+        
+        startAt = new Date(startDate.toDate());
+        if (startTime) {
+          startAt.setHours(startTime.hour(), startTime.minute(), 0, 0);
+        }
+        
+        endAt = new Date(endDate.toDate());
+        if (endTime) {
+          endAt.setHours(endTime.hour(), endTime.minute(), 0, 0);
+        }
+      } else {
+        // Fallback to individual fields
+        startAt = new Date(formData.startDate);
+        if (formData.startTime) {
+          if (typeof formData.startTime === 'string') {
+            const [hours, minutes] = formData.startTime.split(':');
+            startAt.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+          } else if (formData.startTime.hour) {
+            // dayjs object
+            startAt.setHours(formData.startTime.hour(), formData.startTime.minute(), 0, 0);
+          }
+        }
+        
+        endAt = new Date(formData.endDate);
+        if (formData.endTime) {
+          if (typeof formData.endTime === 'string') {
+            const [hours, minutes] = formData.endTime.split(':');
+            endAt.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+          } else if (formData.endTime.hour) {
+            // dayjs object
+            endAt.setHours(formData.endTime.hour(), formData.endTime.minute(), 0, 0);
+          }
+        }
+      }
+      
+      console.log('🔄 [formatBookingRequest] Fallback logic:', { startAt, endAt });
+    }
+    
+    // Validate dates
+    if (isNaN(startAt.getTime()) || isNaN(endAt.getTime())) {
+      throw new Error('Invalid start or end date');
+    }
+    
+    if (endAt <= startAt) {
+      throw new Error('End date must be after start date');
+    }
+    
+    const bookingRequest = {
       vehicleId,
       stationId,
       startAt: startAt.toISOString(),
@@ -665,6 +794,9 @@ export class BookingService {
         premium: formData.insurance?.premium || formData.insurance_premium || false
       }
     };
+    
+    console.log('✅ [formatBookingRequest] Final booking request:', bookingRequest);
+    return bookingRequest;
   }
 
   // Helper: Format booking for display

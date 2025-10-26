@@ -64,8 +64,8 @@ const BookingPage: React.FC = () => {
 
   // ---- Pricing ----
   const calculatePrice = useCallback(
-    async (startAt: string, endAt: string, insurancePremium = false) => {
-      console.log('🚀 [BookingPage] calculatePrice called with:', { vehicleId, startAt, endAt, insurancePremium });
+    async (formDataOrStartAt: any | string, endAt?: string, insurancePremium = false) => {
+      console.log('🚀 [BookingPage] calculatePrice called with:', { formDataOrStartAt, endAt, insurancePremium, vehicleId });
       
       if (!vehicleId) {
         console.warn('❌ [BookingPage] No vehicleId, skipping price calculation');
@@ -74,7 +74,24 @@ const BookingPage: React.FC = () => {
       
       try {
         setCalculatingPrice(true);
-        const priceRequest = { vehicleId, startAt, endAt, insurancePremium };
+        
+        let priceRequest;
+        
+        // Check if called with form data (object) or legacy startAt/endAt strings
+        if (typeof formDataOrStartAt === 'object' && formDataOrStartAt !== null) {
+          // New way: format from form data
+          const formData = { ...formDataOrStartAt, vehicleId, insurance_premium: insurancePremium };
+          priceRequest = bookingService.formatPriceCalculationRequest(formData);
+        } else {
+          // Legacy way: direct startAt/endAt
+          priceRequest = { 
+            vehicleId, 
+            startAt: formDataOrStartAt, 
+            endAt: endAt!, 
+            insurancePremium 
+          };
+        }
+        
         console.log('📤 [BookingPage] Sending price request:', priceRequest);
         
         const pricing = await bookingService.calculatePrice(priceRequest);
@@ -320,36 +337,70 @@ const BookingPage: React.FC = () => {
                     rental_end_time: dayjs("18:00:00", "HH:mm:ss"),
                   }}
                   onValuesChange={(changedValues) => {
+                    const current = form.getFieldsValue();
+                    console.log('📝 [BookingPage] Form values changed:', { changedValues, current });
+                    
+                    // Handle rental type change with smart defaults
+                    if (changedValues.rental_type) {
+                      const now = dayjs();
+                      const rentalType = changedValues.rental_type;
+                      
+                      if (rentalType === "hourly") {
+                        // For hourly: default to today, 4-hour window
+                        const startTime = now.hour() < 22 ? now.add(1, 'hour').startOf('hour') : now.startOf('day').add(8, 'hour');
+                        const endTime = startTime.add(4, 'hour');
+                        
+                        form.setFieldsValue({
+                          rental_start_time: startTime,
+                          rental_end_time: endTime,
+                        });
+                        
+                        // Calculate price for hourly rental
+                        setTimeout(() => {
+                          const updatedValues = form.getFieldsValue();
+                          console.log('⏰ [BookingPage] Hourly price calculation with updated values:', updatedValues);
+                          calculatePrice(updatedValues);
+                        }, 100);
+                        
+                      } else if (rentalType === "daily") {
+                        // For daily: default to tomorrow, full day
+                        const startDate = now.add(1, 'day');
+                        const endDate = startDate.add(1, 'day');
+                        
+                        form.setFieldsValue({
+                          rental_period: [startDate, endDate],
+                          rental_start_time: dayjs("09:00:00", "HH:mm:ss"),
+                        });
+                        
+                        // Calculate price for daily rental
+                        setTimeout(() => {
+                          const updatedValues = form.getFieldsValue();
+                          console.log('📅 [BookingPage] Daily price calculation with updated values:', updatedValues);
+                          calculatePrice(updatedValues);
+                        }, 100);
+                      }
+                      
+                      return; // Exit early to avoid duplicate calculations
+                    }
+                    
+                    // Handle other changes - calculate price based on current rental type
                     if (
                       changedValues.rental_period ||
                       changedValues.rental_start_time ||
                       changedValues.rental_end_time ||
                       changedValues.insurance_premium !== undefined
                     ) {
-                      const current = form.getFieldsValue();
-                      const period: [Dayjs, Dayjs] | undefined = current.rental_period;
-                      if (period && period.length === 2) {
-                        const [startDate, endDate] = period;
-                        const startTime: Dayjs =
-                          current.rental_start_time || dayjs("09:00:00", "HH:mm:ss");
-                        const endTime: Dayjs =
-                          current.rental_end_time || dayjs("18:00:00", "HH:mm:ss");
-
-                        const startAt = startDate
-                          .hour(startTime.hour())
-                          .minute(startTime.minute())
-                          .second(0)
-                          .millisecond(0)
-                          .toISOString();
-
-                        const endAt = endDate
-                          .hour(endTime.hour())
-                          .minute(endTime.minute())
-                          .second(0)
-                          .millisecond(0)
-                          .toISOString();
-
-                        calculatePrice(startAt, endAt, current.insurance_premium || false);
+                      const rentalType = current.rental_type;
+                      
+                      if (rentalType === "hourly") {
+                        // For hourly rental: recalculate with current form values
+                        console.log('⏰ [BookingPage] Hourly price update with current values');
+                        calculatePrice(current);
+                        
+                      } else if (rentalType === "daily") {
+                        // For daily rental: recalculate with current form values
+                        console.log('📅 [BookingPage] Daily price update with current values');
+                        calculatePrice(current);
                       }
                     }
                   }}

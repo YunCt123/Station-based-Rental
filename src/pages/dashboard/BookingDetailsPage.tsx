@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Card, Typography, Descriptions, Tag, Button, Spin, message } from 'antd';
+import { Card, Typography, Tag, Button, Spin, message } from 'antd';
 import { ArrowLeftOutlined, EnvironmentOutlined } from '@ant-design/icons';
 import { bookingService } from '../../services/bookingService';
 import { convertToVND } from '../../lib/currency';
@@ -176,8 +176,8 @@ const BookingDetailsPage: React.FC = () => {
   const prices = formatPrice(booking.pricing_snapshot);
 
   return (
-    <div className="min-h-screen bg-white">
-      <div className="max-w-4xl mx-auto p-6">
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-6xl mx-auto p-6">
         <div className="mb-6">
           <Button 
             icon={<ArrowLeftOutlined />} 
@@ -187,161 +187,203 @@ const BookingDetailsPage: React.FC = () => {
           </Button>
         </div>
 
-        <Card className="mb-6 shadow-sm">
-          <div className="flex justify-between items-center mb-6">
-            <Title level={2}>Booking Details</Title>
-            <Tag color={getStatusColor(booking.status)}>
+        {/* Header Section */}
+        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+          <div className="flex justify-between items-start">
+            <div>
+              <Title level={2} className="mb-2">Booking Details</Title>
+              <p className="text-gray-500">Booking ID: <span className="font-mono text-sm">{booking._id}</span></p>
+            </div>
+            <Tag color={getStatusColor(booking.status)} className="text-lg px-4 py-2">
               {booking.status}
             </Tag>
           </div>
+        </div>
 
-          <Descriptions bordered column={1} size="small">
-            <Descriptions.Item label="Booking ID">
-              <span className="font-mono">{booking._id}</span>
-            </Descriptions.Item>
-
-            <Descriptions.Item label="Vehicle">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Vehicle Information */}
+          <Card title="Vehicle Information" className="shadow-sm">
+            <div className="space-y-4">
               <div>
-                <div className="font-semibold">{booking.vehicle_snapshot?.name || 'Unknown Vehicle'}</div>
-                <div className="text-gray-500">
-                  {booking.vehicle_snapshot?.type} • {booking.vehicle_snapshot?.licensePlate}
-                </div>
+                <h4 className="font-semibold text-lg">{booking.vehicle_snapshot?.name || 'Unknown Vehicle'}</h4>
+                <p className="text-gray-600">{booking.vehicle_snapshot?.type}</p>
+                <p className="text-sm text-gray-500">License: {booking.vehicle_snapshot?.licensePlate}</p>
               </div>
-            </Descriptions.Item>
-
-            <Descriptions.Item label="Pickup Station">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div>{booking.station_snapshot?.name || 'Unknown Station'}</div>
-                  {booking.station_snapshot?.address && (
-                    <div className="text-gray-500 text-sm">
-                      {booking.station_snapshot.address}
-                    </div>
-                  )}
-                </div>
-                <Button 
-                  size="small" 
-                  icon={<EnvironmentOutlined />}
-                  onClick={openDirections}
-                  title="Get directions"
-                >
-                  Directions
-                </Button>
-              </div>
-            </Descriptions.Item>
-
-            <Descriptions.Item label="Return Station">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div>{booking.station_snapshot?.name || 'Unknown Station'}</div>
-                  {booking.station_snapshot?.address && (
-                    <div className="text-gray-500 text-sm">
-                      {booking.station_snapshot.address}
-                    </div>
-                  )}
-                </div>
-                <Button 
-                  size="small" 
-                  icon={<EnvironmentOutlined />}
-                  onClick={openDirections}
-                  title="Get directions"
-                >
-                  Directions
-                </Button>
-              </div>
-            </Descriptions.Item>
-
-            <Descriptions.Item label="Pickup Time">
-              <div>
-                <div>{new Date(booking.start_at).toLocaleDateString()}</div>
-                <div className="text-gray-500">{new Date(booking.start_at).toLocaleTimeString()}</div>
-              </div>
-            </Descriptions.Item>
-
-            <Descriptions.Item label="Return Time">
-              <div>
-                <div>{new Date(booking.end_at).toLocaleDateString()}</div>
-                <div className="text-gray-500">{new Date(booking.end_at).toLocaleTimeString()}</div>
-              </div>
-            </Descriptions.Item>
-
-            <Descriptions.Item label="Rental Duration">
-              <div>
-                {prices.days > 0 && (
-                  <span>{prices.days} days</span>
-                )}
-                {prices.hours > 0 && (
-                  <span>{prices.hours && prices.days ? ` ${prices.hours} hours` : `${prices.hours} hours`}</span>
-                )}
-              </div>
-            </Descriptions.Item>
-
-            <Descriptions.Item label="Base Price">
-              ${prices.base}
-            </Descriptions.Item>
-
-            <Descriptions.Item label="Insurance Fee">
-              ${prices.insurance}
-            </Descriptions.Item>
-
-            <Descriptions.Item label="Taxes">
-              ${prices.taxes}
-            </Descriptions.Item>
-
-            <Descriptions.Item label="Total Amount">
-              ${prices.total}
-            </Descriptions.Item>
-
-            <Descriptions.Item label="Required Deposit">
-              ${prices.deposit}
-            </Descriptions.Item>
-
-            <Descriptions.Item label="Created At">
-              {new Date(booking.createdAt).toLocaleString()}
-            </Descriptions.Item>
-
-            <Descriptions.Item label="Last Updated">
-              {new Date(booking.updatedAt).toLocaleString()}
-            </Descriptions.Item>
-          </Descriptions>
-
-          {/* Action Buttons */}
-          <div className="mt-6 flex flex-wrap gap-3">
-            {booking.status === 'HELD' && (
-              <Button 
-                type="primary" 
-                size="large"
-                onClick={() => navigate(`/payment?bookingId=${booking._id}`)}
-              >
-                Proceed to Payment
-              </Button>
-            )}
-            
-            <Button 
-              size="large"
-              icon={<EnvironmentOutlined />}
-              onClick={openDirections}
-            >
-              Get Directions to Station
-            </Button>
-            
-            <Button 
-              size="large"
-              onClick={() => navigate('/bookings')}
-            >
-              Back to My Bookings
-            </Button>
-          </div>
-
-          {booking.status === 'HELD' && (
-            <div className="mt-4 p-4 bg-orange-50 border border-orange-200 rounded">
-              <p className="text-sm text-orange-800">
-                <strong>Payment Required:</strong> This booking is on hold and requires payment to be confirmed. 
-                Please proceed with payment to secure your vehicle.
-              </p>
             </div>
-          )}
+          </Card>
+
+          {/* Station Information */}
+          <Card title="Station Information" className="shadow-sm">
+            <div className="space-y-4">
+              <div>
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h4 className="font-semibold">{booking.station_snapshot?.name || 'Unknown Station'}</h4>
+                    {booking.station_snapshot?.address && (
+                      <p className="text-gray-600 text-sm mt-1">
+                        {booking.station_snapshot.address}
+                      </p>
+                    )}
+                  </div>
+                  <Button 
+                    size="small" 
+                    icon={<EnvironmentOutlined />}
+                    onClick={openDirections}
+                    type="primary"
+                    ghost
+                  >
+                    Directions
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </Card>
+
+          {/* Time Information */}
+          <Card title="Rental Period" className="shadow-sm">
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 gap-4">
+                <div>
+                  <p className="text-sm text-gray-500">Pickup Time</p>
+                  <p className="font-semibold">{new Date(booking.start_at).toLocaleDateString()}</p>
+                  <p className="text-gray-600 text-sm">{new Date(booking.start_at).toLocaleTimeString()}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Return Time</p>
+                  <p className="font-semibold">{new Date(booking.end_at).toLocaleDateString()}</p>
+                  <p className="text-gray-600 text-sm">{new Date(booking.end_at).toLocaleTimeString()}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Duration</p>
+                  <p className="font-semibold">
+                    {(() => {
+                      // Tính toán duration từ start_at và end_at
+                      const startTime = new Date(booking.start_at);
+                      const endTime = new Date(booking.end_at);
+                      const diffMs = endTime.getTime() - startTime.getTime();
+                      
+                      // Chuyển đổi milliseconds thành ngày và giờ
+                      const totalHours = Math.floor(diffMs / (1000 * 60 * 60));
+                      const days = Math.floor(totalHours / 24);
+                      const hours = totalHours % 24;
+                      
+                      console.log('🕐 Duration calculation:', { 
+                        startTime: startTime.toISOString(), 
+                        endTime: endTime.toISOString(),
+                        diffMs,
+                        totalHours,
+                        days,
+                        hours
+                      });
+                      
+                      if (days > 0 && hours > 0) {
+                        return `${days} day${days > 1 ? 's' : ''} ${hours} hour${hours > 1 ? 's' : ''}`;
+                      } else if (days > 0) {
+                        return `${days} day${days > 1 ? 's' : ''}`;
+                      } else if (hours > 0) {
+                        return `${hours} hour${hours > 1 ? 's' : ''}`;
+                      } else {
+                        return 'Less than 1 hour';
+                      }
+                    })()}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </Card>
+
+          {/* Pricing Information */}
+          <Card title="Pricing Details" className="shadow-sm">
+            <div className="space-y-3">
+              <div className="flex justify-between">
+                <span className="text-gray-600">Base Price:</span>
+                <span className="font-semibold">${prices.base}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Insurance Fee:</span>
+                <span className="font-semibold">${prices.insurance}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Taxes:</span>
+                <span className="font-semibold">${prices.taxes}</span>
+              </div>
+              <div className="border-t pt-3">
+                <div className="flex justify-between">
+                  <span className="text-lg font-semibold">Total Amount:</span>
+                  <span className="text-lg font-bold text-blue-600">${prices.total}</span>
+                </div>
+                <div className="flex justify-between text-sm mt-2">
+                  <span className="text-gray-500">Required Deposit:</span>
+                  <span className="text-orange-600 font-medium">${prices.deposit}</span>
+                </div>
+              </div>
+            </div>
+          </Card>
+        </div>
+
+        {/* Booking Timeline */}
+        <Card title="Booking Timeline" className="shadow-sm mt-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <p className="text-sm text-gray-500">Created At</p>
+              <p className="font-medium">{new Date(booking.createdAt).toLocaleString()}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Last Updated</p>
+              <p className="font-medium">{new Date(booking.updatedAt).toLocaleString()}</p>
+            </div>
+          </div>
         </Card>
+
+        {/* Action Buttons */}
+        <div className="mt-8 flex flex-wrap gap-4 justify-center">
+          {booking.status === 'HELD' && (
+            <Button 
+              type="primary" 
+              size="large"
+              className="px-8"
+              onClick={() => navigate(`/payment?bookingId=${booking._id}`)}
+            >
+              Proceed to Payment
+            </Button>
+          )}
+          
+          <Button 
+            size="large"
+            icon={<EnvironmentOutlined />}
+            className="px-6"
+            onClick={openDirections}
+          >
+            Get Directions
+          </Button>
+          
+          <Button 
+            size="large"
+            className="px-6"
+            onClick={() => navigate('/bookings')}
+          >
+            My Bookings
+          </Button>
+        </div>
+
+        {/* Status Message */}
+        {booking.status === 'HELD' && (
+          <div className="mt-6 max-w-2xl mx-auto">
+            <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+              <div className="flex items-start">
+                <div className="text-orange-500 mr-3 mt-1">⚠️</div>
+                <div>
+                  <h4 className="font-semibold text-orange-800">Payment Required</h4>
+                  <p className="text-sm text-orange-700 mt-1">
+                    This booking is on hold and requires payment to be confirmed. 
+                    Please proceed with payment to secure your vehicle.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
       </div>
     </div>
   );

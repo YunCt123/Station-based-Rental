@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, Typography, Descriptions, Tag, Button, Spin, message } from 'antd';
-import { ArrowLeftOutlined } from '@ant-design/icons';
+import { ArrowLeftOutlined, EnvironmentOutlined } from '@ant-design/icons';
 import { bookingService } from '../../services/bookingService';
 import { convertToVND } from '../../lib/currency';
 import type { Booking } from '../../services/bookingService';
@@ -86,6 +86,50 @@ const BookingDetailsPage: React.FC = () => {
     }
   };
 
+  // Function to open directions to station
+  const openDirections = () => {
+    if (!booking) {
+      message.error('Booking information not available');
+      return;
+    }
+
+    // Try to get coordinates from station object
+    let coordinates = null;
+    
+    console.log('🔍 Full booking object:', booking);
+    console.log('🔍 Station ID:', booking.station_id);
+    
+    // From the image, coordinates should be in station_id.geo.coordinates
+    if (booking.station_id && typeof booking.station_id === 'object') {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const station = booking.station_id as any;
+      if (station.geo?.coordinates && Array.isArray(station.geo.coordinates)) {
+        coordinates = station.geo.coordinates;
+        console.log('✅ Found coordinates in station_id.geo.coordinates:', coordinates);
+      } else if (station.coordinates && Array.isArray(station.coordinates)) {
+        coordinates = station.coordinates;
+        console.log('✅ Found coordinates in station_id.coordinates:', coordinates);
+      }
+    }
+    
+    if (coordinates && Array.isArray(coordinates) && coordinates.length >= 2) {
+      const [lng, lat] = coordinates;
+      const directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
+      window.open(directionsUrl, '_blank');
+      console.log('🗺️ Opening directions with coordinates:', { lat, lng });
+    } else {
+      // Fallback: search by station name and address
+      const stationName = booking.station_snapshot?.name || 'EV Station';
+      const stationAddress = booking.station_snapshot?.address || '';
+      const searchQuery = `${stationName} ${stationAddress}`.trim();
+      const searchUrl = `https://www.google.com/maps/search/${encodeURIComponent(searchQuery)}`;
+      window.open(searchUrl, '_blank');
+      
+      console.log('🔍 Using fallback search:', searchQuery);
+      message.info('Using station name for directions. Coordinates not available.');
+    }
+  };
+
   useEffect(() => {
     const loadBookingDetails = async () => {
       if (!id) return;
@@ -93,6 +137,9 @@ const BookingDetailsPage: React.FC = () => {
       try {
         setLoading(true);
         const bookingData = await bookingService.getBookingById(id);
+        console.log('📊 Booking data received:', bookingData);
+        console.log('🏢 Station snapshot:', bookingData.station_snapshot);
+        console.log('🏢 Station ID object:', bookingData.station_id);
         setBooking(bookingData);
       } catch (error) {
         console.error('Error loading booking details:', error);
@@ -150,12 +197,12 @@ const BookingDetailsPage: React.FC = () => {
 
           <Descriptions bordered column={1} size="small">
             <Descriptions.Item label="Booking ID">
-              {booking._id}
+              <span className="font-mono">{booking._id}</span>
             </Descriptions.Item>
 
             <Descriptions.Item label="Vehicle">
               <div>
-                <div>{booking.vehicle_snapshot?.name || 'Unknown Vehicle'}</div>
+                <div className="font-semibold">{booking.vehicle_snapshot?.name || 'Unknown Vehicle'}</div>
                 <div className="text-gray-500">
                   {booking.vehicle_snapshot?.type} • {booking.vehicle_snapshot?.licensePlate}
                 </div>
@@ -163,11 +210,45 @@ const BookingDetailsPage: React.FC = () => {
             </Descriptions.Item>
 
             <Descriptions.Item label="Pickup Station">
-              {booking.station_snapshot?.name || 'Unknown Station'}
+              <div className="flex items-center justify-between">
+                <div>
+                  <div>{booking.station_snapshot?.name || 'Unknown Station'}</div>
+                  {booking.station_snapshot?.address && (
+                    <div className="text-gray-500 text-sm">
+                      {booking.station_snapshot.address}
+                    </div>
+                  )}
+                </div>
+                <Button 
+                  size="small" 
+                  icon={<EnvironmentOutlined />}
+                  onClick={openDirections}
+                  title="Get directions"
+                >
+                  Directions
+                </Button>
+              </div>
             </Descriptions.Item>
 
             <Descriptions.Item label="Return Station">
-              {booking.station_snapshot?.name || 'Unknown Station'}
+              <div className="flex items-center justify-between">
+                <div>
+                  <div>{booking.station_snapshot?.name || 'Unknown Station'}</div>
+                  {booking.station_snapshot?.address && (
+                    <div className="text-gray-500 text-sm">
+                      {booking.station_snapshot.address}
+                    </div>
+                  )}
+                </div>
+                <Button 
+                  size="small" 
+                  icon={<EnvironmentOutlined />}
+                  onClick={openDirections}
+                  title="Get directions"
+                >
+                  Directions
+                </Button>
+              </div>
             </Descriptions.Item>
 
             <Descriptions.Item label="Pickup Time">
@@ -224,8 +305,9 @@ const BookingDetailsPage: React.FC = () => {
             </Descriptions.Item>
           </Descriptions>
 
-          {booking.status === 'HELD' && (
-            <div className="mt-6 flex justify-end">
+          {/* Action Buttons */}
+          <div className="mt-6 flex flex-wrap gap-3">
+            {booking.status === 'HELD' && (
               <Button 
                 type="primary" 
                 size="large"
@@ -233,6 +315,30 @@ const BookingDetailsPage: React.FC = () => {
               >
                 Proceed to Payment
               </Button>
+            )}
+            
+            <Button 
+              size="large"
+              icon={<EnvironmentOutlined />}
+              onClick={openDirections}
+            >
+              Get Directions to Station
+            </Button>
+            
+            <Button 
+              size="large"
+              onClick={() => navigate('/bookings')}
+            >
+              Back to My Bookings
+            </Button>
+          </div>
+
+          {booking.status === 'HELD' && (
+            <div className="mt-4 p-4 bg-orange-50 border border-orange-200 rounded">
+              <p className="text-sm text-orange-800">
+                <strong>Payment Required:</strong> This booking is on hold and requires payment to be confirmed. 
+                Please proceed with payment to secure your vehicle.
+              </p>
             </div>
           )}
         </Card>

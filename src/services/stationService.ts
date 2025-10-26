@@ -158,7 +158,7 @@ function mapBackendStatusToFrontend(backendStatus: string): "active" | "inactive
 
 // Mapping function to convert backend vehicle data to frontend format
 function mapBackendVehicleToFrontend(backendVehicle: BackendVehicle): Vehicle {
-  console.log('🔄 Mapping backend vehicle:', backendVehicle);
+
   
   const mapped: Vehicle = {
     id: backendVehicle._id || backendVehicle.id || "",
@@ -189,7 +189,6 @@ function mapBackendVehicleToFrontend(backendVehicle: BackendVehicle): Vehicle {
     description: backendVehicle.description || "",
   };
   
-  console.log('✅ Mapped vehicle:', mapped);
   return mapped;
 }
 
@@ -214,9 +213,9 @@ export const stationService = {
    */
   async testConnection(): Promise<unknown> {
     try {
-      console.log('🔗 Testing station API connection...');
+
       const response = await api.get('/stations?limit=1');
-      console.log('Station API connection test successful:', response.data);
+
       return response.data;
     } catch (error) {
       console.error('Station API connection test failed:', error);
@@ -252,18 +251,15 @@ export const stationService = {
       if (options.sort) params.append('sort', options.sort);
       
       const url = `/stations?${params.toString()}`;
-      console.log('🚀 Making station API request to:', url);
-      console.log('🔍 Filters:', filters);
-      console.log('⚙️ Options:', options);
+
       
       const response = await api.get<ApiResponse<BackendStation[]>>(url);
       
-      console.log('✅ Station API Response:', response.data);
-      console.log('📊 Raw station data:', response.data.data);
+
       
       const stations = response.data.data.map(mapBackendStationToFrontend);
       
-      console.log('🔄 Mapped stations:', stations);
+
       
       return {
         stations,
@@ -296,8 +292,7 @@ export const stationService = {
       });
       
       const url = `/stations/nearby?${params.toString()}`;
-      console.log('🌍 Finding nearby stations:', url);
-      
+    
       const response = await api.get<ApiResponse<BackendStation[]>>(url);
       
       const stations = response.data.data.map(mapBackendStationToFrontend);
@@ -327,7 +322,7 @@ export const stationService = {
       if (includeVehicles) params.append('includeVehicles', 'true');
       
       const url = `/stations/${id}${params.toString() ? '?' + params.toString() : ''}`;
-      console.log('🎯 Getting station by ID:', url);
+
       
       const response = await api.get<ApiResponse<BackendStation>>(url);
       return mapBackendStationToFrontend(response.data.data);
@@ -343,7 +338,7 @@ export const stationService = {
    */
   async getStationsByCity(city: string): Promise<Station[]> {
     try {
-      console.log('🏙️ Getting stations by city:', city);
+
       
       const response = await api.get<ApiResponse<BackendStation[]>>(`/stations/city/${encodeURIComponent(city)}`);
       return response.data.data.map(mapBackendStationToFrontend);
@@ -367,7 +362,7 @@ export const stationService = {
       if (status) params.append('status', status);
       
       const url = `/stations/${stationId}/vehicles${params.toString() ? '?' + params.toString() : ''}`;
-      console.log('🚗 Getting station vehicles:', url);
+
       
       const response = await api.get<ApiResponse<{
         station: { id: string; name: string; address: string };
@@ -375,7 +370,7 @@ export const stationService = {
         count: number;
       }>>(url);
       
-      console.log('📡 Raw API response vehicles:', response.data.data.vehicles);
+
       
       // Map backend vehicles to frontend format
       const mappedVehicles = response.data.data.vehicles.map(mapBackendVehicleToFrontend);
@@ -397,7 +392,7 @@ export const stationService = {
    */
   async createStation(stationData: Partial<BackendStation>): Promise<Station> {
     try {
-      console.log('➕ Creating station:', stationData);
+
       
       const response = await api.post<ApiResponse<BackendStation>>('/stations', stationData);
       return mapBackendStationToFrontend(response.data.data);
@@ -413,7 +408,7 @@ export const stationService = {
    */
   async updateStation(id: string, updateData: Partial<BackendStation>): Promise<Station> {
     try {
-      console.log('📝 Updating station:', id, updateData);
+
       
       const response = await api.patch<ApiResponse<BackendStation>>(`/stations/${id}`, updateData);
       return mapBackendStationToFrontend(response.data.data);
@@ -429,7 +424,7 @@ export const stationService = {
    */
   async deleteStation(id: string): Promise<void> {
     try {
-      console.log('🗑️ Deleting station:', id);
+
       
       await api.delete(`/stations/${id}`);
     } catch (error) {

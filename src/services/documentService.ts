@@ -71,7 +71,6 @@ export const uploadFile = async (file: File): Promise<{ url: string }> => {
   const formData = new FormData();
   formData.append('file', file);
 
-  console.log('Uploading file:', file.name, file.size, file.type);
   
   try {
     // Try /upload first
@@ -82,7 +81,6 @@ export const uploadFile = async (file: File): Promise<{ url: string }> => {
     });
     return response.data;
   } catch (error) {
-    console.log('Upload failed, trying /files endpoint...');
     // Fallback to /files
     const response = await api.post('/files', formData, {
       headers: {
@@ -103,7 +101,6 @@ export const createDocument = async (data: {
   number?: string;
   expiry?: string;
 }): Promise<Document> => {
-  console.log('Creating document record:', data);
   
   const response = await api.post('/documents', data);
   return response.data;
@@ -127,13 +124,6 @@ export const uploadDocument = async (documentData: DocumentUpload): Promise<Docu
       formData.append('expiry', documentData.expiry);
     }
 
-    console.log('Uploading document with data:', {
-      type: documentData.type,
-      number: documentData.number,
-      expiry: documentData.expiry,
-      fileName: documentData.file.name,
-      fileSize: documentData.file.size,
-    });
 
     const response = await api.post('/documents', formData, {
       headers: {
@@ -141,7 +131,6 @@ export const uploadDocument = async (documentData: DocumentUpload): Promise<Docu
       },
     });
     
-    console.log('Document uploaded successfully:', response.data);
     return response.data;
   } catch (error: any) {
     console.error('Upload document error:', error);

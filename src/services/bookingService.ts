@@ -531,7 +531,7 @@ export class BookingService {
       return response.data.data;
     }
 
-    throw new Error(response.data.message || 'Xử lý thất bại');
+    throw new Error('Xử lý VNPay callback thất bại');
   } catch (error: any) {
     console.error('[BookingService] Lỗi:', error);
     throw new Error(
@@ -557,7 +557,7 @@ export class BookingService {
       return response.data.data;
     }
 
-    throw new Error(response.data.message || 'Xử lý thất bại');
+    throw new Error('Xử lý PayOS callback thất bại');
   } catch (error: any) {
     console.error('[BookingService] Lỗi PayOS:', error);
     throw new Error(

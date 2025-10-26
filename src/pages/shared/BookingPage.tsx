@@ -8,8 +8,7 @@ import {
 } from "react-router-dom";
 import { Form, message, Spin, Card, Button } from "antd";
 import { UserOutlined, LoginOutlined } from "@ant-design/icons";
-import dayjs, { Dayjs } from "dayjs";
-import type { UploadFile } from "antd/es/upload/interface";
+import dayjs from "dayjs";
 import { bookingService, type PriceBreakdown } from "../../services/bookingService";
 import { vehicleService } from "../../services/vehicleService";
 import type { Vehicle } from "../../types/vehicle";
@@ -19,12 +18,8 @@ import { getCurrentUser } from "../../utils/auth";
 import BookingSteps from "../../components/booking/BookingSteps";
 import RentalPeriodForm from "../../components/booking/RentalPeriodForm";
 import CustomerInformationForm from "../../components/booking/CustomerInformationForm";
-// import DocumentUploadProgress from "../../components/booking/DocumentUploadProgress";
-// import DocumentUpload from "../../components/booking/DocumentUpload";
-// import UploadGuidelines from "../../components/booking/UploadGuidelines";
 import InsuranceAndTermsForm from "../../components/booking/InsuranceAndTermsForm";
 import VehicleSummary from "../../components/booking/VehicleSummary";
-import { DOCUMENT_TYPES } from "../../components/booking/DocumentTypes";
 
 // interface DocumentUploadStatus {
 //   status: "not_started" | "uploading" | "success" | "error";
@@ -47,12 +42,6 @@ const BookingPage: React.FC = () => {
   const [loadingVehicle, setLoadingVehicle] = useState(true);
   const [user, setUser] = useState(() => getCurrentUser());
 
-  const [fileList, setFileList] = useState<{ [key: string]: UploadFile[] }>({
-    [DOCUMENT_TYPES.DRIVERS_LICENSE]: [],
-    [DOCUMENT_TYPES.NATIONAL_ID_FRONT]: [],
-    [DOCUMENT_TYPES.NATIONAL_ID_BACK]: [],
-  });
-
   // const [uploadStatus, setUploadStatus] = useState<{
   //   [key: string]: DocumentUploadStatus["status"];
   // }>
@@ -64,7 +53,7 @@ const BookingPage: React.FC = () => {
 
   // ---- Pricing ----
   const calculatePrice = useCallback(
-    async (formDataOrStartAt: any | string, endAt?: string, insurancePremium = false) => {
+    async (formDataOrStartAt: Record<string, unknown> | string, endAt?: string, insurancePremium = false) => {
       console.log('🚀 [BookingPage] calculatePrice called with:', { formDataOrStartAt, endAt, insurancePremium, vehicleId });
       
       if (!vehicleId) {
@@ -133,13 +122,22 @@ const BookingPage: React.FC = () => {
         const vehicleData = await vehicleService.getVehicleById(vehicleId);
         setVehicle(vehicleData);
 
-        // Initial price window (09:00 -> +1 day 18:00)
+        // Calculate initial price based on default form values (daily rental)
         const now = dayjs();
-        const startAt = now.hour(9).minute(0).second(0).millisecond(0).toISOString();
-        const endAt = now.add(1, "day").hour(18).minute(0).second(0).millisecond(0).toISOString();
+        const tomorrow = now.add(1, "day");
+        const dayAfterTomorrow = tomorrow.add(1, "day");
+        const pickupTime = dayjs("09:00:00", "HH:mm:ss");
         
-        console.log('🔧 [BookingPage] Calculating initial price with:', { startAt, endAt });
-        await calculatePrice(startAt, endAt, false);
+        const initialFormData = {
+          rental_type: "daily",
+          rental_period: [tomorrow, dayAfterTomorrow],
+          rental_start_time: pickupTime,
+          vehicleId,
+          insurance_premium: false
+        };
+        
+        console.log('🔧 [BookingPage] Calculating initial price with default daily rental:', initialFormData);
+        await calculatePrice(initialFormData);
       } catch (error) {
         console.error("Error loading vehicle:", error);
         message.error("Failed to load vehicle information. Please try again.");
@@ -239,40 +237,6 @@ const BookingPage: React.FC = () => {
   //   }
   // };
 
-  const getUploadProps = () => ({
-    name: "file",
-    multiple: false,
-    action: "/api/upload", // TODO: replace with real endpoint
-    accept: ".jpg,.jpeg,.png,.pdf",
-    beforeUpload(file: File) {
-      const isValidFormat =
-        file.type === "image/jpeg" ||
-        file.type === "image/png" ||
-        file.type === "application/pdf";
-      const isValidSize = file.size / 1024 / 1024 < 5;
-
-      if (!isValidFormat) {
-        message.error("You can only upload JPG/PNG/PDF files!");
-      }
-      if (!isValidSize) {
-        message.error("File must be smaller than 5MB!");
-      }
-      return isValidFormat && isValidSize;
-    },
-  });
-
-  // const createDocumentUploadProps = (docType: string) => {
-  //   const baseProps = getUploadProps();
-  //   return {
-  //     ...baseProps,
-  //     fileList: fileList[docType],
-  //     onChange: (info: {
-  //       file: { status?: string; name: string };
-  //       fileList: UploadFile[];
-  //     }) => handleUploadChange(info, docType),
-  //   };
-  // };
-
   // ---- Login required ----
   const LoginRequiredComponent = () => (
     <div className="max-w-md mx-auto mt-8">
@@ -332,7 +296,7 @@ const BookingPage: React.FC = () => {
                     vehicleId: vehicle?.id ?? vehicleId,
                     stationId: stationId ?? "default-station-id",
                     rental_type: "daily",
-                    rental_period: [dayjs(), dayjs().add(1, "day")],
+                    rental_period: [dayjs().add(1, "day"), dayjs().add(2, "day")], // Tomorrow to day after tomorrow
                     rental_start_time: dayjs("09:00:00", "HH:mm:ss"),
                     rental_end_time: dayjs("18:00:00", "HH:mm:ss"),
                   }}

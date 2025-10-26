@@ -11,9 +11,10 @@ interface VehicleSummaryProps {
   vehicle: Vehicle;
   priceBreakdown?: PriceBreakdown | null;
   loading?: boolean;
+  insuranceSelected?: boolean; // ✅ Add prop to track insurance selection
 }
 
-const VehicleSummary: React.FC<VehicleSummaryProps> = ({ vehicle, priceBreakdown, loading }) => {
+const VehicleSummary: React.FC<VehicleSummaryProps> = ({ vehicle, priceBreakdown, loading, insuranceSelected = false }) => {
   
   // Debug log to see what priceBreakdown we receive
   console.log('🏷️ [VehicleSummary] Received priceBreakdown:', priceBreakdown);
@@ -70,7 +71,7 @@ const VehicleSummary: React.FC<VehicleSummaryProps> = ({ vehicle, priceBreakdown
                 (priceBreakdown.hourly_rate || 0) * hours;
               const taxes = priceBreakdown.taxes || 
                 Math.round(basePrice * 0.1);
-              const insurance = priceBreakdown.insurancePrice || 0;
+              const insurance = (insuranceSelected && priceBreakdown.insurancePrice) ? priceBreakdown.insurancePrice : 0;
               const totalPrice = priceBreakdown.totalPrice || 
                 (basePrice + taxes + insurance);
               const deposit = priceBreakdown.deposit || 

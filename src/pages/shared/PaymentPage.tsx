@@ -30,23 +30,43 @@ const calculatePricing = async (booking: Booking) => {
   // Fallback: call API to get accurate pricing (with weekend/peak multipliers)
   try {
     console.log('🔄 [PaymentPage] Recalculating pricing via API for booking:', booking._id);
+    console.log('🔍 [PaymentPage] Booking insurance_option:', booking.insurance_option);
+    
+    // ✅ FIX: Extract boolean value from insurance_option
+    let insurancePremium = false;
+    if (booking.insurance_option) {
+      if (typeof booking.insurance_option === 'boolean') {
+        insurancePremium = booking.insurance_option;
+      } else if (typeof booking.insurance_option === 'object' && 'premium' in booking.insurance_option) {
+        insurancePremium = (booking.insurance_option as any).premium;
+      }
+    }
+    
+    console.log('🔧 [PaymentPage] Insurance extraction:', {
+      'original booking.insurance_option': booking.insurance_option,
+      'extracted insurancePremium': insurancePremium,
+      'type': typeof booking.insurance_option
+    });
     
     const priceRequest = {
       vehicleId: booking.vehicle_id,
       startAt: booking.start_at,
       endAt: booking.end_at,
-      insurancePremium: booking.insurance_option || false
+      insurancePremium: insurancePremium
     };
+    
+    console.log('📤 [PaymentPage] Price request with insurance:', priceRequest);
     
     const apiPricing = await bookingService.calculatePrice(priceRequest);
     console.log('✅ [PaymentPage] API pricing result:', apiPricing);
+    console.log('🔍 [PaymentPage] API insurance price:', apiPricing.insurancePrice);
     
     return {
       hours: Math.ceil((new Date(booking.end_at).getTime() - new Date(booking.start_at).getTime()) / (1000 * 60 * 60)),
       rentalType: (apiPricing.details?.hours || 0) >= 24 ? 'daily' : 'hourly',
       basePrice: apiPricing.basePrice || 0,
       taxes: apiPricing.taxes || 0,
-      insurance: apiPricing.insurancePrice || 0,
+      insurance: apiPricing.insurancePrice || 0, // ✅ FIX: Use API response directly, not booking.insurance_option
       totalPrice: apiPricing.totalPrice || 0,
       deposit: apiPricing.deposit || 0
     };
@@ -75,7 +95,7 @@ const calculatePricing = async (booking: Booking) => {
     }
     
     const taxes = basePrice * 0.1;
-    const insurance = 0;
+    const insurance = 0; // ✅ FIX: Let API be the source of truth, don't use booking.insurance_option
     const totalPrice = basePrice + taxes + insurance;
     const deposit = totalPrice * 0.2;
     

@@ -54,12 +54,21 @@ const BookingPage: React.FC = () => {
   // ---- Pricing ----
   const calculatePrice = useCallback(
     async (formDataOrStartAt: Record<string, unknown> | string, endAt?: string, insurancePremium = false) => {
-      console.log('🚀 [BookingPage] calculatePrice called with:', { formDataOrStartAt, endAt, insurancePremium, vehicleId });
+      console.log('🚀 [BookingPage] calculatePrice called with:', { 
+        formDataOrStartAt, 
+        endAt, 
+        insurancePremium, 
+        vehicleId,
+        timestamp: new Date().toISOString()
+      });
       
       if (!vehicleId) {
         console.warn('❌ [BookingPage] No vehicleId, skipping price calculation');
         return;
       }
+      
+      // Add small delay to debounce rapid calls
+      await new Promise(resolve => setTimeout(resolve, 100));
       
       try {
         setCalculatingPrice(true);
@@ -69,7 +78,8 @@ const BookingPage: React.FC = () => {
         // Check if called with form data (object) or legacy startAt/endAt strings
         if (typeof formDataOrStartAt === 'object' && formDataOrStartAt !== null) {
           // New way: format from form data
-          const formData = { ...formDataOrStartAt, vehicleId, insurance_premium: insurancePremium };
+          console.log('🔍 [BookingPage] Extracting insurance from form data:', formDataOrStartAt);
+          const formData = { ...formDataOrStartAt, vehicleId };
           priceRequest = bookingService.formatPriceCalculationRequest(formData);
         } else {
           // Legacy way: direct startAt/endAt
@@ -304,6 +314,22 @@ const BookingPage: React.FC = () => {
                     const current = form.getFieldsValue();
                     console.log('📝 [BookingPage] Form values changed:', { changedValues, current });
                     
+                    // 🔍 Check if insurance changed
+                    if ('insurance_premium' in changedValues) {
+                      console.log('🛡️ [BookingPage] Insurance changed!', {
+                        'old': current.insurance_premium,
+                        'new': changedValues.insurance_premium,
+                        'will recalculate': true
+                      });
+                      // Immediate price recalculation for insurance changes
+                      setTimeout(() => {
+                        const updatedValues = form.getFieldsValue();
+                        console.log('💰 [BookingPage] Recalculating price due to insurance change:', updatedValues);
+                        calculatePrice(updatedValues);
+                      }, 100);
+                      return; // Exit early for insurance changes
+                    }
+                    
                     // Handle rental type change with smart defaults
                     if (changedValues.rental_type) {
                       const now = dayjs();
@@ -354,6 +380,12 @@ const BookingPage: React.FC = () => {
                       changedValues.rental_end_time ||
                       changedValues.insurance_premium !== undefined
                     ) {
+                      console.log('🔄 [BookingPage] Form values changed:', {
+                        changedValues,
+                        current,
+                        'current.insurance_premium': current.insurance_premium
+                      });
+                      
                       const rentalType = current.rental_type;
                       
                       if (rentalType === "hourly") {
@@ -408,6 +440,7 @@ const BookingPage: React.FC = () => {
                     vehicle={vehicle}
                     priceBreakdown={priceBreakdown}
                     loading={calculatingPrice}
+                    insuranceSelected={form.getFieldValue('insurance_premium') || false}
                   />
                 )}
               </div>

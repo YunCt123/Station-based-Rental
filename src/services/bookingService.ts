@@ -269,7 +269,11 @@ export class BookingService {
   // Calculate booking price before creating booking
   async calculatePrice(request: PriceCalculationRequest): Promise<PriceBreakdown> {
     try {
-      console.log('🚀 [Frontend] Sending calculate price request:', request);
+      console.log('🚀 [Frontend] Sending calculate price request:', {
+        ...request,
+        timestamp: new Date().toISOString(),
+        requestId: Math.random().toString(36).substr(2, 9)
+      });
       
       const response = await api.post<ApiResponse<PriceBreakdown>>('/bookings/calculate-price', request);
       
@@ -723,6 +727,13 @@ export class BookingService {
       endAt,
       insurancePremium: formData.insurance?.premium || formData.insurance_premium || false
     };
+    
+    console.log('🔍 [formatPriceCalculationRequest] Insurance debug:', {
+      'formData.insurance?.premium': formData.insurance?.premium,
+      'formData.insurance_premium': formData.insurance_premium,
+      'final insurancePremium': request.insurancePremium,
+      'formData keys': Object.keys(formData)
+    });
     
     console.log('✅ [formatPriceCalculationRequest] Final request:', request);
     return request;

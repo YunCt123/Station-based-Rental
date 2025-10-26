@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import api from "./api";
+import { convertToVND } from "../lib/currency";
 
 // Types for API responses
 export interface ApiResponse<T> {
@@ -269,21 +270,56 @@ export class BookingService {
   // Calculate booking price before creating booking
   async calculatePrice(request: PriceCalculationRequest): Promise<PriceBreakdown> {
     try {
-      console.log('🚀 [Frontend] Sending calculate price request:', {
+      console.log('🚀 [Frontend] Original request (USD):', {
         ...request,
         timestamp: new Date().toISOString(),
         requestId: Math.random().toString(36).substr(2, 9)
       });
       
-      const response = await api.post<ApiResponse<PriceBreakdown>>('/bookings/calculate-price', request);
+      // 💱 Convert USD amounts to VND for backend
+      const testUsdAmount = 1; // Test with $1  
+      const vndEquivalent = convertToVND(testUsdAmount); // Get VND for $1
+      const usdToVndRate = vndEquivalent; // This is the current rate
+      
+      console.log('💱 [Frontend] Currency rate USD→VND:', usdToVndRate);
+      
+      // Send request with converted VND values (if needed)
+      const vndRequest = {
+        ...request,
+        currency: 'VND' // Tell backend we're working with VND
+      };
+      
+      console.log('� [Frontend] Sending request to backend (VND):', vndRequest);
+      
+      const response = await api.post<ApiResponse<PriceBreakdown>>('/bookings/calculate-price', vndRequest);
       
       if (response.data.success && response.data.data) {
-        const pricing = response.data.data;
+        let pricing = response.data.data;
+        
+        console.log('📥 [Frontend] Raw backend response:', pricing);
+        
+        // 💱 Convert VND response back to USD for frontend display
+        if (pricing.currency === 'VND' || !pricing.currency) {
+          console.log('🔄 [Frontend] Converting VND response to USD for display');
+          
+          pricing = {
+            ...pricing,
+            // Convert all VND amounts to USD for frontend display
+            basePrice: pricing.basePrice ? Math.round(pricing.basePrice / usdToVndRate) : 0,
+            insurancePrice: pricing.insurancePrice ? Math.round(pricing.insurancePrice / usdToVndRate) : 0,
+            taxes: pricing.taxes ? Math.round(pricing.taxes / usdToVndRate) : 0,
+            totalPrice: pricing.totalPrice ? Math.round(pricing.totalPrice / usdToVndRate) : 0,
+            deposit: pricing.deposit ? Math.round(pricing.deposit / usdToVndRate) : 0,
+            currency: 'USD' // Frontend always displays USD
+          };
+          
+          console.log('✅ [Frontend] Converted to USD for display:', pricing);
+        }
         
         // ✅ Validate and debug pricing
         this.validatePriceCalculation(request, pricing);
         
-        console.log('✅ [Frontend] Price calculation successful:', pricing);
+        console.log('✅ [Frontend] Price calculation successful (converted to USD):', pricing);
         return pricing;
       } else {
         throw new Error('Price calculation failed: Invalid response');

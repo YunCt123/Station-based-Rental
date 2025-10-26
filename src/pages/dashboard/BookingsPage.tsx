@@ -3,6 +3,7 @@ import { Card, Typography, Table, Tag, Button, message, Space } from "antd";
 import { EyeOutlined, ReloadOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import { bookingService } from "../../services/bookingService";
+import { convertToVND } from "../../lib/currency";
 import type { Booking } from "../../services/bookingService";
 
 const { Title } = Typography;
@@ -12,6 +13,46 @@ const BookingsPage: React.FC = () => {
   const navigate = useNavigate();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // 💱 Helper function to convert VND back to USD for display
+  const convertVndToUsd = (vndAmount: number): number => {
+    if (!vndAmount) return 0;
+    
+    // Get current USD→VND rate
+    const testUsdAmount = 1;
+    const vndEquivalent = convertToVND(testUsdAmount);
+    const usdToVndRate = vndEquivalent;
+    
+    // Convert VND back to USD
+    const usdAmount = Math.round(vndAmount / usdToVndRate);
+    
+    console.log('💱 [BookingsPage] VND→USD conversion:', {
+      vndAmount,
+      usdToVndRate,
+      usdAmount
+    });
+    
+    return usdAmount;
+  };
+
+  // 💱 Helper function to format price for display
+  const formatPrice = (pricing: { totalPrice?: number; deposit?: number; currency?: string }) => {
+    if (!pricing) return { total: 0, deposit: 0 };
+    
+    // If currency is VND, convert to USD for display
+    if (pricing.currency === 'VND' || (!pricing.currency && pricing.totalPrice && pricing.totalPrice > 1000)) {
+      return {
+        total: convertVndToUsd(pricing.totalPrice || 0),
+        deposit: convertVndToUsd(pricing.deposit || 0)
+      };
+    }
+    
+    // Already in USD
+    return {
+      total: pricing.totalPrice || 0,
+      deposit: pricing.deposit || 0
+    };
+  };
 
   const loadBookings = useCallback(async () => {
     try {
@@ -104,16 +145,19 @@ const BookingsPage: React.FC = () => {
       title: 'Total Amount',
       dataIndex: 'pricing_snapshot',
       key: 'total',
-      render: (pricing: { totalPrice?: number; deposit?: number }) => (
-        <div>
-          <div className="font-semibold">
-            ${pricing?.totalPrice || 0}
+      render: (pricing: { totalPrice?: number; deposit?: number; currency?: string }) => {
+        const prices = formatPrice(pricing);
+        return (
+          <div>
+            <div className="font-semibold">
+              ${prices.total}
+            </div>
+            <div className="text-xs text-gray-500">
+              Deposit: ${prices.deposit}
+            </div>
           </div>
-          <div className="text-xs text-gray-500">
-            Deposit: ${pricing?.deposit || 0}
-          </div>
-        </div>
-      ),
+        );
+      },
     },
     {
       title: 'Status',

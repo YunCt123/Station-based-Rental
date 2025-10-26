@@ -26,30 +26,51 @@ export type BackendVehicleStatus = 'AVAILABLE' | 'RESERVED' | 'RENTED' | 'MAINTE
 // Frontend Vehicle interface (main vehicle data structure)
 export interface Vehicle {
   id: string;
+  _id?: string;
   name: string;
   year: number;
   brand: string;
   model: string;
-  type: VehicleType;
+  type: VehicleType | string;
   image: string;
-  batteryLevel: number;
-  location: string;
-  availability: VehicleAvailability;
-  pricePerHour: number;
-  pricePerDay: number;
-  rating: number;
-  reviewCount: number;
-  trips: number;
-  range: number;
-  seats: number;
-  features: string[];
-  condition: VehicleCondition;
-  lastMaintenance: string;
-  mileage: number;
-  fuelEfficiency: string;
-  inspectionDate: string;
-  insuranceExpiry: string;
-  description: string;
+  station_id?: string;
+  station_name?: string;
+  location?: string;
+  status?: BackendVehicleStatus | string;
+  batteryLevel?: number;
+  battery_soc?: number;
+  battery_kWh?: number;
+  range?: number;
+  seats?: number;
+  pricePerHour?: number;
+  pricePerDay?: number;
+  pricing?: {
+    hourly?: number;
+    daily?: number;
+    currency?: string;
+  };
+  rating?: number;
+  reviewCount?: number;
+  trips?: number;
+  features?: string[];
+  condition?: VehicleCondition | string;
+  lastMaintenance?: string;
+  mileage?: number;
+  odo_km?: number;
+  fuelEfficiency?: string;
+  consumption_wh_per_km?: number;
+  inspectionDate?: string;
+  inspection_due_at?: string;
+  insuranceExpiry?: string;
+  insurance_expiry_at?: string;
+  description?: string;
+  active?: boolean;
+  tags?: string[];
+  createdAt?: string;
+  updatedAt?: string;
+  availability?: VehicleAvailability;
+  lock_version?: number;
+  priceDetail?: string;
 }
 
 // Backend vehicle data structure (from API)
@@ -57,6 +78,7 @@ export interface BackendVehicle {
   _id: string;
   id?: string;
   name: string;
+  lock_version?: number;
   year: number;
   brand?: string;
   model?: string;
@@ -67,6 +89,7 @@ export interface BackendVehicle {
   status: BackendVehicleStatus;
   batteryLevel?: number;
   battery_soc?: number;
+  battery_kWh?: number;
   range?: number;
   seats?: number;
   pricePerHour?: number;
@@ -82,7 +105,6 @@ export interface BackendVehicle {
   features?: string[];
   condition?: string;
   lastMaintenance?: string;
-  mileage?: number;
   odo_km?: number;
   fuelEfficiency?: string;
   consumption_wh_per_km?: number;

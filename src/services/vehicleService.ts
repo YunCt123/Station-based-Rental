@@ -17,29 +17,35 @@ function mapBackendVehicleToFrontend(backendVehicle: BackendVehicle): Vehicle {
   const mapped = {
     id: backendVehicle._id || backendVehicle.id || "",
     name: backendVehicle.name,
+    lockVersion: backendVehicle.lock_version || 0,
+    active: backendVehicle.active !== undefined ? backendVehicle.active : true,
     year: backendVehicle.year,
     brand: backendVehicle.brand || "",
     model: backendVehicle.model || "",
     type: (validTypes.includes(backendVehicle.type || "") ? backendVehicle.type : "SUV") as Vehicle["type"],
     image: backendVehicle.image || "https://images.unsplash.com/photo-1593941707882-a5bac6861d75?w=800&h=600&fit=crop&crop=center",
     batteryLevel: backendVehicle.batteryLevel || (backendVehicle.battery_soc ? backendVehicle.battery_soc * 100 : 0),
+    batterykWh: backendVehicle.battery_kWh || 0,
     location: backendVehicle.station_name || "Unknown Location",
     availability: mapBackendStatusToFrontend(backendVehicle.status),
     pricePerHour: backendVehicle.pricePerHour || backendVehicle.pricing?.hourly || 0,
     pricePerDay: backendVehicle.pricePerDay || backendVehicle.pricing?.daily || 0,
+    priceCurrency: backendVehicle.pricing?.currency || "VND",
     rating: backendVehicle.rating || 0,
     reviewCount: backendVehicle.reviewCount || 0,
     trips: backendVehicle.trips || 0,
     range: backendVehicle.range || 0,
     seats: backendVehicle.seats || 2,
     features: backendVehicle.features || [],
+    status: backendVehicle.status || "AVAILABLE",
     condition: (validConditions.includes(backendVehicle.condition || "") ? backendVehicle.condition : "good") as Vehicle["condition"],
     lastMaintenance: backendVehicle.lastMaintenance || backendVehicle.updatedAt || "",
-    mileage: backendVehicle.mileage || backendVehicle.odo_km || 0,
+    mileage: backendVehicle.odo_km || 0,
     fuelEfficiency: backendVehicle.fuelEfficiency || `${backendVehicle.consumption_wh_per_km || 150} Wh/km`,
     inspectionDate: backendVehicle.inspectionDate || backendVehicle.inspection_due_at || "",
     insuranceExpiry: backendVehicle.insuranceExpiry || backendVehicle.insurance_expiry_at || "",
     description: backendVehicle.description || "",
+    tags: backendVehicle.tags || []
   };
   
   return mapped;
@@ -180,6 +186,32 @@ export const vehicleService = {
       return response.data.data.map(mapBackendVehicleToFrontend);
     } catch (error) {
       console.error('Error getting available vehicles by station:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get reserved vehicles at a specific station
+   * GET /v1/stations/{stationId}/vehicles?status=RESERVED
+   */
+  async getReservedVehiclesByStation(stationId: string, filters: VehicleSearchFilters = {}): Promise<Vehicle[]> {
+    try {
+      const params = new URLSearchParams();
+
+      // Add filters to query params
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+          params.append(key, String(value));
+        }
+      });
+
+      const response = await api.get<ApiResponse<any>>(`/stations/${stationId}/vehicles?status=RESERVED`);
+
+      // Lấy danh sách xe từ data.data.vehicles
+      const vehicles = response.data.data?.vehicles || [];
+      return vehicles.map(mapBackendVehicleToFrontend);
+    } catch (error) {
+      console.error('Error getting reserved vehicles by station:', error);
       throw error;
     }
   },

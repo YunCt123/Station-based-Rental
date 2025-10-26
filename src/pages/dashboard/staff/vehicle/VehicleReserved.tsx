@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
+import { stationService } from '../../../../services/stationService';
+import { vehicleService } from '../../../../services/vehicleService';
 import { Card, Input, Modal, Space, Spin, Table, Tag, message, Descriptions } from 'antd';
 import { SearchOutlined } from '@ant-design/icons';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -36,26 +38,49 @@ const VehicleReserved = () => {
   const [searchText, setSearchText] = useState('');
   const [selectedVehicle, setSelectedVehicle] = useState<any>(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
+  // Thành phố Việt Nam (tĩnh)
+  const cityOptionsRaw = [
+    'Hà Nội', 'Hồ Chí Minh', 'Đà Nẵng', 'Hải Phòng', 'Cần Thơ', 'Nha Trang', 'Huế', 'Vũng Tàu', 'Biên Hòa', 'Buôn Ma Thuột', 'Đà Lạt', 'Quy Nhơn', 'Thanh Hóa', 'Nam Định', 'Vinh', 'Thái Nguyên', 'Bắc Ninh', 'Phan Thiết', 'Long Xuyên', 'Rạch Giá', 'Bạc Liêu', 'Cà Mau', 'Tuy Hòa', 'Pleiku', 'Trà Vinh', 'Sóc Trăng', 'Hạ Long', 'Uông Bí', 'Lào Cai', 'Yên Bái', 'Điện Biên Phủ', 'Sơn La', 'Hòa Bình', 'Tuyên Quang', 'Bắc Giang', 'Bắc Kạn', 'Cao Bằng', 'Lạng Sơn', 'Hà Giang', 'Phủ Lý', 'Hưng Yên', 'Hà Tĩnh', 'Quảng Bình', 'Quảng Trị', 'Đông Hà', 'Quảng Ngãi', 'Tam Kỳ', 'Kon Tum', 'Gia Nghĩa', 'Tây Ninh', 'Bến Tre', 'Vĩnh Long', 'Cao Lãnh', 'Sa Đéc', 'Mỹ Tho', 'Châu Đốc', 'Tân An', 'Bình Dương', 'Bình Phước', 'Phước Long', 'Thủ Dầu Một', 'Bình Thuận', 'Bình Định', 'Quảng Nam', 'Quảng Ninh', 'Quảng Ngãi', 'Quảng Trị', 'Quảng Bình', 'Ninh Bình', 'Ninh Thuận', 'Hà Nam', 'Hà Tĩnh', 'Hậu Giang', 'Kiên Giang', 'Lâm Đồng', 'Lạng Sơn', 'Lào Cai', 'Nam Định', 'Nghệ An', 'Phú Thọ', 'Phú Yên', 'Quảng Bình', 'Quảng Nam', 'Quảng Ngãi', 'Quảng Ninh', 'Quảng Trị', 'Sóc Trăng', 'Sơn La', 'Tây Ninh', 'Thái Bình', 'Thái Nguyên', 'Thanh Hóa', 'Tiền Giang', 'Trà Vinh', 'Tuyên Quang', 'Vĩnh Long', 'Vĩnh Phúc', 'Yên Bái'
+  ];
+  const cityOptions = Array.from(new Set(cityOptionsRaw));
+  const [selectedCity, setSelectedCity] = useState<string>('');
+  const [stationOptions, setStationOptions] = useState<any[]>([]);
+  const [selectedStation, setSelectedStation] = useState<string>('');
 
+  useEffect(() => {
+    if (!selectedCity) return;
+    stationService.getStationsByCity(selectedCity)
+      .then((stations: any[]) => {
+        setStationOptions((stations || []).map((station: any) => ({
+          value: station.id,
+          label: station.name
+        })));
+        setSelectedStation('');
+      })
+      .catch(() => {
+        setStationOptions([]);
+      });
+  }, [selectedCity]);
   const location = useLocation();
   const navigate = useNavigate();
 
+  // Lấy danh sách xe đặt trước theo trạm
   useEffect(() => {
-    setLoading(true);
-    // Seed list with reserved + optionally preselected vehicle from Available screen
-    const incoming = (location.state as any)?.vehicle;
-    const list = [...mockReservedVehicles];
-    if (incoming) {
-      list.unshift({
-        ...incoming,
-        status: 'reserved',
-        customer: { name: 'Khách đặt trước', phone: '—' },
-      });
-      message.success(`Đã thêm xe ${incoming.licensePlate} vào danh sách đặt trước.`);
+    if (!selectedStation) {
+      setVehicles([]);
+      return;
     }
-    setVehicles(list);
-    setLoading(false);
-  }, [location.state]);
+    setLoading(true);
+    vehicleService.getReservedVehiclesByStation(selectedStation)
+      .then((data: any[]) => {
+        setVehicles(data || []);
+      })
+      .catch(() => {
+        setVehicles([]);
+        message.error('Không lấy được danh sách xe đặt trước.');
+      })
+      .finally(() => setLoading(false));
+  }, [selectedStation]);
 
   const filtered = useMemo(
     () =>
@@ -88,8 +113,8 @@ const VehicleReserved = () => {
   const columns = [
     {
       title: 'Hình ảnh',
-      dataIndex: 'image',
-      key: 'image',
+      dataIndex: 'imageUrl',
+      key: 'imageUrl',
       render: (img: string) => (
         <img src={img} alt="vehicle" style={{ width: 80, height: 50, objectFit: 'cover', borderRadius: 4 }} />
       ),
@@ -101,30 +126,35 @@ const VehicleReserved = () => {
         <div>
           <div><b>ID:</b> {record.id}</div>
           <div><b>Model:</b> {record.model}</div>
-          <div><b>Biển số:</b> {record.licensePlate}</div>
         </div>
       ),
     },
     {
       title: 'Khách hàng',
-      key: 'customer',
-      render: (_: any, record: any) => (
-        <div>
-          <div><b>{record.customer?.name || '—'}</b></div>
-          <div>{record.customer?.phone || '—'}</div>
-        </div>
-      ),
+      dataIndex: 'customerName',
+      key: 'customerName',
     },
     {
-      title: 'Trạng thái kỹ thuật',
-      key: 'status',
-      render: (_: any, record: any) => (
-        <div>
-          <Tag color="blue">Pin: {record.battery}</Tag>
-          <Tag color="green">Kỹ thuật: {record.technicalStatus}</Tag>
-          <div style={{ fontSize: 12, color: '#888' }}>Vị trí: {record.location}</div>
-        </div>
-      ),
+      title: 'Số liên hệ',
+      dataIndex: 'customerPhone',
+      key: 'customerPhone',
+    },
+    {
+      title: 'Pin',
+      dataIndex: 'battery',
+      key: 'battery',
+      render: (battery: string) => <Tag color="blue">{battery}</Tag>,
+    },
+    {
+      title: 'Kỹ thuật',
+      dataIndex: 'technicalStatus',
+      key: 'technicalStatus',
+      render: (status: string) => <Tag color="green">{status}</Tag>,
+    },
+    {
+      title: 'Vị trí',
+      dataIndex: 'location',
+      key: 'location',
     },
     {
       title: 'Thao tác',
@@ -149,6 +179,39 @@ const VehicleReserved = () => {
 
   return (
     <Card title="Xe đã đặt trước">
+      {/* Chọn thành phố và trạm */}
+      <Space style={{ marginBottom: 16 }}>
+        <div>
+          <span style={{ marginRight: 8 }}>Thành phố:</span>
+          <Input.Search
+            placeholder="Tìm thành phố..."
+            allowClear
+            style={{ width: 200 }}
+            value={selectedCity}
+            onChange={e => setSelectedCity(e.target.value)}
+            list="city-list"
+          />
+          <datalist id="city-list">
+            {cityOptions.map((city, idx) => (
+              <option key={city + idx} value={city} />
+            ))}
+          </datalist>
+        </div>
+        <div>
+          <span style={{ marginRight: 8 }}>Trạm:</span>
+          <select
+            style={{ width: 200, padding: 4 }}
+            value={selectedStation}
+            onChange={e => setSelectedStation(e.target.value)}
+            disabled={!stationOptions.length}
+          >
+            <option value="">Chọn trạm...</option>
+            {stationOptions.map(station => (
+              <option key={station.value} value={station.value}>{station.label}</option>
+            ))}
+          </select>
+        </div>
+      </Space>
       <Space direction="vertical" style={{ width: '100%' }}>
         <Input
           placeholder="Tìm kiếm..."
@@ -169,13 +232,13 @@ const VehicleReserved = () => {
         onCancel={() => setIsModalVisible(false)}
         okText="Chuyển sang thủ tục bàn giao"
         cancelText="Hủy"
-        bodyStyle={{ padding: 24 }}
+        styles={{ body: { padding: 24 } }}
         width={820}
       >
         {selectedVehicle && (
           <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
             <img
-              src={selectedVehicle.image}
+              src={selectedVehicle.imageUrl}
               alt="vehicle"
               style={{
                 width: 160,
@@ -206,12 +269,8 @@ const VehicleReserved = () => {
                 <Descriptions.Item label="Biển số">{selectedVehicle.licensePlate}</Descriptions.Item>
                 <Descriptions.Item label="Loại xe">{selectedVehicle.type}</Descriptions.Item>
                 <Descriptions.Item label="Model">{selectedVehicle.model}</Descriptions.Item>
-                <Descriptions.Item label="Khách hàng">
-                  {selectedVehicle.customer?.name || '—'}
-                </Descriptions.Item>
-                <Descriptions.Item label="Số liên hệ">
-                  {selectedVehicle.customer?.phone || '—'}
-                </Descriptions.Item>
+                <Descriptions.Item label="Khách hàng">{selectedVehicle.customerName}</Descriptions.Item>
+                <Descriptions.Item label="Số liên hệ">{selectedVehicle.customerPhone}</Descriptions.Item>
                 <Descriptions.Item label="Tình trạng kỹ thuật">{selectedVehicle.technicalStatus}</Descriptions.Item>
                 <Descriptions.Item label="Pin">{selectedVehicle.battery}</Descriptions.Item>
                 <Descriptions.Item label="Vị trí">{selectedVehicle.location}</Descriptions.Item>

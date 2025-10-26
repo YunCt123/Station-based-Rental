@@ -36,21 +36,45 @@ const BookingsPage: React.FC = () => {
   };
 
   // 💱 Helper function to format price for display
-  const formatPrice = (pricing: { totalPrice?: number; deposit?: number; currency?: string }) => {
+  const formatPrice = (pricing?: { 
+    total_price?: number;
+    base_price?: number;
+    taxes?: number;
+    insurance_price?: number;
+    deposit?: number;
+    currency?: string;
+    details?: {
+      days?: number;
+      hours?: number;
+    }
+  }) => {
     if (!pricing) return { total: 0, deposit: 0 };
-    
+
+    // Get total price directly from API
+    const total = pricing.total_price || 0;
+    const deposit = pricing.deposit || 0;
+
     // If currency is VND, convert to USD for display
-    if (pricing.currency === 'VND' || (!pricing.currency && pricing.totalPrice && pricing.totalPrice > 1000)) {
+    if ((pricing.currency === 'VND') || (total > 1000)) {
+      console.log('Converting VND to USD:', { 
+        total, 
+        deposit,
+        base: pricing.base_price,
+        insurance: pricing.insurance_price,
+        taxes: pricing.taxes,
+        days: pricing.details?.days,
+        hours: pricing.details?.hours
+      });
       return {
-        total: convertVndToUsd(pricing.totalPrice || 0),
-        deposit: convertVndToUsd(pricing.deposit || 0)
+        total: convertVndToUsd(total),
+        deposit: convertVndToUsd(deposit)
       };
     }
     
     // Already in USD
     return {
-      total: pricing.totalPrice || 0,
-      deposit: pricing.deposit || 0
+      total: total,
+      deposit: deposit
     };
   };
 
@@ -145,8 +169,21 @@ const BookingsPage: React.FC = () => {
       title: 'Total Amount',
       dataIndex: 'pricing_snapshot',
       key: 'total',
-      render: (pricing: { totalPrice?: number; deposit?: number; currency?: string }) => {
+      render: (pricing: { 
+        total_price?: number;
+        base_price?: number;
+        taxes?: number;
+        insurance_price?: number;
+        deposit?: number;
+        currency?: string;
+        details?: {
+          days?: number;
+          hours?: number;
+        }
+      }) => {
+        console.log('Pricing snapshot:', pricing);
         const prices = formatPrice(pricing);
+        console.log('Formatted prices:', prices);
         return (
           <div>
             <div className="font-semibold">
@@ -181,7 +218,7 @@ const BookingsPage: React.FC = () => {
               if (record.status === 'HELD') {
                 navigate(`/payment?bookingId=${record._id}`);
               } else {
-                message.info('Booking details view coming soon');
+                navigate(`/bookings/${record._id}`);
               }
             }}
           >

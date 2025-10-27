@@ -1,46 +1,28 @@
 import { useState, useEffect } from 'react';
 import { stationService } from '../../../../services/stationService';
-import { Input } from 'antd';
+import { Input, Table, Tag, Card, Space } from 'antd';
+import vehicleService from '@/services/vehicleService';
 import { SearchOutlined } from '@ant-design/icons';
-import { Table, Tag, Card, Space } from 'antd';
 
-// Dữ liệu mẫu
-const mockRentedVehicles = [
-  {
-    id: 1,
-    model: 'Toyota Vios',
-    licensePlate: 'ABC-123',
-    customer: { name: 'Nguyễn Văn A', phone: '0901234567' },
-    rentStart: '2024-06-01 08:00',
-    rentEnd: '2024-06-01 18:00',
-    lastStatus: { battery: '70%', technical: 'Tốt', updated: '2024-06-01 07:50' },
-    estimatedCost: '500,000đ',
-  },
-  {
-    id: 2,
-    model: 'Honda Wave',
-    licensePlate: 'XYZ-789',
-    customer: { name: 'Trần Thị B', phone: '0912345678' },
-    rentStart: '2024-06-01 09:30',
-    rentEnd: '2024-06-01 17:00',
-    lastStatus: { battery: '55%', technical: 'Bình thường', updated: '2024-06-01 09:20' },
-    estimatedCost: '120,000đ',
-  },
-];
-
+// Type for API vehicle data
 type Vehicle = {
   id: number;
-  model: string;
-  licensePlate: string;
-  customer: { name: string; phone: string };
-  rentStart: string;
-  rentEnd: string;
-  lastStatus: { battery: string; technical: string; updated: string };
-  estimatedCost: string;
+  image?: string;
+  name?: string;
+  model?: string;
+  type?: string;
+  year?: number;
+  status?: string;
+  batteryLevel?: number;
+  location?: string;
+  pricePerHour?: number;
+  seats?: number;
+  tags?: string[];
 };
 
 const VehicleRented = () => {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [searchText, setSearchText] = useState('');
   // Thành phố Việt Nam (tĩnh)
   const cityOptionsRaw = [
     'Hà Nội', 'Hồ Chí Minh', 'Đà Nẵng', 'Hải Phòng', 'Cần Thơ', 'Nha Trang', 'Huế', 'Vũng Tàu', 'Biên Hòa', 'Buôn Ma Thuột', 'Đà Lạt', 'Quy Nhơn', 'Thanh Hóa', 'Nam Định', 'Vinh', 'Thái Nguyên', 'Bắc Ninh', 'Phan Thiết', 'Long Xuyên', 'Rạch Giá', 'Bạc Liêu', 'Cà Mau', 'Tuy Hòa', 'Pleiku', 'Trà Vinh', 'Sóc Trăng', 'Hạ Long', 'Uông Bí', 'Lào Cai', 'Yên Bái', 'Điện Biên Phủ', 'Sơn La', 'Hòa Bình', 'Tuyên Quang', 'Bắc Giang', 'Bắc Kạn', 'Cao Bằng', 'Lạng Sơn', 'Hà Giang', 'Phủ Lý', 'Hưng Yên', 'Hà Tĩnh', 'Quảng Bình', 'Quảng Trị', 'Đông Hà', 'Quảng Ngãi', 'Tam Kỳ', 'Kon Tum', 'Gia Nghĩa', 'Tây Ninh', 'Bến Tre', 'Vĩnh Long', 'Cao Lãnh', 'Sa Đéc', 'Mỹ Tho', 'Châu Đốc', 'Tân An', 'Bình Dương', 'Bình Phước', 'Phước Long', 'Thủ Dầu Một', 'Bình Thuận', 'Bình Định', 'Quảng Nam', 'Quảng Ninh', 'Quảng Ngãi', 'Quảng Trị', 'Quảng Bình', 'Ninh Bình', 'Ninh Thuận', 'Hà Nam', 'Hà Tĩnh', 'Hậu Giang', 'Kiên Giang', 'Lâm Đồng', 'Lạng Sơn', 'Lào Cai', 'Nam Định', 'Nghệ An', 'Phú Thọ', 'Phú Yên', 'Quảng Bình', 'Quảng Nam', 'Quảng Ngãi', 'Quảng Ninh', 'Quảng Trị', 'Sóc Trăng', 'Sơn La', 'Tây Ninh', 'Thái Bình', 'Thái Nguyên', 'Thanh Hóa', 'Tiền Giang', 'Trà Vinh', 'Tuyên Quang', 'Vĩnh Long', 'Vĩnh Phúc', 'Yên Bái'
@@ -65,58 +47,90 @@ const VehicleRented = () => {
       });
   }, [selectedCity]);
   useEffect(() => {
-    // Giả lập lấy dữ liệu
-    setVehicles(mockRentedVehicles);
-  }, []);
+    if (!selectedStation) {
+      setVehicles([]);
+      return;
+    }
+    vehicleService.getRentedVehiclesByStation(selectedStation)
+      .then((data: any[]) => {
+        setVehicles(data || []);
+      })
+      .catch(() => {
+        setVehicles([]);
+      });
+  }, [selectedStation]);
+
+  // Filter vehicles by search text
+  const filteredVehicles = vehicles.filter(v => {
+    const text = searchText.toLowerCase();
+    return (
+      v.name?.toLowerCase().includes(text) ||
+      v.model?.toLowerCase().includes(text) ||
+      v.type?.toLowerCase().includes(text)
+    );
+  });
 
   const columns = [
     {
-      title: 'ID / Model / Biển số',
+      title: 'Hình ảnh',
+      dataIndex: 'image',
+      key: 'image',
+      render: (img: string) => (
+        <img src={img} alt="vehicle" style={{ width: 80, height: 50, objectFit: 'cover', borderRadius: 4 }} />
+      ),
+    },
+    {
+      title: 'Xe',
       key: 'vehicleInfo',
       render: (_: any, record: any) => (
         <div>
-          <div><b>ID:</b> {record.id}</div>
-          <div><b>Model:</b> {record.model}</div>
-          <div><b>Biển số:</b> {record.licensePlate}</div>
+          <div style={{ fontWeight: 600 }}>{record.name}</div>
+          <div style={{ color: '#888' }}>{record.model} &bull; {record.type}</div>
         </div>
       ),
     },
     {
-      title: 'Khách hàng',
-      key: 'customer',
-      render: (_: any, record: any) => (
-        <div>
-          <div><b>{record.customer.name}</b></div>
-          <div>{record.customer.phone}</div>
-        </div>
-      ),
+      title: 'Năm',
+      dataIndex: 'year',
+      key: 'year',
     },
     {
-      title: 'Thời gian thuê',
-      key: 'rentTime',
-      render: (_: any, record: any) => (
-        <div>
-          <div>Bắt đầu: {record.rentStart}</div>
-          <div>Dự kiến trả: {record.rentEnd}</div>
-        </div>
-      ),
+      title: 'Trạng thái',
+      dataIndex: 'status',
+      key: 'status',
+      render: (status: string) => <Tag color={status === 'RENTED' ? 'orange' : 'blue'}>{status}</Tag>,
     },
     {
-      title: 'Trạng thái lần cuối',
-      key: 'lastStatus',
-      render: (_: any, record: any) => (
-        <div>
-          <Tag color="blue">Pin: {record.lastStatus.battery}</Tag>
-          <Tag color="green">Kỹ thuật: {record.lastStatus.technical}</Tag>
-          <div style={{ fontSize: 12, color: '#888' }}>Cập nhật: {record.lastStatus.updated}</div>
-        </div>
-      ),
+      title: 'Pin (%)',
+      dataIndex: 'batteryLevel',
+      key: 'batteryLevel',
+      render: (battery: number) => <Tag color="blue">{battery}%</Tag>,
     },
     {
-      title: 'Chi phí tạm tính',
-      dataIndex: 'estimatedCost',
-      key: 'estimatedCost',
-      render: (cost: string) => <b style={{ color: '#faad14' }}>{cost}</b>,
+      title: 'Vị trí',
+      dataIndex: 'location',
+      key: 'location',
+    },
+    {
+      title: 'Giá/giờ',
+      dataIndex: 'pricePerHour',
+      key: 'pricePerHour',
+      render: (_: any, record: any) => record.pricePerHour ? `${record.pricePerHour.toLocaleString()} VND` : '--',
+    },
+    {
+      title: 'Số ghế',
+      dataIndex: 'seats',
+      key: 'seats',
+    },
+    {
+      title: 'Tags',
+      dataIndex: 'tags',
+      key: 'tags',
+      render: (tags: string[]) => (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, maxWidth: 120 }}>
+          {tags?.map(tag => <Tag key={tag} style={{ marginBottom: 4 }}>{tag}</Tag>)}
+        </div>
+      ),
     },
   ];
 
@@ -156,9 +170,16 @@ const VehicleRented = () => {
         </div>
       </Space>
       <Space direction="vertical" style={{ width: '100%' }}>
+        <Input
+          placeholder="Tìm kiếm..."
+          prefix={<SearchOutlined />}
+          value={searchText}
+          onChange={(e) => setSearchText(e.target.value)}
+          style={{ maxWidth: 300 }}
+        />
         <Table
           columns={columns}
-          dataSource={vehicles}
+          dataSource={filteredVehicles}
           rowKey="id"
         />
       </Space>

@@ -6,32 +6,6 @@ import { SearchOutlined } from '@ant-design/icons';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 // Mock reserved data
-const mockReservedVehicles = [
-  {
-    id: 11,
-    type: 'Car',
-    model: 'Hyundai Accent',
-    licensePlate: 'ACC-456',
-    technicalStatus: 'Tốt',
-    battery: '82%',
-    status: 'reserved',
-    location: 'Station C',
-    image: 'https://via.placeholder.com/120x80?text=Car',
-    customer: { name: 'Phạm Minh C', phone: '0903334444' }
-  },
-  {
-    id: 22,
-    type: 'Motorcycle',
-    model: 'Honda Wave',
-    licensePlate: 'WAV-789',
-    technicalStatus: 'Bình thường',
-    battery: '65%',
-    status: 'reserved',
-    location: 'Station B',
-    image: 'https://via.placeholder.com/120x80?text=Moto',
-    customer: { name: 'Lê Thị D', phone: '0911112222' }
-  },
-];
 const VehicleReserved = () => {
   const [vehicles, setVehicles] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -61,7 +35,6 @@ const VehicleReserved = () => {
         setStationOptions([]);
       });
   }, [selectedCity]);
-  const location = useLocation();
   const navigate = useNavigate();
 
   // Lấy danh sách xe đặt trước theo trạm
@@ -113,48 +86,54 @@ const VehicleReserved = () => {
   const columns = [
     {
       title: 'Hình ảnh',
-      dataIndex: 'imageUrl',
-      key: 'imageUrl',
+      dataIndex: 'image',
+      key: 'image',
       render: (img: string) => (
         <img src={img} alt="vehicle" style={{ width: 80, height: 50, objectFit: 'cover', borderRadius: 4 }} />
       ),
     },
     {
       title: 'Xe',
-      key: 'vehicle',
+      key: 'vehicleInfo',
       render: (_: any, record: any) => (
         <div>
-          <div><b>ID:</b> {record.id}</div>
-          <div><b>Model:</b> {record.model}</div>
+          <div style={{ fontWeight: 600 }}>{record.name}</div>
+          <div style={{ color: '#888' }}>{record.model} &bull; {record.type}</div>
         </div>
       ),
     },
     {
-      title: 'Khách hàng',
-      dataIndex: 'customerName',
-      key: 'customerName',
+      title: 'Năm',
+      dataIndex: 'year',
+      key: 'year',
     },
     {
-      title: 'Số liên hệ',
-      dataIndex: 'customerPhone',
-      key: 'customerPhone',
+      title: 'Trạng thái',
+      dataIndex: 'status',
+      key: 'status',
+      render: (status: string) => <Tag color={status === 'RESERVED' ? 'gold' : 'blue'}>{status}</Tag>,
     },
     {
-      title: 'Pin',
-      dataIndex: 'battery',
-      key: 'battery',
-      render: (battery: string) => <Tag color="blue">{battery}</Tag>,
-    },
-    {
-      title: 'Kỹ thuật',
-      dataIndex: 'technicalStatus',
-      key: 'technicalStatus',
-      render: (status: string) => <Tag color="green">{status}</Tag>,
+      title: 'Pin (%)',
+      dataIndex: 'batteryLevel',
+      key: 'batteryLevel',
+      render: (battery: number) => <Tag color="blue">{battery}%</Tag>,
     },
     {
       title: 'Vị trí',
       dataIndex: 'location',
       key: 'location',
+    },
+    {
+      title: 'Giá/giờ',
+      dataIndex: 'pricePerHour',
+      key: 'pricePerHour',
+      render: (_: any, record: any) => record.pricePerHour ? `${record.pricePerHour.toLocaleString()} ${record.currency || 'VND'}` : '--',
+    },
+    {
+      title: 'Số ghế',
+      dataIndex: 'seats',
+      key: 'seats',
     },
     {
       title: 'Thao tác',
@@ -232,58 +211,90 @@ const VehicleReserved = () => {
         onCancel={() => setIsModalVisible(false)}
         okText="Chuyển sang thủ tục bàn giao"
         cancelText="Hủy"
-        styles={{ body: { padding: 24 } }}
+        styles={{ body: { padding: 24, maxHeight: '70vh' } }}
         width={820}
       >
         {selectedVehicle && (
-          <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
-            <img
-              src={selectedVehicle.imageUrl}
-              alt="vehicle"
-              style={{
-                width: 160,
-                height: 100,
-                objectFit: 'cover',
-                borderRadius: 8,
-                border: '1px solid #e4e4e4',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-                flexShrink: 0,
-              }}
-            />
-            <div style={{ flex: 1 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                <div style={{ fontSize: 16, fontWeight: 600 }}>
-                  {selectedVehicle.type} - {selectedVehicle.model}
-                </div>
-                <Tag color="gold" style={{ fontWeight: 500 }}>Đã đặt trước</Tag>
+          <>
+            <Card style={{ marginBottom: 8 }} bodyStyle={{ padding: 16 }}>
+              <div style={{ fontSize: 22, fontWeight: 700, marginBottom: 4, color: '#1890ff', letterSpacing: 1 }}>{selectedVehicle.name} <span style={{ color: '#555', fontWeight: 400 }}>({selectedVehicle.year})</span></div>
+              <div style={{ marginBottom: 8, display: 'flex', gap: 12, alignItems: 'center' }}>
+                <Tag color={selectedVehicle.status === 'RESERVED' ? 'gold' : 'blue'} style={{ fontWeight: 500, fontSize: 15 }}>{selectedVehicle.status === 'RESERVED' ? 'Đã đặt trước' : selectedVehicle.status}</Tag>
+                {selectedVehicle.active === false && <Tag color="red">Không hoạt động</Tag>}
+                <Tag color="blue">{selectedVehicle.type}</Tag>
+                <Tag color="geekblue">{selectedVehicle.brand}</Tag>
               </div>
-
-              <Descriptions
-                size="middle"
-                column={2}
-                bordered
-                labelStyle={{ color: '#888', width: 140 }}
-                contentStyle={{ fontWeight: 500 }}
-              >
-                <Descriptions.Item label="ID">{selectedVehicle.id}</Descriptions.Item>
-                <Descriptions.Item label="Biển số">{selectedVehicle.licensePlate}</Descriptions.Item>
-                <Descriptions.Item label="Loại xe">{selectedVehicle.type}</Descriptions.Item>
-                <Descriptions.Item label="Model">{selectedVehicle.model}</Descriptions.Item>
-                <Descriptions.Item label="Khách hàng">{selectedVehicle.customerName}</Descriptions.Item>
-                <Descriptions.Item label="Số liên hệ">{selectedVehicle.customerPhone}</Descriptions.Item>
-                <Descriptions.Item label="Tình trạng kỹ thuật">{selectedVehicle.technicalStatus}</Descriptions.Item>
-                <Descriptions.Item label="Pin">{selectedVehicle.battery}</Descriptions.Item>
-                <Descriptions.Item label="Vị trí">{selectedVehicle.location}</Descriptions.Item>
-                <Descriptions.Item label="Trạng thái">
-                  <Tag color="gold">Đã đặt trước</Tag>
-                </Descriptions.Item>
-              </Descriptions>
-
-              <div style={{ marginTop: 12, color: '#faad14', textAlign: 'center', fontWeight: 500 }}>
-                Xác nhận chuyển sang màn hình thủ tục bàn giao.
+            </Card>
+            <div style={{ display: 'flex', gap: 32, alignItems: 'flex-start', padding: 8 }}>
+              <img
+                src={selectedVehicle.image}
+                alt="vehicle"
+                style={{ width: 240, height: 160, objectFit: 'cover', borderRadius: 12, border: '2px solid #e4e4e4', boxShadow: '0 4px 16px rgba(0,0,0,0.08)', flexShrink: 0 }}
+              />
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 18, maxHeight: '50vh', overflowY: 'auto' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18 }}>
+                  <Card title="Thông tin chung" style={{ marginBottom: 8 }} bodyStyle={{ padding: 16 }}>
+                    <Descriptions size="small" column={1}>
+                      <Descriptions.Item label="ID"><b>{selectedVehicle.id}</b></Descriptions.Item>
+                      <Descriptions.Item label="Tên xe">{selectedVehicle.name}</Descriptions.Item>
+                      <Descriptions.Item label="Model">{selectedVehicle.model}</Descriptions.Item>
+                      <Descriptions.Item label="Năm sản xuất">{selectedVehicle.year}</Descriptions.Item>
+                      <Descriptions.Item label="Số chỗ ngồi">{selectedVehicle.seats}</Descriptions.Item>
+                      <Descriptions.Item label="Trạm hiện tại">{selectedVehicle.location}</Descriptions.Item>
+                    </Descriptions>
+                  </Card>
+                  <Card title="Giá thuê" style={{ marginBottom: 8 }} bodyStyle={{ padding: 16 }}>
+                    <Descriptions size="small" column={1}>
+                      <Descriptions.Item label="Giá thuê/giờ"><span style={{ color: '#faad14', fontWeight: 600 }}>{selectedVehicle.pricePerHour?.toLocaleString()} VND</span></Descriptions.Item>
+                      <Descriptions.Item label="Giá thuê/ngày"><span style={{ color: '#faad14', fontWeight: 600 }}>{selectedVehicle.pricePerDay?.toLocaleString()} VND</span></Descriptions.Item>
+                      <Descriptions.Item label="Đơn vị tiền tệ">{selectedVehicle.currency || 'VND'}</Descriptions.Item>
+                    </Descriptions>
+                  </Card>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18 }}>
+                  <Card title="Thông số kỹ thuật" style={{ marginBottom: 8 }} bodyStyle={{ padding: 16 }}>
+                    <Descriptions size="small" column={1}>
+                      <Descriptions.Item label="Tình trạng kỹ thuật">{selectedVehicle.condition}</Descriptions.Item>
+                      <Descriptions.Item label="Pin (%)"><span style={{ color: '#52c41a', fontWeight: 600 }}>{selectedVehicle.batteryLevel}%</span></Descriptions.Item>
+                      <Descriptions.Item label="Dung lượng pin">{selectedVehicle.batterykWh} kWh</Descriptions.Item>
+                      <Descriptions.Item label="Quãng đường còn lại">{selectedVehicle.range} km</Descriptions.Item>
+                      <Descriptions.Item label="Odo">{selectedVehicle.mileage} km</Descriptions.Item>
+                      <Descriptions.Item label="Khóa phiên bản">{selectedVehicle.lockVersion}</Descriptions.Item>
+                    </Descriptions>
+                  </Card>
+                  <Card title="Đánh giá & chuyến đi" style={{ marginBottom: 8 }} bodyStyle={{ padding: 16 }}>
+                    <Descriptions size="small" column={1}>
+                      <Descriptions.Item label="Đánh giá trung bình"><span style={{ color: '#1890ff', fontWeight: 600 }}>{selectedVehicle.rating}</span></Descriptions.Item>
+                      <Descriptions.Item label="Số lượt đánh giá">{selectedVehicle.reviewCount}</Descriptions.Item>
+                      <Descriptions.Item label="Số chuyến đi">{selectedVehicle.trips}</Descriptions.Item>
+                    </Descriptions>
+                  </Card>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18 }}>
+                  <Card title="Mô tả & Tính năng" style={{ marginBottom: 8 }} bodyStyle={{ padding: 16 }}>
+                    <Descriptions size="small" column={1}>
+                      <Descriptions.Item label="Mô tả">{selectedVehicle.description}</Descriptions.Item>
+                      <Descriptions.Item label="Tags">
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, maxWidth: 260 }}>
+                          {selectedVehicle.tags?.map((tag: string) => (
+                            <Tag key={tag} style={{ marginBottom: 4 }}>{tag}</Tag>
+                          ))}
+                        </div>
+                      </Descriptions.Item>
+                    </Descriptions>
+                  </Card>
+                  <Card title="Thời gian" style={{ marginBottom: 8 }} bodyStyle={{ padding: 16 }}>
+                    <Descriptions size="small" column={1}>
+                      <Descriptions.Item label="Tính năng">{selectedVehicle.features?.join(', ')}</Descriptions.Item>
+                    </Descriptions>
+                  </Card>
+                </div>
+                {/* <div style={{ marginTop: 12, color: '#faad14', textAlign: 'center', fontWeight: 500 }}>
+                  Xác nhận chuyển sang màn hình thủ tục bàn giao.
+                </div> */}
               </div>
             </div>
-          </div>
+          </>
         )}
       </Modal>
     </Card>

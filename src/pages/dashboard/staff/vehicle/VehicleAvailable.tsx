@@ -141,7 +141,7 @@ const VehicleAvailable: React.FC = () => {
             dataIndex: 'condition',
             key: 'condition',
             render: (condition: string) => (
-                <Tag color={condition === 'excellent' ? 'blue' : (condition === 'good' ? 'green' : 'red')} style={{display: 'flex', justifyContent: 'center'}}>
+                <Tag color={condition === 'excellent' ? 'blue' : (condition === 'good' ? 'green' : 'red')} style={{ display: 'flex', justifyContent: 'center' }}>
                     {condition === 'excellent' ? 'Mới' : (condition === 'good' ? 'Tốt' : 'Cần bảo trì')}
                 </Tag>
             ),
@@ -242,72 +242,83 @@ const VehicleAvailable: React.FC = () => {
                 width={900}
             >
                 {selectedVehicle && (
-                    <div style={{ display: 'flex', gap: 32, alignItems: 'flex-start', padding: 8 }}>
-                        <img
-                            src={selectedVehicle.image}
-                            alt="vehicle"
-                            style={{ width: 240, height: 160, objectFit: 'cover', borderRadius: 12, border: '2px solid #e4e4e4', boxShadow: '0 4px 16px rgba(0,0,0,0.08)', flexShrink: 0 }}
-                        />
-                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 18 }}>
-                            <div style={{ fontSize: 22, fontWeight: 700, marginBottom: 4, color: '#1890ff', letterSpacing: 1 }}>{selectedVehicle.name} <span style={{ color: '#555', fontWeight: 400 }}>({selectedVehicle.year})</span></div>
-                            <div style={{ marginBottom: 8, display: 'flex', gap: 12, alignItems: 'center' }}>
-                                <Tag color={selectedVehicle.status === 'AVAILABLE' ? 'green' : 'orange'} style={{ fontWeight: 500, fontSize: 15 }}>{selectedVehicle.status === 'AVAILABLE' ? 'Có sẵn' : selectedVehicle.status}</Tag>
+                    <>
+                        <Card style={{ marginBottom: 6 }} bodyStyle={{ padding: 12 }}>
+                            <div style={{ fontSize: 20, fontWeight: 700, marginBottom: 2, color: '#1890ff', letterSpacing: 1 }}>{selectedVehicle.name} <span style={{ color: '#555', fontWeight: 400 }}>({selectedVehicle.year})</span></div>
+                            <div style={{ marginBottom: 6, display: 'flex', gap: 10, alignItems: 'center' }}>
+                                <Tag color={selectedVehicle.status === 'AVAILABLE' ? 'green' : 'orange'} style={{ fontWeight: 500, fontSize: 14 }}>{selectedVehicle.status === 'AVAILABLE' ? 'Có sẵn' : selectedVehicle.status}</Tag>
                                 {selectedVehicle.active === false && <Tag color="red">Không hoạt động</Tag>}
                                 <Tag color="blue">{selectedVehicle.type}</Tag>
                                 <Tag color="geekblue">{selectedVehicle.brand}</Tag>
                             </div>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18 }}>
-                                {/* Thông tin chung */}
-                                <div>
-                                    <Descriptions title={<span style={{ fontWeight: 600, color: '#333' }}>Thông tin chung</span>} size="small" column={1} style={{ marginBottom: 12 }}>
-                                        <Descriptions.Item label="ID"><b>{selectedVehicle._id || selectedVehicle.id}</b></Descriptions.Item>
-                                        <Descriptions.Item label="Tên xe">{selectedVehicle.name}</Descriptions.Item>
-                                        <Descriptions.Item label="Model">{selectedVehicle.model}</Descriptions.Item>
-                                        <Descriptions.Item label="Năm sản xuất">{selectedVehicle.year}</Descriptions.Item>
-                                        <Descriptions.Item label="Số chỗ ngồi">{selectedVehicle.seats}</Descriptions.Item>
-                                        <Descriptions.Item label="Trạm hiện tại">{selectedVehicle.location}</Descriptions.Item>
-                                    </Descriptions>
-                                    <Descriptions title={<span style={{ fontWeight: 600, color: '#333' }}>Giá thuê</span>} size="small" column={1} style={{ marginBottom: 12 }}>
-                                        <Descriptions.Item label="Giá thuê/giờ"><span style={{ color: '#faad14', fontWeight: 600 }}>{selectedVehicle.pricePerHour?.toLocaleString()} VND</span></Descriptions.Item>
-                                        <Descriptions.Item label="Giá thuê/ngày"><span style={{ color: '#faad14', fontWeight: 600 }}>{selectedVehicle.pricePerDay?.toLocaleString()} VND</span></Descriptions.Item>
-                                        <Descriptions.Item label="Đơn vị tiền tệ">{selectedVehicle.priceCurrency}</Descriptions.Item>
-                                        {/* <Descriptions.Item label="Giá chi tiết">
-                                            {selectedVehicle.pricing ? <span style={{ color: '#faad14', fontWeight: 600 }}>Giờ: {selectedVehicle.pricing.hourly?.toLocaleString()} {selectedVehicle.pricing.currency}, Ngày: {selectedVehicle.pricing.daily?.toLocaleString()} {selectedVehicle.pricing.currency}</span> : ''}
-                                        </Descriptions.Item> */}
-                                    </Descriptions>
+                        </Card>
+                        <div style={{ display: 'flex', gap: 24, alignItems: 'center', padding: 0, marginTop: 0 }}>
+                            <img
+                                src={selectedVehicle.image}
+                                alt="vehicle"
+                                style={{ width: 160, height: 110, objectFit: 'cover', borderRadius: 10, border: '1px solid #e4e4e4', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', flexShrink: 0, marginTop: 0 }}
+                            />
+                            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 14, marginTop: 0, maxHeight: '50vh', overflowY: 'auto' }}>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                                    <Card title="Thông tin chung" style={{ marginBottom: 6 }} bodyStyle={{ padding: 12 }}>
+                                        <Descriptions size="small" column={1}>
+                                            <Descriptions.Item label="ID"><b>{selectedVehicle._id || selectedVehicle.id}</b></Descriptions.Item>
+                                            <Descriptions.Item label="Tên xe">{selectedVehicle.name}</Descriptions.Item>
+                                            <Descriptions.Item label="Model">{selectedVehicle.model}</Descriptions.Item>
+                                            <Descriptions.Item label="Năm sản xuất">{selectedVehicle.year}</Descriptions.Item>
+                                            <Descriptions.Item label="Số chỗ ngồi">{selectedVehicle.seats}</Descriptions.Item>
+                                            <Descriptions.Item label="Trạm hiện tại">{selectedVehicle.location}</Descriptions.Item>
+                                        </Descriptions>
+                                    </Card>
+                                    <Card title="Giá thuê" style={{ marginBottom: 6 }} bodyStyle={{ padding: 12 }}>
+                                        <Descriptions size="small" column={1}>
+                                            <Descriptions.Item label="Giá thuê/giờ"><span style={{ color: '#faad14', fontWeight: 600 }}>{selectedVehicle.pricePerHour?.toLocaleString()} VND</span></Descriptions.Item>
+                                            <Descriptions.Item label="Giá thuê/ngày"><span style={{ color: '#faad14', fontWeight: 600 }}>{selectedVehicle.pricePerDay?.toLocaleString()} VND</span></Descriptions.Item>
+                                            <Descriptions.Item label="Đơn vị tiền tệ">{selectedVehicle.priceCurrency}</Descriptions.Item>
+                                        </Descriptions>
+                                    </Card>
                                 </div>
-                                {/* Thông số kỹ thuật & đánh giá */}
-                                <div>
-                                    <Descriptions title={<span style={{ fontWeight: 600, color: '#333' }}>Thông số kỹ thuật</span>} size="small" column={1} style={{ marginBottom: 12 }}>
-                                        <Descriptions.Item label="Tình trạng kỹ thuật">{selectedVehicle.condition}</Descriptions.Item>
-                                        <Descriptions.Item label="Pin (%)"><span style={{ color: '#52c41a', fontWeight: 600 }}>{selectedVehicle.batteryLevel}%</span></Descriptions.Item>
-                                        {/* <Descriptions.Item label="SOC">{selectedVehicle.battery_soc}</Descriptions.Item> */}
-                                        <Descriptions.Item label="Dung lượng pin">{selectedVehicle.batterykWh} kWh</Descriptions.Item>
-                                        <Descriptions.Item label="Quãng đường còn lại">{selectedVehicle.range} km</Descriptions.Item>
-                                        <Descriptions.Item label="Odo">{selectedVehicle.mileage} km</Descriptions.Item>
-                                        <Descriptions.Item label="Khóa phiên bản">{selectedVehicle.lockVersion}</Descriptions.Item>
-                                    </Descriptions>
-                                    <Descriptions title={<span style={{ fontWeight: 600, color: '#333' }}>Đánh giá & chuyến đi</span>} size="small" column={1} style={{ marginBottom: 12 }}>
-                                        <Descriptions.Item label="Đánh giá trung bình"><span style={{ color: '#1890ff', fontWeight: 600 }}>{selectedVehicle.rating}</span></Descriptions.Item>
-                                        <Descriptions.Item label="Số lượt đánh giá">{selectedVehicle.reviewCount}</Descriptions.Item>
-                                        <Descriptions.Item label="Số chuyến đi">{selectedVehicle.trips}</Descriptions.Item>
-                                    </Descriptions>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                                    <Card title="Thông số kỹ thuật" style={{ marginBottom: 6 }} bodyStyle={{ padding: 12 }}>
+                                        <Descriptions size="small" column={1}>
+                                            <Descriptions.Item label="Tình trạng kỹ thuật">{selectedVehicle.condition}</Descriptions.Item>
+                                            <Descriptions.Item label="Pin (%)"><span style={{ color: '#52c41a', fontWeight: 600 }}>{selectedVehicle.batteryLevel}%</span></Descriptions.Item>
+                                            <Descriptions.Item label="Dung lượng pin">{selectedVehicle.batterykWh} kWh</Descriptions.Item>
+                                            <Descriptions.Item label="Quãng đường còn lại">{selectedVehicle.range} km</Descriptions.Item>
+                                            <Descriptions.Item label="Odo">{selectedVehicle.mileage} km</Descriptions.Item>
+                                            <Descriptions.Item label="Khóa phiên bản">{selectedVehicle.lockVersion}</Descriptions.Item>
+                                        </Descriptions>
+                                    </Card>
+                                    <Card title="Đánh giá & chuyến đi" style={{ marginBottom: 6 }} bodyStyle={{ padding: 12 }}>
+                                        <Descriptions size="small" column={1}>
+                                            <Descriptions.Item label="Đánh giá trung bình"><span style={{ color: '#1890ff', fontWeight: 600 }}>{selectedVehicle.rating}</span></Descriptions.Item>
+                                            <Descriptions.Item label="Số lượt đánh giá">{selectedVehicle.reviewCount}</Descriptions.Item>
+                                            <Descriptions.Item label="Số chuyến đi">{selectedVehicle.trips}</Descriptions.Item>
+                                        </Descriptions>
+                                    </Card>
                                 </div>
-                            </div>
-                            {/* Mô tả, tính năng, tags, thời gian */}
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18 }}>
-                                <Descriptions title={<span style={{ fontWeight: 600, color: '#333' }}>Mô tả & tính năng</span>} size="small" column={1} style={{ marginBottom: 12 }}>
-                                    <Descriptions.Item label="Mô tả">{selectedVehicle.description}</Descriptions.Item>
-                                    <Descriptions.Item label="Tags">{selectedVehicle.tags?.join(', ')}</Descriptions.Item>
-                                </Descriptions>
-                                <Descriptions title={<span style={{ fontWeight: 600, color: '#333' }}>Thời gian</span>} size="small" column={1}>
-                                    <Descriptions.Item label="Tính năng">{selectedVehicle.features?.join(', ')}</Descriptions.Item>
-                                    {/* <Descriptions.Item label="Thời gian tạo">{selectedVehicle.createdAt ? new Date(selectedVehicle.createdAt).toLocaleString() : ''}</Descriptions.Item>
-                                    <Descriptions.Item label="Cập nhật lần cuối">{selectedVehicle.updatedAt ? new Date(selectedVehicle.updatedAt).toLocaleString() : ''}</Descriptions.Item> */}
-                                </Descriptions>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                                    <Card title="Mô tả & Tính năng" style={{ marginBottom: 6 }} bodyStyle={{ padding: 12 }}>
+                                        <Descriptions size="small" column={1}>
+                                            <Descriptions.Item label="Mô tả">{selectedVehicle.description}</Descriptions.Item>
+                                            <Descriptions.Item label="Tags">
+                                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, maxWidth: 220 }}>
+                                                    {selectedVehicle.tags?.map((tag: string) => (
+                                                        <Tag key={tag} style={{ marginBottom: 4 }}>{tag}</Tag>
+                                                    ))}
+                                                </div>
+                                            </Descriptions.Item>
+                                        </Descriptions>
+                                    </Card>
+                                    <Card title="Thời gian" style={{ marginBottom: 6 }} bodyStyle={{ padding: 12 }}>
+                                        <Descriptions size="small" column={1}>
+                                            <Descriptions.Item label="Tính năng">{selectedVehicle.features?.join(', ')}</Descriptions.Item>
+                                        </Descriptions>
+                                    </Card>
+                                </div>
                             </div>
                         </div>
-                    </div>
+                    </>
                 )}
             </Modal>
 

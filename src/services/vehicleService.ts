@@ -216,6 +216,25 @@ export const vehicleService = {
     }
   },
 
+  async getRentedVehiclesByStation(stationId: string, filters: VehicleSearchFilters = {}): Promise<Vehicle[]> {
+    try {
+      const params = new URLSearchParams();
+      // Add filters to query params
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+          params.append(key, String(value));
+        }
+      });
+
+      const response = await api.get<ApiResponse<any>>(`/stations/${stationId}/vehicles?status=RENTED`);
+      const vehicles = response.data.data?.vehicles || [];
+      return vehicles.map(mapBackendVehicleToFrontend);
+    } catch (error) {
+      console.error('Error getting rented vehicles by station:', error);
+      throw error;
+    }
+  },
+
   /**
    * Create new vehicle (Admin only)
    * POST /v1/vehicles

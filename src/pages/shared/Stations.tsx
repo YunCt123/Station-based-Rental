@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { getAllStations } from '@/services/stationService';
 import StationCard from '@/components/StationCard';
-import { Input } from '@/components/ui/input'; // Dùng Input của shadcn
+import { Input } from '@/components/ui/input'; // Using shadcn Input
 import {
   Select,
   SelectContent,
@@ -18,7 +18,6 @@ import {
   MapPin,
   BatteryCharging,
   Filter,
-  X,
   Zap,
   Star,
 } from 'lucide-react';
@@ -26,15 +25,19 @@ import type { Station } from '@/types/station';
 import type { StationSearchFilters } from '@/services/stationService';
 import { Separator } from '@/components/ui/separator';
 
-// THÊM MỚI: Sao chép danh sách thành phố từ VehicleAvailable.tsx
+// Copied city list from VehicleAvailable.tsx
+// const cityOptionsRaw = [
+//   'Hanoi', 'Ho Chi Minh', 'Da Nang', 'Hai Phong', 'Can Tho', 'Nha Trang', 'Hue', 'Vung Tau', 'Bien Hoa', 'Buon Ma Thuot', 'Da Lat', 'Quy Nhon', 'Thanh Hoa', 'Nam Dinh', 'Vinh', 'Thai Nguyen', 'Bac Ninh', 'Phan Thiet', 'Long Xuyen', 'Rach Gia', 'Bac Lieu', 'Ca Mau', 'Tuy Hoa', 'Pleiku', 'Tra Vinh', 'Soc Trang', 'Ha Long', 'Uong Bi', 'Lao Cai', 'Yen Bai', 'Dien Bien Phu', 'Son La', 'Hoa Binh', 'Tuyen Quang', 'Bac Giang', 'Bac Kan', 'Cao Bang', 'Lang Son', 'Ha Giang', 'Phu Ly', 'Hung Yen', 'Ha Tinh', 'Quang Binh', 'Quang Tri', 'Dong Ha', 'Quang Ngai', 'Tam Ky', 'Kon Tum', 'Gia Nghia', 'Tay Ninh', 'Ben Tre', 'Vinh Long', 'Cao Lanh', 'Sa Dec', 'My Tho', 'Chau Doc', 'Tan An', 'Binh Duong', 'Binh Phuoc', 'Phuoc Long', 'Thu Dau Mot', 'Binh Thuan', 'Binh Dinh', 'Quang Nam', 'Quang Ninh', 'Quang Ngai', 'Quang Tri', 'Quang Binh', 'Ninh Binh', 'Ninh Thuan', 'Ha Nam', 'Ha Tinh', 'Hau Giang', 'Kien Giang', 'Lam Dong', 'Lang Son', 'Lao Cai', 'Nam Dinh', 'Nghe An', 'Phu Tho', 'Phu Yen', 'Quang Binh', 'Quang Nam', 'Quang Ngai', 'Quang Ninh', 'Quang Tri', 'Soc Trang', 'Son La', 'Tay Ninh', 'Thai Binh', 'Thai Nguyen', 'Thanh Hoa', 'Tien Giang', 'Tra Vinh', 'Tuyen Quang', 'Vinh Long', 'Vinh Phuc', 'Yen Bai'
+// ];
 const cityOptionsRaw = [
   'Hà Nội', 'Hồ Chí Minh', 'Đà Nẵng', 'Hải Phòng', 'Cần Thơ', 'Nha Trang', 'Huế', 'Vũng Tàu', 'Biên Hòa', 'Buôn Ma Thuột', 'Đà Lạt', 'Quy Nhơn', 'Thanh Hóa', 'Nam Định', 'Vinh', 'Thái Nguyên', 'Bắc Ninh', 'Phan Thiết', 'Long Xuyên', 'Rạch Giá', 'Bạc Liêu', 'Cà Mau', 'Tuy Hòa', 'Pleiku', 'Trà Vinh', 'Sóc Trăng', 'Hạ Long', 'Uông Bí', 'Lào Cai', 'Yên Bái', 'Điện Biên Phủ', 'Sơn La', 'Hòa Bình', 'Tuyên Quang', 'Bắc Giang', 'Bắc Kạn', 'Cao Bằng', 'Lạng Sơn', 'Hà Giang', 'Phủ Lý', 'Hưng Yên', 'Hà Tĩnh', 'Quảng Bình', 'Quảng Trị', 'Đông Hà', 'Quảng Ngãi', 'Tam Kỳ', 'Kon Tum', 'Gia Nghĩa', 'Tây Ninh', 'Bến Tre', 'Vĩnh Long', 'Cao Lãnh', 'Sa Đéc', 'Mỹ Tho', 'Châu Đốc', 'Tân An', 'Bình Dương', 'Bình Phước', 'Phước Long', 'Thủ Dầu Một', 'Bình Thuận', 'Bình Định', 'Quảng Nam', 'Quảng Ninh', 'Quảng Ngãi', 'Quảng Trị', 'Quảng Bình', 'Ninh Bình', 'Ninh Thuận', 'Hà Nam', 'Hà Tĩnh', 'Hậu Giang', 'Kiên Giang', 'Lâm Đồng', 'Lạng Sơn', 'Lào Cai', 'Nam Định', 'Nghệ An', 'Phú Thọ', 'Phú Yên', 'Quảng Bình', 'Quảng Nam', 'Quảng Ngãi', 'Quảng Ninh', 'Quảng Trị', 'Sóc Trăng', 'Sơn La', 'Tây Ninh', 'Thái Bình', 'Thái Nguyên', 'Thanh Hóa', 'Tiền Giang', 'Trà Vinh', 'Tuyên Quang', 'Vĩnh Long', 'Vĩnh Phúc', 'Yên Bái'
 ];
 const cityOptions = Array.from(new Set(cityOptionsRaw));
-// Thêm "Tất cả thành phố" vào đầu danh sách
-const allCityOptions = ["Tất cả thành phố", ...cityOptions];
+// Add "All Cities" to the beginning
+// TRANSLATED:
+const allCityOptions = ["All Cities", ...cityOptions];
 
-// Kiểu dữ liệu cho các bộ lọc phía Client
+// Data type for Client Filters
 interface ClientFilters {
   searchTerm: string;
   status: 'all' | 'ACTIVE' | 'INACTIVE' | 'UNDER_MAINTENANCE';
@@ -46,9 +49,9 @@ interface ClientFilters {
 const StationsPage: React.FC = () => {
   // === State ===
   const [loading, setLoading] = useState(true);
-  // Sửa state mặc định thành "Tất cả thành phố"
-  const [apiCityFilter, setApiCityFilter] = useState<string>(''); 
-  const [allStations, setAllStations] = useState<Station[]>([]); 
+  // Default state changed to empty string to fetch all initially
+  const [apiCityFilter, setApiCityFilter] = useState<string>('');
+  const [allStations, setAllStations] = useState<Station[]>([]);
 
   const [clientFilters, setClientFilters] = useState<ClientFilters>({
     searchTerm: '',
@@ -58,29 +61,28 @@ const StationsPage: React.FC = () => {
     sortBy: 'name:asc',
   });
   const [showMoreFilters, setShowMoreFilters] = useState(false);
-  
+
   const [currentPage, setCurrentPage] = useState(1);
   const stationsPerPage = 9;
 
   // === Logic ===
 
-  // 1. GỌI API: Chạy khi `apiCityFilter` thay đổi (mỗi khi gõ phím)
+  // 1. API CALL: Runs when `apiCityFilter` changes (on keystroke)
   useEffect(() => {
     const fetchStationsByCity = async () => {
       setLoading(true);
-      setAllStations([]); 
-      setCurrentPage(1); 
+      setAllStations([]);
+      setCurrentPage(1);
 
       const filterParams: StationSearchFilters = {};
-      
-      // Chỉ áp dụng filter nếu thành phố không phải là "Tất cả"
-      if (apiCityFilter && apiCityFilter !== 'Tất cả thành phố') {
+
+      // Only apply filter if city is not empty or "All Cities"
+      // TRANSLATED:
+      if (apiCityFilter && apiCityFilter !== 'All Cities') {
         filterParams.city = apiCityFilter;
       }
-      
+
       try {
-        // Chúng ta vẫn gọi `getAllStations` vì nó hỗ trợ lọc client-side tốt hơn
-        // (Nếu `apiCityFilter` trống, nó sẽ lấy tất cả)
         const data = await getAllStations(filterParams, { sort: 'name:asc' });
         setAllStations(data.stations || []);
       } catch (error) {
@@ -91,13 +93,13 @@ const StationsPage: React.FC = () => {
     };
 
     fetchStationsByCity();
-  }, [apiCityFilter]); // Chạy lại mỗi khi gõ phím, giống hệt VehicleAvailable.tsx
+  }, [apiCityFilter]); // Reruns on every keystroke, like VehicleAvailable.tsx
 
-  // 2. LỌC CLIENT: (Không thay đổi)
+  // 2. CLIENT FILTERING: (No change)
   const filteredAndSortedStations = useMemo(() => {
     let stations = [...allStations];
 
-    // Lọc theo searchTerm (Tên hoặc Địa chỉ)
+    // Filter by searchTerm (Name or Address)
     if (clientFilters.searchTerm) {
       const term = clientFilters.searchTerm.toLowerCase();
       stations = stations.filter(
@@ -106,24 +108,24 @@ const StationsPage: React.FC = () => {
           station.address.toLowerCase().includes(term)
       );
     }
-    // Lọc theo Trạng thái
+    // Filter by Status
     if (clientFilters.status !== 'all') {
       const status = clientFilters.status === 'ACTIVE' ? 'active' : (clientFilters.status === 'INACTIVE' ? 'inactive' : 'maintenance');
       stations = stations.filter((station) => station.status === status);
     }
-    // Lọc theo Sạc nhanh
+    // Filter by Fast Charging
     if (clientFilters.fastCharging !== 'all') {
       const hasFastCharging = clientFilters.fastCharging === 'true';
       stations = stations.filter(
         (station) => station.fastCharging === hasFastCharging
       );
     }
-    // Lọc theo Đánh giá
+    // Filter by Rating
     if (clientFilters.minRating !== 'all') {
       const minRating = Number(clientFilters.minRating);
       stations = stations.filter((station) => station.rating >= minRating);
     }
-    // Sắp xếp
+    // Sorting
     stations.sort((a, b) => {
       const [field, order] = clientFilters.sortBy.split(':');
       let valA: any; let valB: any;
@@ -141,7 +143,7 @@ const StationsPage: React.FC = () => {
     return stations;
   }, [allStations, clientFilters]);
 
-  // 3. PHÂN TRANG CLIENT: (Không thay đổi)
+  // 3. CLIENT PAGINATION: (No change)
   const totalPages = Math.ceil(filteredAndSortedStations.length / stationsPerPage);
   const paginatedStations = useMemo(() => {
     const startIndex = (currentPage - 1) * stationsPerPage;
@@ -149,27 +151,27 @@ const StationsPage: React.FC = () => {
     return filteredAndSortedStations.slice(startIndex, endIndex);
   }, [filteredAndSortedStations, currentPage, stationsPerPage]);
 
-  // Hàm xử lý chung cho các filter của client
+  // Handler for client filters
   const handleClientFilterChange = (
     key: keyof ClientFilters,
     value: string
   ) => {
     setClientFilters(prev => ({ ...prev, [key]: value as any }));
-    setCurrentPage(1); 
+    setCurrentPage(1);
   };
 
-  // Hàm xử lý riêng cho filter API (Thành phố)
+  // Handler for API filter (City)
   const handleApiCityChange = (cityValue: string) => {
     setApiCityFilter(cityValue);
   };
 
-  // Hàm xử lý phân trang
+  // Handler for pagination
   const handlePageChange = (newPage: number) => {
     setCurrentPage(newPage);
   };
 
   // === JSX ===
-  
+
   const StationSkeletonCard: React.FC = () => (
     <div className="border rounded-lg overflow-hidden shadow-lg">
       <Skeleton className="h-48 w-full" />
@@ -182,36 +184,39 @@ const StationsPage: React.FC = () => {
 
   return (
     <div className="container mx-auto p-4 md:p-8">
-      <h1 className="text-3xl font-bold mb-6 text-gray-800">Tìm trạm thuê</h1>
-      
-      {/* === KHU VỰC FILTER NGANG === */}
+      {/* TRANSLATED: */}
+      <h1 className="text-3xl font-bold mb-6 text-gray-800">Find a Rental Station</h1>
+
+      {/* === HORIZONTAL FILTER AREA === */}
       <div className="mb-6 p-4 bg-white rounded-xl shadow-lg space-y-4">
-        {/* Hàng 1: Search, City, Nút Thêm Filter */}
+        {/* Row 1: Search, City, More Filters Button */}
         <div className="flex flex-col md:flex-row gap-4">
           {/* Search (Client) */}
           <div className="relative flex-grow">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
             <Input
               id="name-search"
-              placeholder="Tìm theo tên hoặc địa chỉ trạm..."
+              // TRANSLATED:
+              placeholder="Search by station name or address..."
               className="pl-10"
               value={clientFilters.searchTerm}
               onChange={(e) => handleClientFilterChange('searchTerm', e.target.value)}
             />
           </div>
-          
-          {/* THAY THẾ: Sử dụng Input + Datalist cho Thành phố (API) */}
+
+          {/* City Input + Datalist (API) */}
           <div className="relative w-full md:w-[250px]">
             <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 z-10" />
             <Input
-              placeholder="Tìm thành phố..."
+              // TRANSLATED:
+              placeholder="Search city..."
               className="pl-10"
               value={apiCityFilter}
-              // Cập nhật state trên mỗi lần gõ phím
-              onChange={(e) => handleApiCityChange(e.target.value)} 
-              list="city-list" // Kết nối với datalist
+              // Update state on every keystroke
+              onChange={(e) => handleApiCityChange(e.target.value)}
+              list="city-list" // Connect to datalist
             />
-            {/* Đây là <datalist> giống hệt VehicleAvailable.tsx */}
+            {/* Datalist like VehicleAvailable.tsx */}
             <datalist id="city-list">
               {allCityOptions.map((city, idx) => (
                   <option key={city + idx} value={city} />
@@ -219,88 +224,97 @@ const StationsPage: React.FC = () => {
             </datalist>
           </div>
 
-          {/* Nút Thêm Filter */}
-          <Button 
-            variant="outline" 
+          {/* More Filters Button */}
+          <Button
+            variant="outline"
             className="w-full md:w-auto"
             onClick={() => setShowMoreFilters(!showMoreFilters)}
           >
             <Filter className="mr-2 h-4 w-4" />
-            {showMoreFilters ? 'Ẩn filter' : 'Thêm filter'}
+            {/* TRANSLATED: */}
+            {showMoreFilters ? 'Hide Filters' : 'More Filters'}
           </Button>
         </div>
 
-        {/* Hàng 2: Các Filter khác (hiện khi bấm nút) */}
+        {/* Row 2: Other Filters (shown on button click) */}
         {showMoreFilters && (
           <>
             <Separator />
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              {/* Filter Trạng thái */}
+              {/* Status Filter */}
               <Select
                 value={clientFilters.status}
                 onValueChange={(value) => handleClientFilterChange('status', value)}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Trạng thái" />
+                  {/* TRANSLATED: */}
+                  <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Mọi trạng thái</SelectItem>
-                  <SelectItem value="ACTIVE">Đang hoạt động</SelectItem>
-                  <SelectItem value="INACTIVE">Không hoạt động</SelectItem>
-                  <SelectItem value="UNDER_MAINTENANCE">Đang bảo trì</SelectItem>
+                  {/* TRANSLATED: */}
+                  <SelectItem value="all">All Statuses</SelectItem>
+                  <SelectItem value="ACTIVE">Active</SelectItem>
+                  <SelectItem value="INACTIVE">Inactive</SelectItem>
+                  <SelectItem value="UNDER_MAINTENANCE">Maintenance</SelectItem>
                 </SelectContent>
               </Select>
-              
-              {/* Filter Sạc nhanh */}
+
+              {/* Fast Charging Filter */}
               <Select
                 value={clientFilters.fastCharging}
                 onValueChange={(value) => handleClientFilterChange('fastCharging', value)}
               >
                 <SelectTrigger>
                   <Zap className="mr-2 h-4 w-4" />
-                  <SelectValue placeholder="Sạc nhanh" />
+                  {/* TRANSLATED: */}
+                  <SelectValue placeholder="Fast Charging" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Mọi loại sạc</SelectItem>
-                  <SelectItem value="true">Có sạc nhanh</SelectItem>
-                  <SelectItem value="false">Không có</SelectItem>
+                  {/* TRANSLATED: */}
+                  <SelectItem value="all">Any Charging</SelectItem>
+                  <SelectItem value="true">Fast Charging</SelectItem>
+                  <SelectItem value="false">Standard Charging</SelectItem>
                 </SelectContent>
               </Select>
-              
-              {/* Filter Đánh giá */}
+
+              {/* Rating Filter */}
               <Select
                 value={clientFilters.minRating}
                 onValueChange={(value) => handleClientFilterChange('minRating', value)}
               >
                 <SelectTrigger>
                   <Star className="mr-2 h-4 w-4" />
-                  <SelectValue placeholder="Đánh giá" />
+                  {/* TRANSLATED: */}
+                  <SelectValue placeholder="Rating" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Mọi đánh giá</SelectItem>
-                  <SelectItem value="5">Từ 5 sao</SelectItem>
-                  <SelectItem value="4">Từ 4 sao</SelectItem>
-                  <SelectItem value="3">Từ 3 sao</SelectItem>
-                  <SelectItem value="2">Từ 2 sao</SelectItem>
-                  <SelectItem value="1">Từ 1 sao</SelectItem>
+                  {/* TRANSLATED: */}
+                  <SelectItem value="all">Any Rating</SelectItem>
+                  <SelectItem value="5">5 Stars & Up</SelectItem>
+                  <SelectItem value="4">4 Stars & Up</SelectItem>
+                  <SelectItem value="3">3 Stars & Up</SelectItem>
+                  <SelectItem value="2">2 Stars & Up</SelectItem>
+                  <SelectItem value="1">1 Star & Up</SelectItem>
                 </SelectContent>
               </Select>
 
-              {/* Filter Sắp xếp */}
+              {/* Sort By Filter */}
               <Select
                 value={clientFilters.sortBy}
                 onValueChange={(value) => handleClientFilterChange('sortBy', value)}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Sắp xếp" />
+                  {/* TRANSLATED: */}
+                  <SelectValue placeholder="Sort By" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="name:asc">Tên (A-Z)</SelectItem>
-                  <SelectItem value="name:desc">Tên (Z-A)</SelectItem>
-                  <SelectItem value="totalSlots:desc">Sức chứa (Cao-Thấp)</SelectItem>
-                  <SelectItem value="totalSlots:asc">Sức chứa (Thấp-Cao)</SelectItem>
-                  <SelectItem value="rating:desc">Đánh giá (Cao-Thấp)</SelectItem>
-                  <SelectItem value="rating:asc">Đánh giá (Thấp-Cao)</SelectItem>
+                  {/* TRANSLATED: */}
+                  <SelectItem value="name:asc">Name (A-Z)</SelectItem>
+                  <SelectItem value="name:desc">Name (Z-A)</SelectItem>
+                  <SelectItem value="totalSlots:desc">Capacity (High-Low)</SelectItem>
+                  <SelectItem value="totalSlots:asc">Capacity (Low-High)</SelectItem>
+                  <SelectItem value="rating:desc">Rating (High-Low)</SelectItem>
+                  <SelectItem value="rating:asc">Rating (Low-High)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -308,7 +322,7 @@ const StationsPage: React.FC = () => {
         )}
       </div>
 
-      {/* === KHU VỰC DANH SÁCH TRẠM === */}
+      {/* === STATION LIST AREA === */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {loading
           ? Array.from({ length: 6 }).map((_, index) => (
@@ -318,34 +332,38 @@ const StationsPage: React.FC = () => {
               <StationCard
                 key={station.id}
                 station={{
-                  ...station,
+                  ...station, // Pass all original station data
+                  // Ensure required props for StationCard are explicitly passed
                   id: station.id,
                   name: station.name,
                   address: station.address,
                   imageUrl: station.image || 'https://via.placeholder.com/400x300?text=EV+Station',
                   availableCount: station.availableVehicles,
                   totalCount: station.totalSlots,
-                  fastCharging: station.fastCharging,
-                  rating: station.rating,
+                  fastCharging: station.fastCharging, // Pass fastCharging
+                  rating: station.rating,             // Pass rating
                 }}
               />
             ))}
       </div>
 
-      {/* Thông báo nếu không tìm thấy kết quả */}
+      {/* No Results Message */}
       {!loading && paginatedStations.length === 0 && (
         <div className="col-span-full text-center py-12 bg-white rounded-lg shadow">
           <BatteryCharging className="mx-auto h-12 w-12 text-gray-400" />
-          <h3 className="mt-2 text-lg font-medium text-gray-900">Không tìm thấy trạm nào</h3>
+          {/* TRANSLATED: */}
+          <h3 className="mt-2 text-lg font-medium text-gray-900">No stations found</h3>
           <p className="mt-1 text-sm text-gray-500">
             {allStations.length > 0
-              ? 'Thử thay đổi bộ lọc tìm kiếm.'
-              : 'Không có trạm nào cho thành phố này.'}
+              // TRANSLATED:
+              ? 'Try adjusting your search filters.'
+              // TRANSLATED:
+              : 'No stations available for this city.'}
           </p>
         </div>
       )}
-      
-      {/* Phân trang (Client-side) */}
+
+      {/* Pagination (Client-side) */}
       {!loading && filteredAndSortedStations.length > stationsPerPage && (
         <div className="flex justify-center items-center mt-8 space-x-2">
           <Button
@@ -353,17 +371,20 @@ const StationsPage: React.FC = () => {
             disabled={currentPage <= 1}
             variant="outline"
           >
-            Trang trước
+            {/* TRANSLATED: */}
+            Previous
           </Button>
           <span className="text-sm text-gray-700">
-            Trang {currentPage} / {totalPages}
+            {/* TRANSLATED: */}
+            Page {currentPage} / {totalPages}
           </span>
           <Button
             onClick={() => handlePageChange(currentPage + 1)}
             disabled={currentPage >= totalPages}
             variant="outline"
           >
-            Trang sau
+            {/* TRANSLATED: */}
+            Next
           </Button>
         </div>
       )}

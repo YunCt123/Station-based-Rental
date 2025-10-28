@@ -356,63 +356,70 @@ const StationsPage: React.FC = () => {
               {showMoreFilters ? 'Ẩn bộ lọc' : 'Thêm bộ lọc'}
             </Button>
           </div>
-          {showMoreFilters && (
-            <>
-              <Separator className="my-4" />
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <Select value={clientFilters.status} onValueChange={(value) => handleClientFilterChange('status', value)}>
-                  <SelectTrigger className="rounded-full">
-                    <SelectValue placeholder="Trạng thái" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Tất cả trạng thái</SelectItem>
-                    <SelectItem value="ACTIVE">Đang hoạt động</SelectItem>
-                    <SelectItem value="INACTIVE">Ngừng hoạt động</SelectItem>
-                    <SelectItem value="UNDER_MAINTENANCE">Bảo trì</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Select value={clientFilters.fastCharging} onValueChange={(value) => handleClientFilterChange('fastCharging', value)}>
-                  <SelectTrigger className="rounded-full">
-                    <Zap className="mr-2 h-4 w-4" />
-                    <SelectValue placeholder="Sạc nhanh" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Tất cả loại sạc</SelectItem>
-                    <SelectItem value="true">Có sạc nhanh</SelectItem>
-                    <SelectItem value="false">Không có sạc nhanh</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Select value={clientFilters.minRating} onValueChange={(value) => handleClientFilterChange('minRating', value)}>
-                  <SelectTrigger className="rounded-full">
-                    <Star className="mr-2 h-4 w-4" />
-                    <SelectValue placeholder="Đánh giá" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Tất cả đánh giá</SelectItem>
-                    <SelectItem value="5">5 sao trở lên</SelectItem>
-                    <SelectItem value="4">4 sao trở lên</SelectItem>
-                    <SelectItem value="3">3 sao trở lên</SelectItem>
-                    <SelectItem value="2">2 sao trở lên</SelectItem>
-                    <SelectItem value="1">1 sao trở lên</SelectItem>
-                  </SelectContent>
-                </Select>
-                {/* Ẩn SortBy khi đang tìm gần đây (vì đã sort theo distance) */}
-                {searchMode === 'city' && (
-                  <Select value={clientFilters.sortBy} onValueChange={(value) => handleClientFilterChange('sortBy', value)}>
-                    <SelectTrigger className="rounded-full"><SelectValue placeholder="Sort By" /></SelectTrigger>
+          {/* Hiển thị lỗi tìm kiếm lân cận */}
+          {nearbyError && searchMode === 'nearby' && (
+            <div className="mt-4 text-center text-red-600 bg-red-50 p-3 rounded-md border border-red-200 text-sm">
+              {nearbyError}
+            </div>
+          )}
+          <AnimatePresence>
+            {showMoreFilters && (
+              <motion.div
+                initial={{ height: 0, opacity: 0, marginTop: 0 }}
+                animate={{ height: 'auto', opacity: 1, marginTop: '1rem' }} // Thêm marginTop khi hiện
+                exit={{ height: 0, opacity: 0, marginTop: 0 }}
+                transition={{ duration: 0.3 }}
+                className="overflow-hidden" // Quan trọng để animation height hoạt động
+              >
+                <Separator className="my-4" /> {/* Separator vẫn ở đây */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  {/* ... (Select cho Status, FastCharging, Rating, SortBy như cũ) ... */}
+                  <Select value={clientFilters.status} onValueChange={(value) => handleClientFilterChange('status', value)}>
+                    <SelectTrigger className="rounded-full"><SelectValue placeholder="Status" /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="name:asc">Name (A-Z)</SelectItem>
-                      <SelectItem value="name:desc">Name (Z-A)</SelectItem>
-                      <SelectItem value="totalSlots:desc">Capacity (High-Low)</SelectItem>
-                      <SelectItem value="totalSlots:asc">Capacity (Low-High)</SelectItem>
-                      <SelectItem value="rating:desc">Rating (High-Low)</SelectItem>
-                      <SelectItem value="rating:asc">Rating (Low-High)</SelectItem>
+                      <SelectItem value="all">All Statuses</SelectItem>
+                      <SelectItem value="ACTIVE">Active</SelectItem>
+                      <SelectItem value="INACTIVE">Inactive</SelectItem>
+                      <SelectItem value="UNDER_MAINTENANCE">Maintenance</SelectItem>
                     </SelectContent>
                   </Select>
-                )}
-              </div>
-            </>
-          )}
+                  <Select value={clientFilters.fastCharging} onValueChange={(value) => handleClientFilterChange('fastCharging', value)}>
+                    <SelectTrigger className="rounded-full"><Zap className="mr-2 h-4 w-4" /><SelectValue placeholder="Fast Charging" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Any Charging</SelectItem>
+                      <SelectItem value="true">Fast Charging</SelectItem>
+                      <SelectItem value="false">Standard Charging</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select value={clientFilters.minRating} onValueChange={(value) => handleClientFilterChange('minRating', value)}>
+                    <SelectTrigger className="rounded-full"><Star className="mr-2 h-4 w-4" /><SelectValue placeholder="Rating" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Any Rating</SelectItem>
+                      <SelectItem value="5">5 Stars & Up</SelectItem>
+                      <SelectItem value="4">4 Stars & Up</SelectItem>
+                      <SelectItem value="3">3 Stars & Up</SelectItem>
+                      <SelectItem value="2">2 Stars & Up</SelectItem>
+                      <SelectItem value="1">1 Star & Up</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {/* Ẩn SortBy khi đang tìm gần đây (vì đã sort theo distance) */}
+                  {searchMode === 'city' && (
+                    <Select value={clientFilters.sortBy} onValueChange={(value) => handleClientFilterChange('sortBy', value)}>
+                      <SelectTrigger className="rounded-full"><SelectValue placeholder="Sort By" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="name:asc">Name (A-Z)</SelectItem>
+                        <SelectItem value="name:desc">Name (Z-A)</SelectItem>
+                        <SelectItem value="totalSlots:desc">Capacity (High-Low)</SelectItem>
+                        <SelectItem value="totalSlots:asc">Capacity (Low-High)</SelectItem>
+                        <SelectItem value="rating:desc">Rating (High-Low)</SelectItem>
+                        <SelectItem value="rating:asc">Rating (Low-High)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </motion.div>
 
         {/* === STATION LIST AREA === */}

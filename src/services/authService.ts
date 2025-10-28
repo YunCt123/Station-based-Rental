@@ -64,15 +64,6 @@ function normalize(raw: any, opts: { requireTokens?: boolean } = {}): AuthRespon
 
   return {
     user: normalizedUser,
-    user: {
-      id: user.id || user._id || "",
-      name: user.name || "",
-      email: user.email || "",
-      role: user.role || "customer",
-      phoneNumber: user.phoneNumber,
-      dateOfBirth: user.dateOfBirth,
-      isVerified: user.isVerified,
-    },
     tokens: { accessToken, refreshToken },
   };
 }

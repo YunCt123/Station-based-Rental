@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
@@ -16,10 +15,7 @@ import {
 import {
   User,
   Shield,
-  Bell,
-  CreditCard,
   FileText,
-  Trash2,
   Globe,
   Loader2,
   CheckCircle,
@@ -49,6 +45,7 @@ const Settings = () => {
 
   const { toast } = useToast();
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [notifications, setNotifications] = useState({
     emailBooking: true,
     emailPromotions: false,

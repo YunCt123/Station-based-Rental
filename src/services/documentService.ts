@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import api from './api';
 
 // Document types based on backend schema
@@ -89,6 +90,7 @@ export const uploadFile = async (file: File): Promise<{ url: string }> => {
       },
     });
     return response.data;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (error) {
     // Fallback to /files
     const response = await api.post('/files', formData, {
@@ -173,6 +175,7 @@ export const getPendingDocuments = async (): Promise<PendingDocument[]> => {
     console.log('🔢 Number of documents:', Array.isArray(documents) ? documents.length : 'Not an array');
     
     return documents;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     console.error('❌ getPendingDocuments failed:', error);
     console.error('📝 Error details:', {

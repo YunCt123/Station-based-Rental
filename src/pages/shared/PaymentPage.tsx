@@ -39,6 +39,7 @@ const calculatePricing = async (booking: Booking) => {
       if (typeof booking.insurance_option === 'boolean') {
         insurancePremium = booking.insurance_option;
       } else if (typeof booking.insurance_option === 'object' && 'premium' in booking.insurance_option) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         insurancePremium = (booking.insurance_option as any).premium;
       }
     }

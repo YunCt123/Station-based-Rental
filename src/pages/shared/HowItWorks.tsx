@@ -1,5 +1,5 @@
 import React from "react";
-import { Card, Row, Col, Typography, Button, Space, Avatar, Tag, Collapse, Divider, Tooltip, Badge } from "antd";
+import { Card, Row, Col, Typography, Button, Space, Avatar, Tag, Collapse, Divider, Tooltip } from "antd";
 import { Link } from "react-router-dom";
 import {
   SearchOutlined,

@@ -172,13 +172,51 @@ const Settings = () => {
     try {
       setIsUploadingDoc(true);
 
-      // TODO: Upload file to server and get URL
-      // For now, simulate upload
-      const mockUrl = URL.createObjectURL(file);
+      // Validate file type
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+      if (!allowedTypes.includes(file.type)) {
+        throw new Error('Only JPEG and PNG files are allowed');
+      }
 
-      // Update verification images
-      const uploadData = { [documentType]: mockUrl };
+      // Validate file size (max 5MB)
+      const maxSize = 5 * 1024 * 1024; // 5MB
+      if (file.size > maxSize) {
+        throw new Error('File size must be less than 5MB');
+      }
+
+      console.log(`📁 Uploading ${documentType}:`, {
+        fileName: file.name,
+        fileSize: file.size,
+        fileType: file.type
+      });
+
+      // Convert file to base64 data URL (keep the full data URI format)
+      const base64DataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          if (typeof reader.result === 'string') {
+            // Keep the full data URL format: data:image/jpeg;base64,xxxxx
+            resolve(reader.result);
+          } else {
+            reject(new Error('Failed to read file as base64'));
+          }
+        };
+        reader.onerror = () => reject(new Error('Failed to read file'));
+        reader.readAsDataURL(file);
+      });
+
+      console.log(`✅ Base64 data URL conversion complete:`, {
+        documentType,
+        dataUrlLength: base64DataUrl.length,
+        preview: base64DataUrl.substring(0, 50) + '...',
+        hasDataPrefix: base64DataUrl.startsWith('data:')
+      });
+
+      // Upload full data URL to server
+      const uploadData = { [documentType]: base64DataUrl };
       await userService.uploadVerificationImages(uploadData);
+
+      console.log(`🚀 Upload successful for ${documentType}`);
 
       // Refresh verification status
       await refreshProfile();
@@ -187,11 +225,20 @@ const Settings = () => {
         title: "Success",
         description: `${documentType} uploaded successfully!`,
       });
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Document upload error:", error);
+      
+      let errorMessage = "Failed to upload document. Please try again.";
+      const err = error as { message?: string; response?: { data?: { message?: string } } };
+      if (err.message) {
+        errorMessage = err.message;
+      } else if (err.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      }
+      
       toast({
         title: "Error",
-        description: "Failed to upload document. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {

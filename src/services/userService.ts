@@ -90,7 +90,20 @@ export const userService = {
 
   // Upload verification images
   async uploadVerificationImages(payload: UploadVerificationImagesPayload): Promise<UserProfile> {
+    console.log('🚀 Starting uploadVerificationImages with payload:', {
+      payloadKeys: Object.keys(payload),
+      payloadSizes: Object.entries(payload).map(([key, value]) => ({
+        [key]: value ? `${value.length} chars` : 'null'
+      }))
+    });
+    
     const response = await api.post("/users/verification/upload", payload);
+    console.log('✅ Upload response received:', {
+      status: response.status,
+      hasData: !!response.data,
+      dataKeys: response.data ? Object.keys(response.data) : []
+    });
+    
     return response.data.data;
   },
 

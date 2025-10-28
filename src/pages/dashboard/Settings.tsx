@@ -224,8 +224,26 @@ const Settings = () => {
         hasDataPrefix: base64DataUrl.startsWith('data:')
       });
 
+      // Map document type to correct backend field name
+      const fieldMapping = {
+        "Driver License": "driverLicense",
+        "Card Front": "idCardFront", 
+        "Card Back": "idCardBack",
+        "Selfie Photo": "selfiePhoto"
+      };
+      
+      const fieldName = fieldMapping[documentType];
+      if (!fieldName) {
+        throw new Error(`Invalid document type: ${documentType}`);
+      }
+
       // Upload full data URL to server
-      const uploadData = { [documentType]: base64DataUrl };
+      const uploadData = { [fieldName]: base64DataUrl };
+      console.log(`🔄 Uploading to backend with field name:`, fieldName, {
+        uploadDataKeys: Object.keys(uploadData),
+        fieldName
+      });
+      
       await userService.uploadVerificationImages(uploadData);
 
       console.log(`🚀 Upload successful for ${documentType}`);

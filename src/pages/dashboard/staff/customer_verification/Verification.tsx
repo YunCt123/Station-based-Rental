@@ -22,20 +22,20 @@ import {
   getDocumentTypeLabel,
 } from '@/services/documentService';
 import { OnlineDocumentSummaryModal } from '@/components/dashboard/staff/verify/DocumentSummary';
-import { getUserInfo, preloadUsersCache } from '@/services/userService';
 
 const Verification: React.FC = () => {
   const [pendingDocuments, setPendingDocuments] = useState<PendingDocument[]>([]);
   const [selectedDocument, setSelectedDocument] = useState<PendingDocument | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterType, setFilterType] = useState<'ALL' | 'DRIVER_LICENSE' | 'ID_CARD_FRONT' | 'ID_CARD_BACK'>('ALL');
+  const [filterType, setFilterType] = useState<'ALL' | 'PENDING' | 'APPROVED' | 'REJECTED'>('ALL');
   const [rejectionReason, setRejectionReason] = useState('');
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
   // Load pending documents and users cache on component mount
   useEffect(() => {
+    console.log('🚀 Verification component mounted, loading data...');
     loadData();
   }, []);
 
@@ -43,13 +43,12 @@ const Verification: React.FC = () => {
     try {
       setIsLoading(true);
       setError(null);
+      console.log('🔍 Loading verification data...');
       
-      // Load users cache and documents in parallel
-      await Promise.all([
-        preloadUsersCache(),
-        loadPendingDocuments()
-      ]);
+      // Just load pending documents - no need for user cache anymore
+      await loadPendingDocuments();
     } catch (error: any) {
+      console.error('❌ Error loading data:', error);
       const errorMessage = error.message || 'Failed to load data. Please try again.';
       setError(errorMessage);
       toast({
@@ -63,32 +62,36 @@ const Verification: React.FC = () => {
   };
 
   const loadPendingDocuments = async () => {
+    console.log('📥 Calling getPendingDocuments API...');
     const documents = await getPendingDocuments();
+    console.log('✅ Received documents:', documents);
     setPendingDocuments(documents);
   };
 
 
-  const handleApprove = async (documentId: string) => {
+  const handleApprove = async (userId: string) => {
     try {
-      await approveDocument(documentId, { status: 'APPROVED' });
+      console.log('✅ Approving user:', userId);
+      await approveDocument(userId, { status: 'APPROVED' });
       
       toast({
-        title: 'Document Approved',
-        description: 'Document has been successfully approved.',
+        title: 'User Verification Approved',
+        description: 'User verification has been successfully approved.',
       });
       
       await loadPendingDocuments();
       setSelectedDocument(null);
     } catch (error: any) {
+      console.error('❌ Error approving:', error);
       toast({
         title: 'Error',
-        description: error.message || 'Failed to approve document.',
+        description: error.message || 'Failed to approve user verification.',
         variant: 'destructive',
       });
     }
   };
 
-  const handleReject = async (documentId: string) => {
+  const handleReject = async (userId: string) => {
     if (!rejectionReason.trim()) {
       toast({
         title: 'Rejection Reason Required',
@@ -99,54 +102,53 @@ const Verification: React.FC = () => {
     }
 
     try {
-      await approveDocument(documentId, { 
+      console.log('❌ Rejecting user:', userId, 'Reason:', rejectionReason);
+      await approveDocument(userId, { 
         status: 'REJECTED', 
-        note: rejectionReason 
+        rejectionReason: rejectionReason 
       });
       
       toast({
-        title: 'Document Rejected',
-        description: 'Document has been rejected with reason provided.',
+        title: 'User Verification Rejected',
+        description: 'User verification has been rejected with reason provided.',
       });
       
       await loadPendingDocuments();
       setSelectedDocument(null);
       setRejectionReason('');
     } catch (error: any) {
+      console.error('❌ Error rejecting:', error);
       toast({
         title: 'Error',
-        description: error.message || 'Failed to reject document.',
+        description: error.message || 'Failed to reject user verification.',
         variant: 'destructive',
       });
     }
   };
 
   const getUserName = (doc: PendingDocument): string => {
-    const userInfo = getUserInfo(doc.user_id);
-    return userInfo.name;
+    return doc.name || 'Unknown User';
   };
 
   const getUserEmail = (doc: PendingDocument): string => {
-    const userInfo = getUserInfo(doc.user_id);
-    return userInfo.email;
+    return doc.email || 'No email';
   };
 
   const filteredDocuments = Array.isArray(pendingDocuments) ? pendingDocuments.filter(doc => {
     const userName = getUserName(doc);
     const userEmail = getUserEmail(doc);
-    const docNumber = doc.number || '';
     
     const matchesSearch = searchTerm === '' || 
       userName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       userEmail.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      docNumber.toLowerCase().includes(searchTerm.toLowerCase());
+      doc._id.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesType = filterType === 'ALL' || doc.type === filterType;
+    const matchesType = filterType === 'ALL' || doc.verificationStatus === filterType;
     
     return matchesSearch && matchesType;
   }) : [];
 
-  const getStatusIcon = (status: PendingDocument['status']) => {
+  const getStatusIcon = (status: PendingDocument['verificationStatus']) => {
     switch (status) {
       case 'APPROVED':
         return <CheckCircle className="h-4 w-4 text-green-600" />;
@@ -164,9 +166,9 @@ const Verification: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Online Document Verification</h1>
+          <h1 className="text-3xl font-bold">User Verification Management</h1>
           <p className="text-muted-foreground">
-            Review and approve customer document submissions
+            Review and approve user verification submissions
           </p>
         </div>
         <Button
@@ -200,13 +202,13 @@ const Verification: React.FC = () => {
                 <div>
                   <select
                     value={filterType}
-                    onChange={(e) => setFilterType(e.target.value as any)}
+                    onChange={(e) => setFilterType(e.target.value as 'ALL' | 'PENDING' | 'APPROVED' | 'REJECTED')}
                     className="px-3 py-2 border rounded-lg bg-background"
                   >
-                    <option value="ALL">All Documents</option>
-                    <option value="DRIVER_LICENSE">Driver License</option>
-                    <option value="ID_CARD_FRONT">ID Card Front</option>
-                    <option value="ID_CARD_BACK">ID Card Back</option>
+                    <option value="ALL">All Users</option>
+                    <option value="PENDING">Pending</option>
+                    <option value="APPROVED">Approved</option>
+                    <option value="REJECTED">Rejected</option>
                   </select>
                 </div>
               </div>
@@ -217,8 +219,8 @@ const Verification: React.FC = () => {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5" />
-                Pending Documents ({filteredDocuments.length})
+                <User className="h-5 w-5" />
+                Pending User Verifications ({filteredDocuments.length})
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -246,9 +248,9 @@ const Verification: React.FC = () => {
                 </div>
               ) : filteredDocuments.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
-                  <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>No pending documents found</p>
-                  <p className="text-sm">All documents have been processed or no submissions yet.</p>
+                  <User className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>No pending user verifications found</p>
+                  <p className="text-sm">All verifications have been processed or no submissions yet.</p>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -264,30 +266,52 @@ const Verification: React.FC = () => {
                     >
                       <div className="flex items-start justify-between">
                         <div className="space-y-1 flex-1">
+                           <div className="flex items-center gap-2">
+                            <Badge variant="outline">
+                              {doc.verificationStatus || 'PENDING'}
+                            </Badge>
+                            <span className="text-xs text-muted-foreground">
+                              ID: {doc._id.slice(-8)}
+                            </span>
+                          </div>
                           <div className="flex items-center gap-2">
                             <User className="h-4 w-4" />
+                            
                             <span className="font-medium">
                               {getUserName(doc)}
                             </span>
-                            {getStatusIcon(doc.status)}
+                            {getStatusIcon(doc.verificationStatus)}
                           </div>
                           <p className="text-sm text-muted-foreground">
                             {getUserEmail(doc)}
                           </p>
-                          <div className="flex items-center gap-2">
+                          {/* <div className="flex items-center gap-2">
                             <Badge variant="outline">
-                              {getDocumentTypeLabel(doc.type)}
+                              {doc.verificationStatus || 'PENDING'}
                             </Badge>
-                            {doc.number && (
-                              <span className="text-xs text-muted-foreground">
-                                #{doc.number}
-                              </span>
+                            <span className="text-xs text-muted-foreground">
+                              ID: {doc._id.slice(-8)}
+                            </span>
+                          </div> */}
+                          {/* Show available verification images */}
+                          <div className="flex gap-1 mt-2">
+                            {doc.idCardFront && (
+                              <Badge variant="secondary" className="text-xs">ID Front</Badge>
+                            )}
+                            {doc.idCardBack && (
+                              <Badge variant="secondary" className="text-xs">ID Back</Badge>
+                            )}
+                            {doc.driverLicense && (
+                              <Badge variant="secondary" className="text-xs">License</Badge>
+                            )}
+                            {doc.selfiePhoto && (
+                              <Badge variant="secondary" className="text-xs">Selfie</Badge>
                             )}
                           </div>
                         </div>
                         <div className="flex flex-col items-end gap-2">
                           <div className="text-xs text-muted-foreground text-right">
-                            <p>{new Date(doc.createdAt).toLocaleDateString()}</p>
+                            <p>{new Date(doc.verifiedAt).toLocaleDateString()}</p>
                           </div>
                         </div>
                       </div>

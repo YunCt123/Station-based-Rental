@@ -183,34 +183,116 @@ export const OnlineDocumentSummaryModal: React.FC<{
       <DialogContent className="max-w-6xl max-h-[85vh] overflow-hidden">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
-            Document Summary
+            <User className="h-5 w-5" />
+            User Verification Review
           </DialogTitle>
         </DialogHeader>
         
-        {/* Layout ngang: Left = Image, Right = Info */}
+        {/* Layout ngang: Left = Images, Right = Info */}
         <div className="grid grid-cols-2 gap-6 overflow-y-auto max-h-[calc(85vh-8rem)] pr-2">
-          {/* Left Column - Document Image */}
+          {/* Left Column - Verification Images */}
           <div className="space-y-3">
-            <h3 className="font-semibold text-sm text-muted-foreground">Document Image</h3>
-            <div className="relative border rounded-lg overflow-hidden bg-muted">
-              <img
-                src={document.image_url}
-                alt="Document"
-                className="w-full h-auto object-contain"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src = '/placeholder-document.png';
-                }}
-              />
-              <Button
-                variant="outline"
-                size="sm"
-                className="absolute top-2 right-2"
-                onClick={() => window.open(document.image_url, '_blank')}
-              >
-                <Eye className="h-4 w-4 mr-1" />
-                Full Size
-              </Button>
+            <h3 className="font-semibold text-sm text-muted-foreground">Verification Images</h3>
+            <div className="space-y-4">
+              {/* ID Card Front */}
+              {document.idCardFront && (
+                <div className="relative border rounded-lg overflow-hidden bg-muted">
+                  <div className="text-xs font-medium p-2 bg-blue-50 border-b">ID Card (Front)</div>
+                  <img
+                    src={document.idCardFront}
+                    alt="ID Card Front"
+                    className="w-full h-32 object-cover"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = '/placeholder-document.png';
+                    }}
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="absolute top-8 right-2"
+                    onClick={() => window.open(document.idCardFront, '_blank')}
+                  >
+                    <Eye className="h-3 w-3" />
+                  </Button>
+                </div>
+              )}
+              
+              {/* ID Card Back */}
+              {document.idCardBack && (
+                <div className="relative border rounded-lg overflow-hidden bg-muted">
+                  <div className="text-xs font-medium p-2 bg-blue-50 border-b">ID Card (Back)</div>
+                  <img
+                    src={document.idCardBack}
+                    alt="ID Card Back"
+                    className="w-full h-32 object-cover"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = '/placeholder-document.png';
+                    }}
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="absolute top-8 right-2"
+                    onClick={() => window.open(document.idCardBack, '_blank')}
+                  >
+                    <Eye className="h-3 w-3" />
+                  </Button>
+                </div>
+              )}
+              
+              {/* Driver License */}
+              {document.driverLicense && (
+                <div className="relative border rounded-lg overflow-hidden bg-muted">
+                  <div className="text-xs font-medium p-2 bg-green-50 border-b">Driver License</div>
+                  <img
+                    src={document.driverLicense}
+                    alt="Driver License"
+                    className="w-full h-32 object-cover"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = '/placeholder-document.png';
+                    }}
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="absolute top-8 right-2"
+                    onClick={() => window.open(document.driverLicense, '_blank')}
+                  >
+                    <Eye className="h-3 w-3" />
+                  </Button>
+                </div>
+              )}
+              
+              {/* Selfie Photo */}
+              {document.selfiePhoto && (
+                <div className="relative border rounded-lg overflow-hidden bg-muted">
+                  <div className="text-xs font-medium p-2 bg-purple-50 border-b">Selfie Photo</div>
+                  <img
+                    src={document.selfiePhoto}
+                    alt="Selfie Photo"
+                    className="w-full h-32 object-cover"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = '/placeholder-document.png';
+                    }}
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="absolute top-8 right-2"
+                    onClick={() => window.open(document.selfiePhoto, '_blank')}
+                  >
+                    <Eye className="h-3 w-3" />
+                  </Button>
+                </div>
+              )}
+              
+              {/* No images available */}
+              {!document.idCardFront && !document.idCardBack && !document.driverLicense && !document.selfiePhoto && (
+                <div className="text-center py-8 text-muted-foreground">
+                  <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>No verification images uploaded yet</p>
+                </div>
+              )}
             </div>
           </div>
 
@@ -225,43 +307,53 @@ export const OnlineDocumentSummaryModal: React.FC<{
               </div>
             </div>
 
-            {/* Document Details */}
+            {/* User Verification Details */}
             <div className="space-y-3">
-              <h3 className="font-semibold text-sm text-muted-foreground">Document Details</h3>
+              <h3 className="font-semibold text-sm text-muted-foreground">Verification Details</h3>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <p className="text-xs font-medium text-muted-foreground">Document Type</p>
+                  <p className="text-xs font-medium text-muted-foreground">Verification Status</p>
                   <Badge variant="outline" className="mt-1">
-                    {getDocumentTypeLabel(document.type)}
+                    {document.verificationStatus}
                   </Badge>
                 </div>
-                {document.number && (
+                {document.phoneNumber && (
                   <div>
-                    <p className="text-xs font-medium text-muted-foreground">Document Number</p>
-                    <p className="font-medium mt-1 text-sm">{document.number}</p>
+                    <p className="text-xs font-medium text-muted-foreground">Phone Number</p>
+                    <p className="font-medium mt-1 text-sm">{document.phoneNumber}</p>
                   </div>
                 )}
-                {document.expiry && (
+                {document.dateOfBirth && (
                   <div>
-                    <p className="text-xs font-medium text-muted-foreground">Expiry Date</p>
+                    <p className="text-xs font-medium text-muted-foreground">Date of Birth</p>
                     <p className="font-medium mt-1 text-sm">
-                      {new Date(document.expiry).toLocaleDateString()}
+                      {new Date(document.dateOfBirth).toLocaleDateString()}
                     </p>
                   </div>
                 )}
                 <div>
-                  <p className="text-xs font-medium text-muted-foreground">Status</p>
-                  <Badge className={`${getDocumentStatusColor(document.status)} mt-1`}>
-                    {document.status}
+                  <p className="text-xs font-medium text-muted-foreground">Account Verified</p>
+                  <Badge className={`mt-1 ${document.isVerified ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                    {document.isVerified ? 'Yes' : 'No'}
                   </Badge>
                 </div>
-                <div>
-                  <p className="text-xs font-medium text-muted-foreground">Upload Date</p>
-                  <p className="font-medium mt-1 text-sm">
-                    {new Date(document.createdAt).toLocaleDateString()}
-                  </p>
-                </div>
+                {document.verifiedAt && (
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground">Upload Date</p>
+                    <p className="font-medium mt-1 text-sm">
+                      {new Date(document.verifiedAt).toLocaleDateString()}
+                    </p>
+                  </div>
+                )}
               </div>
+              
+              {/* Rejection Reason if exists */}
+              {document.rejectionReason && (
+                <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-xs font-medium text-red-800 mb-1">Previous Rejection Reason</p>
+                  <p className="text-sm text-red-700">{document.rejectionReason}</p>
+                </div>
+              )}
             </div>
 
             {/* Verification Actions - Only show if handlers are provided */}

@@ -1,72 +1,111 @@
-import { Card, Badge } from "flowbite-react";
-import { FaMapMarkerAlt, FaClock, FaCar } from "react-icons/fa";
-import { Link } from "react-router-dom";
-import type { Station } from "../data/stations";
+// src/components/StationCard.tsx
 
+import React from 'react';
+import { Link } from 'react-router-dom';
+import { Progress } from '@/components/ui/Progress';
+import { MapPin, BatteryCharging, Star, Zap } from 'lucide-react'; // THÊM MỚI: Star, Zap
+
+// Định nghĩa props cho component
 interface StationCardProps {
-    station: Station;
+  station: {
+    id: string;
+    name: string;
+    address: string;
+    imageUrl: string;
+    availableCount: number;
+    totalCount: number;
+    rating?: number; // THÊM MỚI: Prop cho rating
+    fastCharging?: boolean; // THÊM MỚI: Prop cho sạc nhanh
+  };
 }
 
-const StationCard = ({ station }: StationCardProps) => {
-    const isInactive = station.status === 'inactive';
-    const isFull = station.availableVehicles === 0;
+/**
+ * Component hiển thị thông tin tóm tắt của một trạm.
+ * Được sử dụng trong trang danh sách trạm (StationsPage).
+ */
+const StationCard: React.FC<StationCardProps> = ({ station }) => {
+  // Tính toán phần trăm số xe có sẵn
+  const availablePercentage =
+    station.totalCount > 0
+      ? (station.availableCount / station.totalCount) * 100
+      : 0;
 
-    const buttonBaseClasses = "w-full text-center font-medium rounded-lg text-sm px-5 py-2.5 focus:outline-none focus:ring-4";
-    const activeButtonClasses = "text-white bg-gradient-to-br from-blue-600 to-green-500 hover:bg-gradient-to-bl focus:ring-blue-300 dark:focus:ring-blue-800";
-    const disabledButtonClasses = "text-gray-900 bg-gray-200 cursor-not-allowed dark:bg-gray-700 dark:text-gray-400";
+  return (
+    <div className="border rounded-lg overflow-hidden shadow-lg transition-transform duration-300 ease-in-out hover:scale-[1.03] hover:shadow-xl flex flex-col h-full">
+      <Link to={`/stations/${station.id}`} className="block h-full flex flex-col">
+        {/* Phần hình ảnh */}
+        <div className="relative w-full h-48">
+          <img
+            src={station.imageUrl}
+            alt={station.name}
+            className="w-full h-full object-cover"
+            // Thêm fallback nếu ảnh lỗi
+            onError={(e) => {
+              const target = e.target as HTMLImageElement;
+              target.onerror = null; // Ngăn lặp vô hạn
+              target.src = 'https://via.placeholder.com/400x300?text=EV+Station';
+            }}
+          />
+          <div className="absolute top-2 right-2 bg-white/90 px-2 py-1 rounded-md text-xs font-semibold shadow">
+            {station.availableCount} / {station.totalCount} xe
+          </div>
+        </div>
 
-    return (
-        <Card
-            className="w-full h-full shadow-md hover:shadow-lg transition-shadow duration-300"
-            imgAlt={`Image of ${station.name}`}
-            imgSrc={station.image}
-        >
-            <div className="p-4 flex flex-col justify-between flex-grow">
-                <div>
-                    <div className="flex justify-between items-start mb-2">
-                        <h5 className="text-xl font-bold tracking-tight text-gray-900 dark:text-white">
-                            {station.name}
-                        </h5>
-                        <Badge color={isInactive ? "failure" : "success"} className="ml-2 whitespace-nowrap">
-                            {isInactive ? "Inactive" : "Active"}
-                        </Badge>
-                    </div>
-                    <div className="flex items-center text-sm text-gray-600 dark:text-gray-400 mb-2">
-                        <FaMapMarkerAlt className="mr-2 flex-shrink-0" /> {station.address}
-                    </div>
-                    <div className="flex items-center text-sm text-gray-600 dark:text-gray-400 mb-4">
-                        <FaClock className="mr-2 flex-shrink-0" /> {station.operatingHours}
-                    </div>
+        {/* Phần nội dung text */}
+        <div className="p-4 flex flex-col flex-grow">
+          {/* Tên trạm */}
+          <h3 className="text-lg font-semibold text-gray-800 truncate mb-2" title={station.name}>
+            {station.name}
+          </h3>
 
-                    <div className="grid grid-cols-1 gap-4 text-center border-t dark:border-gray-700 pt-4 mb-4">
-                        <div>
-                            <div className={`flex items-center justify-center font-bold text-lg ${isFull ? 'text-red-500' : 'text-cyan-600'}`}>
-                                <FaCar className="mr-2" />
-                                <span>{station.availableVehicles}/{station.totalSlots}</span>
-                            </div>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">Available Vehicles</p>
-                        </div>
-                        {/* <div>
-                            <div className={`flex items-center justify-center font-bold text-lg ${station.fastCharging ? 'text-yellow-400' : 'text-gray-400'}`}>
-                                <FaBolt className="mr-1" />
-                                <span>{station.fastCharging ? "Fast" : "Standard"}</span>
-                            </div>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">Charging</p>
-                        </div> */}
-                    </div>
-                </div>
-                <Link
-                    to={`/stations/${station.id}`}
-                    className={`${buttonBaseClasses} ${isInactive ? disabledButtonClasses : activeButtonClasses}`}
-                    // Ngăn click nếu nút bị vô hiệu hóa
-                    onClick={(e) => { if (isInactive) e.preventDefault(); }}
-                    aria-disabled={isInactive}
-                >
-                    {isInactive ? 'Station Unavailable' : 'View Details'}
-                </Link>
+          {/* === KHU VỰC MỚI: RATING VÀ SẠC NHANH === */}
+          <div className="flex justify-between items-center mb-2 text-sm">
+            {/* Rating */}
+            {station.rating && station.rating > 0 ? (
+              <div className="flex items-center gap-1 text-gray-700">
+                <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
+                <span className="font-medium">{station.rating.toFixed(1)}</span>
+              </div>
+            ) : (
+              // Hiển thị nếu chưa có rating
+              <div className="flex items-center gap-1 text-gray-400">
+                <Star className="w-4 h-4" />
+                <span className="text-xs">Chưa có</span>
+              </div>
+            )}
+            
+            {/* Sạc nhanh: Chỉ hiển thị nếu fastCharging = true */}
+            {station.fastCharging && (
+              <div className="flex items-center gap-1 text-blue-600 font-medium">
+                <Zap className="w-4 h-4 fill-blue-600" />
+                <span className="text-sm">Sạc nhanh</span>
+              </div>
+            )}
+          </div>
+          {/* === KẾT THÚC KHU VỰC MỚI === */}
+
+          {/* Địa chỉ */}
+          <div className="flex items-start gap-2 text-gray-500 mb-4 h-10">
+            <MapPin className="w-4 h-4 mt-1 shrink-0" />
+            <p className="text-sm leading-relaxed line-clamp-2" title={station.address}>
+              {station.address}
+            </p>
+          </div>
+
+          {/* Thanh tiến trình (Availability) - đẩy xuống dưới cùng */}
+          <div className="mt-auto">
+            <div className="flex justify-between items-center text-sm text-gray-600 mb-1">
+              <span>Số xe có sẵn</span>
+              <span className="font-semibold">
+                {station.availableCount} / {station.totalCount}
+              </span>
             </div>
-        </Card>
-    );
+            <Progress value={availablePercentage} className="h-2" />
+          </div>
+        </div>
+      </Link>
+    </div>
+  );
 };
 
 export default StationCard;

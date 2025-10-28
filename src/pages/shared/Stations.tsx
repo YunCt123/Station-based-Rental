@@ -1,309 +1,374 @@
-import { useState, useEffect } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { MapPin, Clock, Zap, AlertCircle } from "lucide-react";
-import { Link } from "react-router-dom";
-import { useTranslation } from "@/contexts/TranslationContext";
-import { stationService, type Station } from "@/services/stationService";
+// src/pages/shared/Stations.tsx
+
+import React, { useState, useEffect, useMemo } from 'react';
+import { getAllStations } from '@/services/stationService';
+import StationCard from '@/components/StationCard';
+import { Input } from '@/components/ui/input'; // Dùng Input của shadcn
 import {
-  PageTransition,
-  FadeIn,
-  SlideIn,
-  LoadingWrapper,
-} from "@/components/LoadingComponents";
-import { VehicleCardSkeleton } from "@/components/ui/skeleton";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Search,
+  MapPin,
+  BatteryCharging,
+  Filter,
+  X,
+  Zap,
+  Star,
+} from 'lucide-react';
+import type { Station } from '@/types/station';
+import type { StationSearchFilters } from '@/services/stationService';
+import { Separator } from '@/components/ui/separator';
 
-const Stations = () => {
-  const { t } = useTranslation();
+// THÊM MỚI: Sao chép danh sách thành phố từ VehicleAvailable.tsx
+const cityOptionsRaw = [
+  'Hà Nội', 'Hồ Chí Minh', 'Đà Nẵng', 'Hải Phòng', 'Cần Thơ', 'Nha Trang', 'Huế', 'Vũng Tàu', 'Biên Hòa', 'Buôn Ma Thuột', 'Đà Lạt', 'Quy Nhơn', 'Thanh Hóa', 'Nam Định', 'Vinh', 'Thái Nguyên', 'Bắc Ninh', 'Phan Thiết', 'Long Xuyên', 'Rạch Giá', 'Bạc Liêu', 'Cà Mau', 'Tuy Hòa', 'Pleiku', 'Trà Vinh', 'Sóc Trăng', 'Hạ Long', 'Uông Bí', 'Lào Cai', 'Yên Bái', 'Điện Biên Phủ', 'Sơn La', 'Hòa Bình', 'Tuyên Quang', 'Bắc Giang', 'Bắc Kạn', 'Cao Bằng', 'Lạng Sơn', 'Hà Giang', 'Phủ Lý', 'Hưng Yên', 'Hà Tĩnh', 'Quảng Bình', 'Quảng Trị', 'Đông Hà', 'Quảng Ngãi', 'Tam Kỳ', 'Kon Tum', 'Gia Nghĩa', 'Tây Ninh', 'Bến Tre', 'Vĩnh Long', 'Cao Lãnh', 'Sa Đéc', 'Mỹ Tho', 'Châu Đốc', 'Tân An', 'Bình Dương', 'Bình Phước', 'Phước Long', 'Thủ Dầu Một', 'Bình Thuận', 'Bình Định', 'Quảng Nam', 'Quảng Ninh', 'Quảng Ngãi', 'Quảng Trị', 'Quảng Bình', 'Ninh Bình', 'Ninh Thuận', 'Hà Nam', 'Hà Tĩnh', 'Hậu Giang', 'Kiên Giang', 'Lâm Đồng', 'Lạng Sơn', 'Lào Cai', 'Nam Định', 'Nghệ An', 'Phú Thọ', 'Phú Yên', 'Quảng Bình', 'Quảng Nam', 'Quảng Ngãi', 'Quảng Ninh', 'Quảng Trị', 'Sóc Trăng', 'Sơn La', 'Tây Ninh', 'Thái Bình', 'Thái Nguyên', 'Thanh Hóa', 'Tiền Giang', 'Trà Vinh', 'Tuyên Quang', 'Vĩnh Long', 'Vĩnh Phúc', 'Yên Bái'
+];
+const cityOptions = Array.from(new Set(cityOptionsRaw));
+// Thêm "Tất cả thành phố" vào đầu danh sách
+const allCityOptions = ["Tất cả thành phố", ...cityOptions];
+
+// Kiểu dữ liệu cho các bộ lọc phía Client
+interface ClientFilters {
+  searchTerm: string;
+  status: 'all' | 'ACTIVE' | 'INACTIVE' | 'UNDER_MAINTENANCE';
+  fastCharging: 'all' | 'true' | 'false';
+  minRating: 'all' | '1' | '2' | '3' | '4' | '5';
+  sortBy: string;
+}
+
+const StationsPage: React.FC = () => {
+  // === State ===
+  const [loading, setLoading] = useState(true);
+  // Sửa state mặc định thành "Tất cả thành phố"
+  const [apiCityFilter, setApiCityFilter] = useState<string>(''); 
+  const [allStations, setAllStations] = useState<Station[]>([]); 
+
+  const [clientFilters, setClientFilters] = useState<ClientFilters>({
+    searchTerm: '',
+    status: 'all',
+    fastCharging: 'all',
+    minRating: 'all',
+    sortBy: 'name:asc',
+  });
+  const [showMoreFilters, setShowMoreFilters] = useState(false);
   
-  // State for stations data
-  const [stations, setStations] = useState<Station[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const stationsPerPage = 9;
 
-  // Fetch stations from API
+  // === Logic ===
+
+  // 1. GỌI API: Chạy khi `apiCityFilter` thay đổi (mỗi khi gõ phím)
   useEffect(() => {
-    const fetchStations = async () => {
+    const fetchStationsByCity = async () => {
+      setLoading(true);
+      setAllStations([]); 
+      setCurrentPage(1); 
+
+      const filterParams: StationSearchFilters = {};
+      
+      // Chỉ áp dụng filter nếu thành phố không phải là "Tất cả"
+      if (apiCityFilter && apiCityFilter !== 'Tất cả thành phố') {
+        filterParams.city = apiCityFilter;
+      }
+      
       try {
-        setError(null);
-        setIsLoading(true);
-        
-        console.log('🏢 Fetching stations from API...');
-        
-        // Test connection first
-        await stationService.testConnection();
-        console.log('🔗 Station API connection OK');
-        
-        // Get active stations
-        const response = await stationService.getActiveStations({}, {
-          limit: 50,
-          sort: 'name'
-        });
-        
-        console.log('✅ Fetched stations:', response.stations);
-        
-        // Fetch real vehicle counts for each station
-        const stationsWithRealCounts = await Promise.all(
-          response.stations.map(async (station) => {
-            try {
-              // Get total vehicle count for station
-              const allVehiclesData = await stationService.getStationVehicles(station.id);
-              const totalVehicles = allVehiclesData.count;
-              
-              // Get available vehicle count for station
-              const availableVehiclesData = await stationService.getStationVehicles(station.id, 'AVAILABLE');
-              const availableVehicles = availableVehiclesData.count;
-              
-              console.log(`📊 Station ${station.name}: ${availableVehicles}/${totalVehicles} vehicles`);
-              
-              return {
-                ...station,
-                totalVehicles,
-                availableVehicles
-              };
-            } catch (vehicleError) {
-              console.warn(`⚠️ Could not fetch vehicles for station ${station.name}:`, vehicleError);
-              // Fallback to backend metrics or default values
-              return {
-                ...station,
-                totalVehicles: station.totalVehicles || 0,
-                availableVehicles: station.availableVehicles || 0
-              };
-            }
-          })
-        );
-        
-        setStations(stationsWithRealCounts);
-        
-      } catch (error: any) {
-        console.error('❌ Error fetching stations:', error);
-        setError(`Failed to load stations: ${error.message || 'Unknown error'}`);
-        setStations([]);
+        // Chúng ta vẫn gọi `getAllStations` vì nó hỗ trợ lọc client-side tốt hơn
+        // (Nếu `apiCityFilter` trống, nó sẽ lấy tất cả)
+        const data = await getAllStations(filterParams, { sort: 'name:asc' });
+        setAllStations(data.stations || []);
+      } catch (error) {
+        console.error('Failed to fetch stations by city:', error);
       } finally {
-        setIsLoading(false);
+        setLoading(false);
       }
     };
 
-    fetchStations();
-  }, []);
+    fetchStationsByCity();
+  }, [apiCityFilter]); // Chạy lại mỗi khi gõ phím, giống hệt VehicleAvailable.tsx
 
-  const getStatusBadge = (status: Station['status']) => {
-    switch (status) {
-      case 'active':
-        return <Badge className="badge-available">{t("common.active")}</Badge>;
-      case 'maintenance':
-        return <Badge variant="destructive">Maintenance</Badge>;
-      case 'inactive':
-        return <Badge variant="secondary">Inactive</Badge>;
-      default:
-        return <Badge variant="outline">Unknown</Badge>;
+  // 2. LỌC CLIENT: (Không thay đổi)
+  const filteredAndSortedStations = useMemo(() => {
+    let stations = [...allStations];
+
+    // Lọc theo searchTerm (Tên hoặc Địa chỉ)
+    if (clientFilters.searchTerm) {
+      const term = clientFilters.searchTerm.toLowerCase();
+      stations = stations.filter(
+        (station) =>
+          station.name.toLowerCase().includes(term) ||
+          station.address.toLowerCase().includes(term)
+      );
     }
+    // Lọc theo Trạng thái
+    if (clientFilters.status !== 'all') {
+      const status = clientFilters.status === 'ACTIVE' ? 'active' : (clientFilters.status === 'INACTIVE' ? 'inactive' : 'maintenance');
+      stations = stations.filter((station) => station.status === status);
+    }
+    // Lọc theo Sạc nhanh
+    if (clientFilters.fastCharging !== 'all') {
+      const hasFastCharging = clientFilters.fastCharging === 'true';
+      stations = stations.filter(
+        (station) => station.fastCharging === hasFastCharging
+      );
+    }
+    // Lọc theo Đánh giá
+    if (clientFilters.minRating !== 'all') {
+      const minRating = Number(clientFilters.minRating);
+      stations = stations.filter((station) => station.rating >= minRating);
+    }
+    // Sắp xếp
+    stations.sort((a, b) => {
+      const [field, order] = clientFilters.sortBy.split(':');
+      let valA: any; let valB: any;
+      switch(field) {
+        case 'name': valA = a.name.toLowerCase(); valB = b.name.toLowerCase(); break;
+        case 'totalSlots': valA = a.totalSlots; valB = b.totalSlots; break;
+        case 'rating': valA = a.rating; valB = b.rating; break;
+        default: return 0;
+      }
+      if (valA < valB) return order === 'asc' ? -1 : 1;
+      if (valA > valB) return order === 'asc' ? 1 : -1;
+      return 0;
+    });
+
+    return stations;
+  }, [allStations, clientFilters]);
+
+  // 3. PHÂN TRANG CLIENT: (Không thay đổi)
+  const totalPages = Math.ceil(filteredAndSortedStations.length / stationsPerPage);
+  const paginatedStations = useMemo(() => {
+    const startIndex = (currentPage - 1) * stationsPerPage;
+    const endIndex = startIndex + stationsPerPage;
+    return filteredAndSortedStations.slice(startIndex, endIndex);
+  }, [filteredAndSortedStations, currentPage, stationsPerPage]);
+
+  // Hàm xử lý chung cho các filter của client
+  const handleClientFilterChange = (
+    key: keyof ClientFilters,
+    value: string
+  ) => {
+    setClientFilters(prev => ({ ...prev, [key]: value as any }));
+    setCurrentPage(1); 
   };
-  return (
-    <PageTransition>
-      <div className="min-h-screen bg-background">
-        {/* Header */}
-        <FadeIn>
-          <div className="bg-gradient-hero py-16">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-              <SlideIn direction="top" delay={100}>
-                <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
-                  Our Station Locations
-                </h1>
-              </SlideIn>
-              <SlideIn direction="top" delay={200}>
-                <p className="text-xl text-white/90 mb-8 max-w-2xl mx-auto">
-                  Find convenient pickup and drop-off locations throughout the
-                  city
-                </p>
-              </SlideIn>
-            </div>
-          </div>
-        </FadeIn>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          {/* Error Display */}
-          {error && (
-            <FadeIn>
-              <div className="bg-destructive/15 border border-destructive/50 rounded-lg p-4 mb-6">
-                <div className="flex items-center space-x-2">
-                  <AlertCircle className="h-5 w-5 text-destructive" />
-                  <p className="text-destructive">{error}</p>
-                </div>
-                <Button 
-                  onClick={() => window.location.reload()} 
-                  variant="outline" 
-                  size="sm" 
-                  className="mt-2"
-                >
-                  Retry
-                </Button>
-              </div>
-            </FadeIn>
-          )}
+  // Hàm xử lý riêng cho filter API (Thành phố)
+  const handleApiCityChange = (cityValue: string) => {
+    setApiCityFilter(cityValue);
+  };
 
-          <LoadingWrapper
-            isLoading={isLoading}
-            fallback={
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {[...Array(6)].map((_, i) => (
-                  <VehicleCardSkeleton key={i} />
-                ))}
-              </div>
-            }
-          >
-            {stations.length > 0 ? (
-              <SlideIn direction="bottom" delay={200}>
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                  {stations.map((station, index) => (
-                    <FadeIn key={station.id} delay={300 + index * 100}>
-                      <Card className="card-premium">
-                        <CardContent className="p-6">
-                          <div className="flex justify-between items-start mb-4">
-                            <h3 className="text-xl font-semibold">
-                              {station.name}
-                            </h3>
-                            {getStatusBadge(station.status)}
-                          </div>
+  // Hàm xử lý phân trang
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(newPage);
+  };
 
-                          <div className="space-y-3 mb-6">
-                            <div className="flex items-start space-x-2">
-                              <MapPin className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-                              <div>
-                                <p className="text-sm text-muted-foreground">
-                                  {station.address}
-                                </p>
-                                {station.city && (
-                                  <p className="text-xs text-muted-foreground">
-                                    {station.city}
-                                  </p>
-                                )}
-                              </div>
-                            </div>
-
-                            <div className="flex items-center space-x-2">
-                              <Clock className="h-5 w-5 text-primary" />
-                              <p className="text-sm">
-                                {station.operatingHours.weekday || 
-                                 station.operatingHours.weekend || 
-                                 "24/7"}
-                              </p>
-                            </div>
-
-                            {station.fastCharging && (
-                              <div className="flex items-center space-x-2">
-                                <Zap className="h-5 w-5 text-yellow-500" />
-                                <p className="text-sm">Fast Charging Available</p>
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Amenities */}
-                          {station.amenities.length > 0 && (
-                            <div className="mb-4">
-                              <p className="text-sm font-medium mb-2">Amenities:</p>
-                              <div className="flex flex-wrap gap-1">
-                                {station.amenities.slice(0, 3).map((amenity, i) => (
-                                  <Badge key={i} variant="outline" className="text-xs">
-                                    {amenity}
-                                  </Badge>
-                                ))}
-                                {station.amenities.length > 3 && (
-                                  <Badge variant="outline" className="text-xs">
-                                    +{station.amenities.length - 3} more
-                                  </Badge>
-                                )}
-                              </div>
-                            </div>
-                          )}
-
-                          <div className="grid grid-cols-2 gap-4 pt-4 border-t">
-                            <div className="text-center">
-                              <div className="text-2xl font-bold text-primary">
-                                {station.availableVehicles}
-                              </div>
-                              <div className="text-sm text-muted-foreground">
-                                Available
-                              </div>
-                            </div>
-                            <div className="text-center">
-                              <div className="text-2xl font-bold text-primary">
-                                {station.totalVehicles}
-                              </div>
-                              <div className="text-sm text-muted-foreground">
-                                Total
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Rating */}
-                          {station.rating > 0 && (
-                            <div className="pt-4 border-t mt-4">
-                              <div className="flex items-center justify-between">
-                                <span className="text-sm">Rating:</span>
-                                <div className="flex items-center space-x-1">
-                                  <span className="text-sm font-medium">
-                                    {station.rating.toFixed(1)}
-                                  </span>
-                                  <span className="text-yellow-500">★</span>
-                                  <span className="text-xs text-muted-foreground">
-                                    ({station.reviewCount} reviews)
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-                          )}
-
-                          <div className="pt-4">
-                            <Button asChild className="w-full">
-                              <Link to={`/stations/${station.id}`}>
-                                {t("common.viewDetails")}
-                              </Link>
-                            </Button>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </FadeIn>
-                  ))}
-                </div>
-              </SlideIn>
-            ) : !isLoading && !error ? (
-              <FadeIn delay={400}>
-                <div className="text-center py-12">
-                  <div className="text-6xl mb-4">🏢</div>
-                  <h3 className="text-xl font-semibold mb-2">
-                    No stations found
-                  </h3>
-                  <p className="text-muted-foreground mb-4">
-                    No stations are currently available. Please check back later.
-                  </p>
-                </div>
-              </FadeIn>
-            ) : null}
-          </LoadingWrapper>
-
-          {stations.length > 0 && (
-            <FadeIn delay={500}>
-              <div className="mt-12 text-center">
-                <Card className="inline-block">
-                  <CardContent className="p-6">
-                    <Zap className="h-12 w-12 text-primary mx-auto mb-4" />
-                    <h3 className="text-xl font-semibold mb-2">
-                      {t("common.moreVehicles")}
-                    </h3>
-                    <p className="text-muted-foreground">
-                      {t("common.moreVehicles")}
-                    </p>
-                  </CardContent>
-                </Card>
-              </div>
-            </FadeIn>
-          )}
-        </div>
+  // === JSX ===
+  
+  const StationSkeletonCard: React.FC = () => (
+    <div className="border rounded-lg overflow-hidden shadow-lg">
+      <Skeleton className="h-48 w-full" />
+      <div className="p-4 space-y-3">
+        <Skeleton className="h-6 w-3/4" /> <Skeleton className="h-4 w-full" />
+        <Skeleton className="h-4 w-1/2" /> <Skeleton className="h-10 w-full" />
       </div>
-    </PageTransition>
+    </div>
+  );
+
+  return (
+    <div className="container mx-auto p-4 md:p-8">
+      <h1 className="text-3xl font-bold mb-6 text-gray-800">Tìm trạm thuê</h1>
+      
+      {/* === KHU VỰC FILTER NGANG === */}
+      <div className="mb-6 p-4 bg-white rounded-xl shadow-lg space-y-4">
+        {/* Hàng 1: Search, City, Nút Thêm Filter */}
+        <div className="flex flex-col md:flex-row gap-4">
+          {/* Search (Client) */}
+          <div className="relative flex-grow">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+            <Input
+              id="name-search"
+              placeholder="Tìm theo tên hoặc địa chỉ trạm..."
+              className="pl-10"
+              value={clientFilters.searchTerm}
+              onChange={(e) => handleClientFilterChange('searchTerm', e.target.value)}
+            />
+          </div>
+          
+          {/* THAY THẾ: Sử dụng Input + Datalist cho Thành phố (API) */}
+          <div className="relative w-full md:w-[250px]">
+            <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 z-10" />
+            <Input
+              placeholder="Tìm thành phố..."
+              className="pl-10"
+              value={apiCityFilter}
+              // Cập nhật state trên mỗi lần gõ phím
+              onChange={(e) => handleApiCityChange(e.target.value)} 
+              list="city-list" // Kết nối với datalist
+            />
+            {/* Đây là <datalist> giống hệt VehicleAvailable.tsx */}
+            <datalist id="city-list">
+              {allCityOptions.map((city, idx) => (
+                  <option key={city + idx} value={city} />
+              ))}
+            </datalist>
+          </div>
+
+          {/* Nút Thêm Filter */}
+          <Button 
+            variant="outline" 
+            className="w-full md:w-auto"
+            onClick={() => setShowMoreFilters(!showMoreFilters)}
+          >
+            <Filter className="mr-2 h-4 w-4" />
+            {showMoreFilters ? 'Ẩn filter' : 'Thêm filter'}
+          </Button>
+        </div>
+
+        {/* Hàng 2: Các Filter khác (hiện khi bấm nút) */}
+        {showMoreFilters && (
+          <>
+            <Separator />
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              {/* Filter Trạng thái */}
+              <Select
+                value={clientFilters.status}
+                onValueChange={(value) => handleClientFilterChange('status', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Trạng thái" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Mọi trạng thái</SelectItem>
+                  <SelectItem value="ACTIVE">Đang hoạt động</SelectItem>
+                  <SelectItem value="INACTIVE">Không hoạt động</SelectItem>
+                  <SelectItem value="UNDER_MAINTENANCE">Đang bảo trì</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              {/* Filter Sạc nhanh */}
+              <Select
+                value={clientFilters.fastCharging}
+                onValueChange={(value) => handleClientFilterChange('fastCharging', value)}
+              >
+                <SelectTrigger>
+                  <Zap className="mr-2 h-4 w-4" />
+                  <SelectValue placeholder="Sạc nhanh" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Mọi loại sạc</SelectItem>
+                  <SelectItem value="true">Có sạc nhanh</SelectItem>
+                  <SelectItem value="false">Không có</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              {/* Filter Đánh giá */}
+              <Select
+                value={clientFilters.minRating}
+                onValueChange={(value) => handleClientFilterChange('minRating', value)}
+              >
+                <SelectTrigger>
+                  <Star className="mr-2 h-4 w-4" />
+                  <SelectValue placeholder="Đánh giá" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Mọi đánh giá</SelectItem>
+                  <SelectItem value="5">Từ 5 sao</SelectItem>
+                  <SelectItem value="4">Từ 4 sao</SelectItem>
+                  <SelectItem value="3">Từ 3 sao</SelectItem>
+                  <SelectItem value="2">Từ 2 sao</SelectItem>
+                  <SelectItem value="1">Từ 1 sao</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {/* Filter Sắp xếp */}
+              <Select
+                value={clientFilters.sortBy}
+                onValueChange={(value) => handleClientFilterChange('sortBy', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Sắp xếp" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="name:asc">Tên (A-Z)</SelectItem>
+                  <SelectItem value="name:desc">Tên (Z-A)</SelectItem>
+                  <SelectItem value="totalSlots:desc">Sức chứa (Cao-Thấp)</SelectItem>
+                  <SelectItem value="totalSlots:asc">Sức chứa (Thấp-Cao)</SelectItem>
+                  <SelectItem value="rating:desc">Đánh giá (Cao-Thấp)</SelectItem>
+                  <SelectItem value="rating:asc">Đánh giá (Thấp-Cao)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* === KHU VỰC DANH SÁCH TRẠM === */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {loading
+          ? Array.from({ length: 6 }).map((_, index) => (
+              <StationSkeletonCard key={index} />
+            ))
+          : paginatedStations.map((station) => (
+              <StationCard
+                key={station.id}
+                station={{
+                  ...station,
+                  id: station.id,
+                  name: station.name,
+                  address: station.address,
+                  imageUrl: station.image || 'https://via.placeholder.com/400x300?text=EV+Station',
+                  availableCount: station.availableVehicles,
+                  totalCount: station.totalSlots,
+                  fastCharging: station.fastCharging,
+                  rating: station.rating,
+                }}
+              />
+            ))}
+      </div>
+
+      {/* Thông báo nếu không tìm thấy kết quả */}
+      {!loading && paginatedStations.length === 0 && (
+        <div className="col-span-full text-center py-12 bg-white rounded-lg shadow">
+          <BatteryCharging className="mx-auto h-12 w-12 text-gray-400" />
+          <h3 className="mt-2 text-lg font-medium text-gray-900">Không tìm thấy trạm nào</h3>
+          <p className="mt-1 text-sm text-gray-500">
+            {allStations.length > 0
+              ? 'Thử thay đổi bộ lọc tìm kiếm.'
+              : 'Không có trạm nào cho thành phố này.'}
+          </p>
+        </div>
+      )}
+      
+      {/* Phân trang (Client-side) */}
+      {!loading && filteredAndSortedStations.length > stationsPerPage && (
+        <div className="flex justify-center items-center mt-8 space-x-2">
+          <Button
+            onClick={() => handlePageChange(currentPage - 1)}
+            disabled={currentPage <= 1}
+            variant="outline"
+          >
+            Trang trước
+          </Button>
+          <span className="text-sm text-gray-700">
+            Trang {currentPage} / {totalPages}
+          </span>
+          <Button
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={currentPage >= totalPages}
+            variant="outline"
+          >
+            Trang sau
+          </Button>
+        </div>
+      )}
+    </div>
   );
 };
 
-export default Stations;
+export default StationsPage;

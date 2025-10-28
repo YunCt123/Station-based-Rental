@@ -3,7 +3,7 @@ import { stationService } from '../../../../services/stationService';
 import { vehicleService } from '../../../../services/vehicleService';
 import { Card, Input, Modal, Space, Spin, Table, Tag, message, Descriptions } from 'antd';
 import { SearchOutlined } from '@ant-design/icons';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 // Mock reserved data
 const VehicleReserved = () => {

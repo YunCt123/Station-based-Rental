@@ -25,6 +25,8 @@ import {
   CheckCircle,
   AlertCircle,
   Clock,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { useTranslation } from "@/contexts/TranslationContext";
 import { useUserProfile } from "@/hooks/useUserProfile";
@@ -59,6 +61,19 @@ const Settings = () => {
     Record<string, string>
   >({});
   const [isUploadingDoc, setIsUploadingDoc] = useState(false);
+  const [imageVisibility, setImageVisibility] = useState({
+    driverLicense: false,
+    idCardFront: false,
+    idCardBack: false,
+    selfiePhoto: false,
+  });
+
+  const toggleImageVisibility = (documentType: keyof typeof imageVisibility) => {
+    setImageVisibility(prev => ({
+      ...prev,
+      [documentType]: !prev[documentType]
+    }));
+  };
 
   const validateForm = (data: {
     name?: string;
@@ -167,7 +182,7 @@ const Settings = () => {
 
   const handleDocumentUpload = async (
     file: File,
-    documentType: "driverLicense" | "idCardFront" | "idCardBack" | "selfiePhoto"
+    documentType: "Driver License" | "Card Front" | "Card Back" | "Selfie Photo"
   ) => {
     try {
       setIsUploadingDoc(true);
@@ -249,18 +264,34 @@ const Settings = () => {
   const getVerificationStatusIcon = () => {
     if (!verificationStatus) return <Clock className="h-4 w-4 text-gray-500" />;
 
+    // Check if all required documents are uploaded
+    const hasAllDocuments = verificationStatus.hasImages?.driverLicense && 
+                           verificationStatus.hasImages?.idCardFront && 
+                           verificationStatus.hasImages?.idCardBack && 
+                           verificationStatus.hasImages?.selfiePhoto;
+
     switch (verificationStatus.verificationStatus) {
       case "APPROVED":
         return <CheckCircle className="h-4 w-4 text-green-500" />;
       case "REJECTED":
         return <AlertCircle className="h-4 w-4 text-red-500" />;
       default:
-        return <Clock className="h-4 w-4 text-yellow-500" />;
+        // Only show pending if ALL 4 documents uploaded (ignore BE PENDING status if incomplete)
+        if (hasAllDocuments) {
+          return <Clock className="h-4 w-4 text-yellow-500" />;
+        }
+        return <Clock className="h-4 w-4 text-gray-500" />;
     }
   };
 
   const getVerificationStatusText = () => {
     if (!verificationStatus) return "Not verified";
+
+    // Check if all required documents are uploaded
+    const hasAllDocuments = verificationStatus.hasImages?.driverLicense && 
+                           verificationStatus.hasImages?.idCardFront && 
+                           verificationStatus.hasImages?.idCardBack && 
+                           verificationStatus.hasImages?.selfiePhoto;
 
     switch (verificationStatus.verificationStatus) {
       case "APPROVED":
@@ -268,7 +299,11 @@ const Settings = () => {
       case "REJECTED":
         return "Verification rejected";
       default:
-        return "Not Verified";
+        // Only show "Pending review" if ALL 4 documents uploaded (ignore BE PENDING status if incomplete)
+        if (hasAllDocuments) {
+          return "Pending review";
+        }
+        return "Not verified";
     }
   };
 
@@ -427,17 +462,40 @@ const Settings = () => {
                             {profile.driverLicense && (
                               <Card className="mb-4">
                                 <CardHeader>
-                                  <CardTitle className="flex items-center text-sm">
-                                    Driver's License
-                                    <CheckCircle className="ml-2 h-4 w-4 text-green-600" />
+                                  <CardTitle className="flex items-center justify-between text-sm">
+                                    <div className="flex items-center">
+                                      Driver's License
+                                      <CheckCircle className="ml-2 h-4 w-4 text-green-600" />
+                                    </div>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => toggleImageVisibility('driverLicense')}
+                                      className="p-2"
+                                    >
+                                      {imageVisibility.driverLicense ? (
+                                        <EyeOff className="w-4 h-4" />
+                                      ) : (
+                                        <Eye className="w-4 h-4" />
+                                      )}
+                                    </Button>
                                   </CardTitle>
                                 </CardHeader>
                                 <CardContent>
-                                  <img
-                                    src={profile.driverLicense}
-                                    alt="Driver's License"
-                                    className="w-full max-w-md h-48 object-cover border rounded-lg"
-                                  />
+                                  {imageVisibility.driverLicense ? (
+                                    <img
+                                      src={profile.driverLicense}
+                                      alt="Driver's License"
+                                      className="w-full max-w-md h-48 object-cover border rounded-lg"
+                                    />
+                                  ) : (
+                                    <div className="w-full max-w-md h-48 bg-gray-100 border rounded-lg flex items-center justify-center">
+                                      <div className="text-center text-gray-500">
+                                        <Eye className="w-8 h-8 mx-auto mb-2" />
+                                        <p className="text-sm">Click the eye icon to view document</p>
+                                      </div>
+                                    </div>
+                                  )}
                                 </CardContent>
                               </Card>
                             )}
@@ -445,17 +503,40 @@ const Settings = () => {
                             {profile.idCardFront && (
                               <Card className="mb-4">
                                 <CardHeader>
-                                  <CardTitle className="flex items-center text-sm">
-                                    National ID - Front
-                                    <CheckCircle className="ml-2 h-4 w-4 text-green-600" />
+                                  <CardTitle className="flex items-center justify-between text-sm">
+                                    <div className="flex items-center">
+                                      National ID - Front
+                                      <CheckCircle className="ml-2 h-4 w-4 text-green-600" />
+                                    </div>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => toggleImageVisibility('idCardFront')}
+                                      className="p-2"
+                                    >
+                                      {imageVisibility.idCardFront ? (
+                                        <EyeOff className="w-4 h-4" />
+                                      ) : (
+                                        <Eye className="w-4 h-4" />
+                                      )}
+                                    </Button>
                                   </CardTitle>
                                 </CardHeader>
                                 <CardContent>
-                                  <img
-                                    src={profile.idCardFront}
-                                    alt="National ID Front"
-                                    className="w-full max-w-md h-48 object-cover border rounded-lg"
-                                  />
+                                  {imageVisibility.idCardFront ? (
+                                    <img
+                                      src={profile.idCardFront}
+                                      alt="National ID Front"
+                                      className="w-full max-w-md h-48 object-cover border rounded-lg"
+                                    />
+                                  ) : (
+                                    <div className="w-full max-w-md h-48 bg-gray-100 border rounded-lg flex items-center justify-center">
+                                      <div className="text-center text-gray-500">
+                                        <Eye className="w-8 h-8 mx-auto mb-2" />
+                                        <p className="text-sm">Click the eye icon to view document</p>
+                                      </div>
+                                    </div>
+                                  )}
                                 </CardContent>
                               </Card>
                             )}
@@ -463,17 +544,40 @@ const Settings = () => {
                             {profile.idCardBack && (
                               <Card className="mb-4">
                                 <CardHeader>
-                                  <CardTitle className="flex items-center text-sm">
-                                    National ID - Back
-                                    <CheckCircle className="ml-2 h-4 w-4 text-green-600" />
+                                  <CardTitle className="flex items-center justify-between text-sm">
+                                    <div className="flex items-center">
+                                      National ID - Back
+                                      <CheckCircle className="ml-2 h-4 w-4 text-green-600" />
+                                    </div>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => toggleImageVisibility('idCardBack')}
+                                      className="p-2"
+                                    >
+                                      {imageVisibility.idCardBack ? (
+                                        <EyeOff className="w-4 h-4" />
+                                      ) : (
+                                        <Eye className="w-4 h-4" />
+                                      )}
+                                    </Button>
                                   </CardTitle>
                                 </CardHeader>
                                 <CardContent>
-                                  <img
-                                    src={profile.idCardBack}
-                                    alt="National ID Back"
-                                    className="w-full max-w-md h-48 object-cover border rounded-lg"
-                                  />
+                                  {imageVisibility.idCardBack ? (
+                                    <img
+                                      src={profile.idCardBack}
+                                      alt="National ID Back"
+                                      className="w-full max-w-md h-48 object-cover border rounded-lg"
+                                    />
+                                  ) : (
+                                    <div className="w-full max-w-md h-48 bg-gray-100 border rounded-lg flex items-center justify-center">
+                                      <div className="text-center text-gray-500">
+                                        <Eye className="w-8 h-8 mx-auto mb-2" />
+                                        <p className="text-sm">Click the eye icon to view document</p>
+                                      </div>
+                                    </div>
+                                  )}
                                 </CardContent>
                               </Card>
                             )}
@@ -481,17 +585,40 @@ const Settings = () => {
                             {profile.selfiePhoto && (
                               <Card className="mb-4">
                                 <CardHeader>
-                                  <CardTitle className="flex items-center text-sm">
-                                    Selfie Photo
-                                    <CheckCircle className="ml-2 h-4 w-4 text-green-600" />
+                                  <CardTitle className="flex items-center justify-between text-sm">
+                                    <div className="flex items-center">
+                                      Selfie Photo
+                                      <CheckCircle className="ml-2 h-4 w-4 text-green-600" />
+                                    </div>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => toggleImageVisibility('selfiePhoto')}
+                                      className="p-2"
+                                    >
+                                      {imageVisibility.selfiePhoto ? (
+                                        <EyeOff className="w-4 h-4" />
+                                      ) : (
+                                        <Eye className="w-4 h-4" />
+                                      )}
+                                    </Button>
                                   </CardTitle>
                                 </CardHeader>
                                 <CardContent>
-                                  <img
-                                    src={profile.selfiePhoto}
-                                    alt="Selfie Photo"
-                                    className="w-full max-w-md h-48 object-cover border rounded-lg"
-                                  />
+                                  {imageVisibility.selfiePhoto ? (
+                                    <img
+                                      src={profile.selfiePhoto}
+                                      alt="Selfie Photo"
+                                      className="w-full max-w-md h-48 object-cover border rounded-lg"
+                                    />
+                                  ) : (
+                                    <div className="w-full max-w-md h-48 bg-gray-100 border rounded-lg flex items-center justify-center">
+                                      <div className="text-center text-gray-500">
+                                        <Eye className="w-8 h-8 mx-auto mb-2" />
+                                        <p className="text-sm">Click the eye icon to view document</p>
+                                      </div>
+                                    </div>
+                                  )}
                                 </CardContent>
                               </Card>
                             )}
@@ -519,28 +646,74 @@ const Settings = () => {
                               </div>
                             )}
 
-                            {verificationStatus?.verificationStatus ===
-                              "PENDING" && (
-                                
-                              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
-                                
-                                <div className="flex items-center mb-2">
-                                  <Clock className="h-5 w-5 text-yellow-600 mr-2" />
-                                  <span className="text-yellow-800 font-medium">
-                                    Not Verified
-                                  </span>
-                                </div>
-                                <p className="text-sm text-yellow-700">
-                                  You need to upload verification documents to use serverices.
-                                </p>
-                              </div>
-                            )}
+                            {(() => {
+                              // Check if all required documents are uploaded
+                              const hasAllDocuments = verificationStatus?.hasImages?.driverLicense && 
+                                                     verificationStatus?.hasImages?.idCardFront && 
+                                                     verificationStatus?.hasImages?.idCardBack && 
+                                                     verificationStatus?.hasImages?.selfiePhoto;
+
+                              // Debug logging
+                              console.log('🔍 Verification status debug:', {
+                                verificationStatus: verificationStatus?.verificationStatus,
+                                hasImages: verificationStatus?.hasImages,
+                                hasAllDocuments,
+                                individual: {
+                                  driverLicense: verificationStatus?.hasImages?.driverLicense,
+                                  idCardFront: verificationStatus?.hasImages?.idCardFront,
+                                  idCardBack: verificationStatus?.hasImages?.idCardBack,
+                                  selfiePhoto: verificationStatus?.hasImages?.selfiePhoto
+                                }
+                              });
+
+                              // Show pending message ONLY if all 4 documents are uploaded (ignore BE status if incomplete)
+                              if (hasAllDocuments && verificationStatus?.verificationStatus !== "REJECTED") {
+                                return (
+                                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                                    <div className="flex items-center mb-2">
+                                      <Clock className="h-5 w-5 text-yellow-600 mr-2" />
+                                      <span className="text-yellow-800 font-medium">
+                                        Pending Review
+                                      </span>
+                                    </div>
+                                    <p className="text-sm text-yellow-700">
+                                      Your documents have been submitted and are under review. 
+                                      We'll notify you once the verification is complete.
+                                    </p>
+                                  </div>
+                                );
+                              }
+
+                              // Show not verified if no documents or incomplete (default state)
+                              if (!hasAllDocuments && 
+                                  !["APPROVED", "REJECTED", "PENDING"].includes(verificationStatus?.verificationStatus || "")) {
+                                return (
+                                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                                    <div className="flex items-center mb-2">
+                                      <Clock className="h-5 w-5 text-blue-600 mr-2" />
+                                      <span className="text-blue-800 font-medium">
+                                        Upload Required Documents
+                                      </span>
+                                    </div>
+                                    <p className="text-sm text-blue-700">
+                                      Please upload all 4 required documents to start the verification process:
+                                      <br />• Driver's License {verificationStatus?.hasImages?.driverLicense ? "✅" : "❌"}
+                                      <br />• National ID - Front {verificationStatus?.hasImages?.idCardFront ? "✅" : "❌"}
+                                      <br />• National ID - Back {verificationStatus?.hasImages?.idCardBack ? "✅" : "❌"}
+                                      <br />• Selfie Photo {verificationStatus?.hasImages?.selfiePhoto ? "✅" : "❌"}
+                                    </p>
+                                  </div>
+                                );
+                              }
+
+                              return null;
+                            })()}
 
                             <DocumentUpload
                               title="Driver's License"
                               description="Please upload your driver's license"
                               onUpload={(file) =>
-                                handleDocumentUpload(file, "driverLicense")
+                                handleDocumentUpload(file, "Driver License")
                               }
                               isUploading={isUploadingDoc}
                               existingImageUrl={
@@ -554,7 +727,7 @@ const Settings = () => {
                               title="National ID - Front"
                               description="Please upload the front side of your national ID card"
                               onUpload={(file) =>
-                                handleDocumentUpload(file, "idCardFront")
+                                handleDocumentUpload(file, "Card Front")
                               }
                               isUploading={isUploadingDoc}
                               existingImageUrl={
@@ -568,7 +741,7 @@ const Settings = () => {
                               title="National ID - Back"
                               description="Please upload the back side of your national ID card"
                               onUpload={(file) =>
-                                handleDocumentUpload(file, "idCardBack")
+                                handleDocumentUpload(file, "Card Back")
                               }
                               isUploading={isUploadingDoc}
                               existingImageUrl={
@@ -582,7 +755,7 @@ const Settings = () => {
                               title="Selfie Photo"
                               description="Please upload a clear selfie photo"
                               onUpload={(file) =>
-                                handleDocumentUpload(file, "selfiePhoto")
+                                handleDocumentUpload(file, "Selfie Photo")
                               }
                               isUploading={isUploadingDoc}
                               existingImageUrl={

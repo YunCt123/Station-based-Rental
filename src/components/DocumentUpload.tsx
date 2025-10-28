@@ -1,5 +1,5 @@
-import React from 'react';
-import { Upload } from 'lucide-react';
+import React, { useState } from 'react';
+import { Upload, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -18,6 +18,8 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({
   isUploading = false,
   existingImageUrl 
 }) => {
+  const [isImageVisible, setIsImageVisible] = useState(false);
+
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
@@ -29,19 +31,41 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({
     return (
       <Card className="mb-4">
         <CardHeader>
-          <CardTitle className="flex items-center text-sm">
-            {title}
-            <span className="ml-2 text-green-600">✓ Uploaded</span>
+          <CardTitle className="flex items-center justify-between text-sm">
+            <div className="flex items-center">
+              {title}
+              <span className="ml-2 text-green-600">✓ Uploaded</span>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsImageVisible(!isImageVisible)}
+              className="p-2"
+            >
+              {isImageVisible ? (
+                <EyeOff className="w-4 h-4" />
+              ) : (
+                <Eye className="w-4 h-4" />
+              )}
+            </Button>
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            <img 
-              src={existingImageUrl} 
-              alt={title}
-              className="w-full max-w-md h-48 object-cover border rounded-lg"
-            />
-            <p className="text-sm text-gray-600">{description}</p>
+            {isImageVisible ? (
+              <img 
+                src={existingImageUrl} 
+                alt={title}
+                className="w-full max-w-md h-48 object-cover border rounded-lg"
+              />
+            ) : (
+              <div className="w-full max-w-md h-48 bg-gray-100 border rounded-lg flex items-center justify-center">
+                <div className="text-center text-gray-500">
+                  <Eye className="w-8 h-8 mx-auto mb-2" />
+                  <p className="text-sm">Click the eye icon to view image</p>
+                </div>
+              </div>
+            )}
             <label htmlFor={`file-${title.replace(/\s+/g, '-').toLowerCase()}`}>
               <Button variant="outline" className="w-full" asChild>
                 <span>

@@ -88,7 +88,7 @@ export const userService = {
     return response.data.data;
   },
 
-  // Upload verification images
+  // Upload verification images (bulk upload for first time)
   async uploadVerificationImages(payload: UploadVerificationImagesPayload): Promise<UserProfile> {
     console.log('🚀 Starting uploadVerificationImages with payload:', {
       payloadKeys: Object.keys(payload),
@@ -99,6 +99,52 @@ export const userService = {
     
     const response = await api.post("/users/verification/upload", payload);
     console.log('✅ Upload response received:', {
+      status: response.status,
+      hasData: !!response.data,
+      dataKeys: response.data ? Object.keys(response.data) : []
+    });
+    
+    return response.data.data;
+  },
+
+  // Update single verification document (for re-upload)
+  async updateSingleDocument(
+    documentType: 'idCardFront' | 'idCardBack' | 'driverLicense' | 'selfiePhoto',
+    base64Data: string
+  ): Promise<UserProfile> {
+    console.log('🔄 Updating single document:', {
+      documentType,
+      dataLength: base64Data.length,
+      preview: base64Data.substring(0, 50) + '...'
+    });
+    
+    const payload = { [documentType]: base64Data };
+    const response = await api.patch(`/users/verification/upload/${documentType}`, payload);
+    
+    console.log('✅ Single document update response:', {
+      status: response.status,
+      hasData: !!response.data,
+      dataKeys: response.data ? Object.keys(response.data) : []
+    });
+    
+    return response.data.data;
+  },
+
+  // Update single verification document
+  async updateSingleVerificationDocument(
+    documentType: 'idCardFront' | 'idCardBack' | 'driverLicense' | 'selfiePhoto',
+    base64Data: string
+  ): Promise<UserProfile> {
+    console.log('🔄 Updating single document:', {
+      documentType,
+      dataLength: base64Data.length,
+      preview: base64Data.substring(0, 50) + '...'
+    });
+    
+    const payload = { [documentType]: base64Data };
+    const response = await api.patch(`/users/verification/upload/${documentType}`, payload);
+    
+    console.log('✅ Single document update response:', {
       status: response.status,
       hasData: !!response.data,
       dataKeys: response.data ? Object.keys(response.data) : []

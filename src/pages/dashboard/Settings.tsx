@@ -276,6 +276,99 @@ const Settings = () => {
     }
   };
 
+  const handleReplaceDocument = async (
+    file: File,
+    documentType: "Driver License" | "Card Front" | "Card Back" | "Selfie Photo"
+  ) => {
+    try {
+      console.log(`🔄 Starting replace for ${documentType}, setting isUploadingDoc to true`);
+      setIsUploadingDoc(true);
+
+      // Add a small delay to ensure state update is visible
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Validate file type
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+      if (!allowedTypes.includes(file.type)) {
+        throw new Error('Only JPEG and PNG files are allowed');
+      }
+
+      // Validate file size (max 5MB)
+      const maxSize = 5 * 1024 * 1024; // 5MB
+      if (file.size > maxSize) {
+        throw new Error('File size must be less than 5MB');
+      }
+
+      console.log(`� Replacing ${documentType}:`, {
+        fileName: file.name,
+        fileSize: file.size,
+        fileType: file.type,
+        isUploadingDoc: true // Should be true here
+      });
+
+      // Convert file to base64 data URL
+      const base64DataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          if (typeof reader.result === 'string') {
+            resolve(reader.result);
+          } else {
+            reject(new Error('Failed to read file as base64'));
+          }
+        };
+        reader.onerror = () => reject(new Error('Failed to read file'));
+        reader.readAsDataURL(file);
+      });
+
+      // Map document type to correct backend field name
+      const fieldMapping = {
+        "Driver License": "driverLicense",
+        "Card Front": "idCardFront", 
+        "Card Back": "idCardBack",
+        "Selfie Photo": "selfiePhoto"
+      };
+      
+      const fieldName = fieldMapping[documentType] as 'idCardFront' | 'idCardBack' | 'driverLicense' | 'selfiePhoto';
+      if (!fieldName) {
+        throw new Error(`Invalid document type: ${documentType}`);
+      }
+
+      console.log(`🚀 Calling API to replace ${documentType} with field ${fieldName}`);
+
+      // Use single document update API
+      await userService.updateSingleDocument(fieldName, base64DataUrl);
+
+      console.log(`✅ Replace API call successful for ${documentType}`);
+
+      // Refresh verification status
+      await refreshProfile();
+
+      toast({
+        title: "Success",
+        description: `${documentType} replaced successfully!`,
+      });
+    } catch (error: unknown) {
+      console.error("Document replace error:", error);
+      
+      let errorMessage = "Failed to replace document. Please try again.";
+      const err = error as { message?: string; response?: { data?: { message?: string } } };
+      if (err.message) {
+        errorMessage = err.message;
+      } else if (err.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      }
+      
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      console.log(`🔄 Setting isUploadingDoc to false for ${documentType}`);
+      setIsUploadingDoc(false);
+    }
+  };
+
   const getVerificationStatusIcon = () => {
     if (!verificationStatus) return <Clock className="h-4 w-4 text-gray-500" />;
 
@@ -482,27 +575,53 @@ const Settings = () => {
                                       Driver's License
                                       <CheckCircle className="ml-2 h-4 w-4 text-green-600" />
                                     </div>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => toggleImageVisibility('driverLicense')}
-                                      className="p-2"
-                                    >
-                                      {imageVisibility.driverLicense ? (
-                                        <EyeOff className="w-4 h-4" />
-                                      ) : (
-                                        <Eye className="w-4 h-4" />
-                                      )}
-                                    </Button>
+                                    <div className="flex items-center space-x-2">
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => toggleImageVisibility('driverLicense')}
+                                        className="p-2"
+                                      >
+                                        {imageVisibility.driverLicense ? (
+                                          <EyeOff className="w-4 h-4" />
+                                        ) : (
+                                          <Eye className="w-4 h-4" />
+                                        )}
+                                      </Button>
+                                    </div>
                                   </CardTitle>
                                 </CardHeader>
                                 <CardContent>
                                   {imageVisibility.driverLicense ? (
-                                    <img
-                                      src={profile.driverLicense}
-                                      alt="Driver's License"
-                                      className="w-full max-w-md h-48 object-cover border rounded-lg"
-                                    />
+                                    <div className="space-y-3">
+                                      <img
+                                        src={profile.driverLicense}
+                                        alt="Driver's License"
+                                        className="w-full max-w-md h-48 object-cover border rounded-lg"
+                                      />
+                                      <div>
+                                        <input
+                                          type="file"
+                                          id="replace-driver-license"
+                                          accept="image/*"
+                                          className="hidden"
+                                          onChange={(e) => {
+                                            const file = e.target.files?.[0];
+                                            if (file) {
+                                              handleReplaceDocument(file, "Driver License");
+                                            }
+                                          }}
+                                        />
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={() => document.getElementById('replace-driver-license')?.click()}
+                                          disabled={isUploadingDoc}
+                                        >
+                                          {isUploadingDoc ? "Replacing..." : "Replace Image"}
+                                        </Button>
+                                      </div>
+                                    </div>
                                   ) : (
                                     <div className="w-full max-w-md h-48 bg-gray-100 border rounded-lg flex items-center justify-center">
                                       <div className="text-center text-gray-500">
@@ -523,27 +642,53 @@ const Settings = () => {
                                       National ID - Front
                                       <CheckCircle className="ml-2 h-4 w-4 text-green-600" />
                                     </div>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => toggleImageVisibility('idCardFront')}
-                                      className="p-2"
-                                    >
-                                      {imageVisibility.idCardFront ? (
-                                        <EyeOff className="w-4 h-4" />
-                                      ) : (
-                                        <Eye className="w-4 h-4" />
-                                      )}
-                                    </Button>
+                                    <div className="flex items-center space-x-2">
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => toggleImageVisibility('idCardFront')}
+                                        className="p-2"
+                                      >
+                                        {imageVisibility.idCardFront ? (
+                                          <EyeOff className="w-4 h-4" />
+                                        ) : (
+                                          <Eye className="w-4 h-4" />
+                                        )}
+                                      </Button>
+                                    </div>
                                   </CardTitle>
                                 </CardHeader>
                                 <CardContent>
                                   {imageVisibility.idCardFront ? (
-                                    <img
-                                      src={profile.idCardFront}
-                                      alt="National ID Front"
-                                      className="w-full max-w-md h-48 object-cover border rounded-lg"
-                                    />
+                                    <div className="space-y-3">
+                                      <img
+                                        src={profile.idCardFront}
+                                        alt="National ID Front"
+                                        className="w-full max-w-md h-48 object-cover border rounded-lg"
+                                      />
+                                      <div>
+                                        <input
+                                          type="file"
+                                          id="replace-id-card-front"
+                                          accept="image/*"
+                                          className="hidden"
+                                          onChange={(e) => {
+                                            const file = e.target.files?.[0];
+                                            if (file) {
+                                              handleReplaceDocument(file, "Card Front");
+                                            }
+                                          }}
+                                        />
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={() => document.getElementById('replace-id-card-front')?.click()}
+                                          disabled={isUploadingDoc}
+                                        >
+                                          {isUploadingDoc ? "Replacing..." : "Replace Image"}
+                                        </Button>
+                                      </div>
+                                    </div>
                                   ) : (
                                     <div className="w-full max-w-md h-48 bg-gray-100 border rounded-lg flex items-center justify-center">
                                       <div className="text-center text-gray-500">
@@ -564,27 +709,53 @@ const Settings = () => {
                                       National ID - Back
                                       <CheckCircle className="ml-2 h-4 w-4 text-green-600" />
                                     </div>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => toggleImageVisibility('idCardBack')}
-                                      className="p-2"
-                                    >
-                                      {imageVisibility.idCardBack ? (
-                                        <EyeOff className="w-4 h-4" />
-                                      ) : (
-                                        <Eye className="w-4 h-4" />
-                                      )}
-                                    </Button>
+                                    <div className="flex items-center space-x-2">
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => toggleImageVisibility('idCardBack')}
+                                        className="p-2"
+                                      >
+                                        {imageVisibility.idCardBack ? (
+                                          <EyeOff className="w-4 h-4" />
+                                        ) : (
+                                          <Eye className="w-4 h-4" />
+                                        )}
+                                      </Button>
+                                    </div>
                                   </CardTitle>
                                 </CardHeader>
                                 <CardContent>
                                   {imageVisibility.idCardBack ? (
-                                    <img
-                                      src={profile.idCardBack}
-                                      alt="National ID Back"
-                                      className="w-full max-w-md h-48 object-cover border rounded-lg"
-                                    />
+                                    <div className="space-y-3">
+                                      <img
+                                        src={profile.idCardBack}
+                                        alt="National ID Back"
+                                        className="w-full max-w-md h-48 object-cover border rounded-lg"
+                                      />
+                                      <div>
+                                        <input
+                                          type="file"
+                                          id="replace-id-card-back"
+                                          accept="image/*"
+                                          className="hidden"
+                                          onChange={(e) => {
+                                            const file = e.target.files?.[0];
+                                            if (file) {
+                                              handleReplaceDocument(file, "Card Back");
+                                            }
+                                          }}
+                                        />
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={() => document.getElementById('replace-id-card-back')?.click()}
+                                          disabled={isUploadingDoc}
+                                        >
+                                          {isUploadingDoc ? "Replacing..." : "Replace Image"}
+                                        </Button>
+                                      </div>
+                                    </div>
                                   ) : (
                                     <div className="w-full max-w-md h-48 bg-gray-100 border rounded-lg flex items-center justify-center">
                                       <div className="text-center text-gray-500">
@@ -605,27 +776,53 @@ const Settings = () => {
                                       Selfie Photo
                                       <CheckCircle className="ml-2 h-4 w-4 text-green-600" />
                                     </div>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => toggleImageVisibility('selfiePhoto')}
-                                      className="p-2"
-                                    >
-                                      {imageVisibility.selfiePhoto ? (
-                                        <EyeOff className="w-4 h-4" />
-                                      ) : (
-                                        <Eye className="w-4 h-4" />
-                                      )}
-                                    </Button>
+                                    <div className="flex items-center space-x-2">
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => toggleImageVisibility('selfiePhoto')}
+                                        className="p-2"
+                                      >
+                                        {imageVisibility.selfiePhoto ? (
+                                          <EyeOff className="w-4 h-4" />
+                                        ) : (
+                                          <Eye className="w-4 h-4" />
+                                        )}
+                                      </Button>
+                                    </div>
                                   </CardTitle>
                                 </CardHeader>
                                 <CardContent>
                                   {imageVisibility.selfiePhoto ? (
-                                    <img
-                                      src={profile.selfiePhoto}
-                                      alt="Selfie Photo"
-                                      className="w-full max-w-md h-48 object-cover border rounded-lg"
-                                    />
+                                    <div className="space-y-3">
+                                      <img
+                                        src={profile.selfiePhoto}
+                                        alt="Selfie Photo"
+                                        className="w-full max-w-md h-48 object-cover border rounded-lg"
+                                      />
+                                      <div>
+                                        <input
+                                          type="file"
+                                          id="replace-selfie-photo"
+                                          accept="image/*"
+                                          className="hidden"
+                                          onChange={(e) => {
+                                            const file = e.target.files?.[0];
+                                            if (file) {
+                                              handleReplaceDocument(file, "Selfie Photo");
+                                            }
+                                          }}
+                                        />
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={() => document.getElementById('replace-selfie-photo')?.click()}
+                                          disabled={isUploadingDoc}
+                                        >
+                                          {isUploadingDoc ? "Replacing..." : "Replace Image"}
+                                        </Button>
+                                      </div>
+                                    </div>
                                   ) : (
                                     <div className="w-full max-w-md h-48 bg-gray-100 border rounded-lg flex items-center justify-center">
                                       <div className="text-center text-gray-500">

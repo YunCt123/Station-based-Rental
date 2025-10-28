@@ -7,12 +7,12 @@ import {
   Link,
 } from "react-router-dom";
 import { Form, message, Spin, Card, Button } from "antd";
-import { UserOutlined, LoginOutlined } from "@ant-design/icons";
+import { UserOutlined, LoginOutlined, SafetyCertificateOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { bookingService, type PriceBreakdown } from "../../services/bookingService";
 import { vehicleService } from "../../services/vehicleService";
 import type { Vehicle } from "../../types/vehicle";
-import { getCurrentUser } from "../../utils/auth";
+import { getCurrentUser, isUserVerified, getVerificationStatusMessage } from "../../utils/auth";
 
 // Components
 import BookingSteps from "../../components/booking/BookingSteps";
@@ -167,6 +167,14 @@ const BookingPage: React.FC = () => {
       navigate("/login", { state: { from: location.pathname } });
       return;
     }
+    
+    // ✅ Check verification status before allowing booking
+    if (!isUserVerified(user)) {
+      message.error("Your account must be verified before making a booking");
+      navigate("/settings");
+      return;
+    }
+    
     if (!vehicleId) {
       message.error("Vehicle ID is required for booking");
       return;
@@ -273,11 +281,61 @@ const BookingPage: React.FC = () => {
     </div>
   );
 
+  // ---- Verification required ----
+  const VerificationRequiredComponent = () => (
+    <div className="max-w-md mx-auto mt-8">
+      <Card className="text-center p-6">
+        <SafetyCertificateOutlined className="text-4xl text-orange-500 mb-4" />
+        <h2 className="text-xl font-semibold mb-4">Account Verification Required</h2>
+        <p className="text-gray-600 mb-4">
+          Your account needs to be verified before you can make a booking.
+        </p>
+        <div className="mb-6">
+          <p className="text-sm font-medium">
+            Status: <span className={`${
+              user?.verificationStatus === 'REJECTED' ? 'text-red-600' :
+              user?.verificationStatus === 'PENDING' ? 'text-orange-600' : 'text-gray-600'
+            }`}>
+              {getVerificationStatusMessage(user)}
+            </span>
+          </p>
+          {user?.rejectionReason && (
+            <p className="text-sm text-red-600 mt-2">
+              Reason: {user.rejectionReason}
+            </p>
+          )}
+        </div>
+        <div className="space-x-4">
+          {user?.verificationStatus === 'REJECTED' || user?.verificationStatus === 'PENDING' ? (
+            <Button
+              type="primary"
+              onClick={() => navigate("/profile/verification")}
+            >
+              {user?.verificationStatus === 'REJECTED' ? 'Re-submit Documents' : 'Complete Verification'}
+            </Button>
+          ) : (
+            <Button
+              type="primary"
+              onClick={() => navigate("/profile/verification")}
+            >
+              Start Verification Process
+            </Button>
+          )}
+          <Button onClick={() => navigate("/")}>
+            Back to Home
+          </Button>
+        </div>
+      </Card>
+    </div>
+  );
+
   // ---- Render ----
   return (
-    <div className="max-w-4xl mx-auto p-4 bg-gray-50">
+    <div className="max-w-4xl mx-auto p-4">
       {!user ? (
         <LoginRequiredComponent />
+      ) : !isUserVerified(user) ? (
+        <VerificationRequiredComponent />
       ) : (
         <div>
           <BookingSteps currentStep={1} />

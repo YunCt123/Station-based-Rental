@@ -7,7 +7,20 @@ export interface User {
   role: "customer" | "staff" | "admin";
   phoneNumber?: string;
   dateOfBirth?: string;
-  isVerified?: boolean;
+  isVerified?: boolean; // Legacy field - deprecated
+  
+  // New verification fields from BE
+  licenseNumber?: string;
+  licenseExpiry?: Date;
+  licenseClass?: string;
+  idCardFront?: string;
+  idCardBack?: string;
+  driverLicense?: string;
+  selfiePhoto?: string;
+  verificationStatus?: "PENDING" | "APPROVED" | "REJECTED";
+  rejectionReason?: string;
+  verifiedBy?: string;
+  verifiedAt?: Date;
 }
 
 // Kiểm tra xem user có đăng nhập không
@@ -31,6 +44,34 @@ export const getCurrentUser = (): User | null => {
 export const hasRole = (user: User | null, allowedRoles: string[]): boolean => {
   if (!user) return false;
   return allowedRoles.includes(user.role);
+};
+
+// Kiểm tra user đã được verify chưa (theo BE schema mới)
+export const isUserVerified = (user: User | null): boolean => {
+  if (!user) return false;
+  
+  // Check new verification status field first
+  if (user.verificationStatus) {
+    return user.verificationStatus === "APPROVED";
+  }
+  
+  // Fallback to legacy isVerified field
+  return user.isVerified === true;
+};
+
+// Lấy verification status message
+export const getVerificationStatusMessage = (user: User | null): string => {
+  if (!user) return "Not logged in";
+  
+  switch (user.verificationStatus) {
+    case "APPROVED":
+      return "Account verified";
+    case "REJECTED":
+      return user.rejectionReason || "Account verification rejected";
+    case "PENDING":
+    default:
+      return "Account verification pending";
+  }
 };
 
 // Kiểm tra quyền truy cập route

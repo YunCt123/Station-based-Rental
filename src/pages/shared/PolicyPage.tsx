@@ -105,6 +105,127 @@ const PolicyPage = () => {
 
               <div>
                 <h3 className="text-lg font-semibold mb-3 flex items-center">
+                  <Shield className="h-5 w-5 mr-2 text-orange-600" />
+                  Yêu Cầu Xác Minh Tài Khoản - Vì Sự An Toàn Của Bạn
+                </h3>
+                <div className="bg-orange-50 border-l-4 border-orange-400 p-4 rounded-lg mb-4">
+                  <div className="flex items-start">
+                    <AlertTriangle className="h-6 w-6 text-orange-600 mr-3 mt-0.5" />
+                    <div>
+                      <h4 className="font-semibold text-orange-800 mb-2">Tại Sao Cần Xác Minh Tài Khoản?</h4>
+                      <p className="text-orange-700 text-sm mb-3">
+                        Để đảm bảo an toàn tuyệt đối cho quý khách hàng và cộng đồng, chúng tôi yêu cầu xác minh 
+                        danh tính trước khi có thể đặt xe. Đây là biện pháp bảo vệ cần thiết giúp:
+                      </p>
+                      <ul className="text-sm text-orange-700 space-y-1">
+                        <li>• <strong>Bảo vệ tài sản:</strong> Ngăn chặn việc sử dụng trái phép phương tiện</li>
+                        <li>• <strong>An toàn giao thông:</strong> Đảm bảo người lái có đủ năng lực và kinh nghiệm</li>
+                        <li>• <strong>Bảo mật thông tin:</strong> Ngăn chặn gian lận và bảo vệ dữ liệu cá nhân</li>
+                        <li>• <strong>Hỗ trợ khẩn cấp:</strong> Có thông tin chính xác để hỗ trợ khi cần thiết</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="bg-blue-50 p-4 rounded-lg">
+                    <h4 className="font-medium text-blue-700 mb-3 flex items-center">
+                      <FileText className="h-4 w-4 mr-2" />
+                      Tài Liệu Cần Xác Minh
+                    </h4>
+                    <ul className="text-sm text-gray-700 space-y-2">
+                      <li className="flex items-start">
+                        <CheckCircle className="h-4 w-4 mr-2 mt-0.5 text-green-600" />
+                        <div>
+                          <strong>CMND/CCCD/Hộ chiếu:</strong> Phải còn hiệu lực, ảnh rõ nét, đầy đủ thông tin
+                        </div>
+                      </li>
+                      <li className="flex items-start">
+                        <CheckCircle className="h-4 w-4 mr-2 mt-0.5 text-green-600" />
+                        <div>
+                          <strong>Giấy phép lái xe:</strong> Phù hợp với loại xe muốn thuê, còn hiệu lực
+                        </div>
+                      </li>
+                      <li className="flex items-start">
+                        <CheckCircle className="h-4 w-4 mr-2 mt-0.5 text-green-600" />
+                        <div>
+                          <strong>Ảnh chân dung:</strong> Để xác nhận danh tính với giấy tờ
+                        </div>
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div className="bg-red-50 p-4 rounded-lg">
+                    <h4 className="font-medium text-red-700 mb-3 flex items-center">
+                      <XCircle className="h-4 w-4 mr-2" />
+                      Tài Khoản Chưa Xác Minh Không Thể
+                    </h4>
+                    <ul className="text-sm text-gray-700 space-y-2">
+                      <li className="flex items-start">
+                        <XCircle className="h-4 w-4 mr-2 mt-0.5 text-red-600" />
+                        Đặt bất kỳ loại xe nào
+                      </li>
+                      <li className="flex items-start">
+                        <XCircle className="h-4 w-4 mr-2 mt-0.5 text-red-600" />
+                        Tham gia chương trình khuyến mãi
+                      </li>
+                      <li className="flex items-start">
+                        <XCircle className="h-4 w-4 mr-2 mt-0.5 text-red-600" />
+                        Sử dụng tính năng đặt xe trước
+                      </li>
+                      <li className="flex items-start">
+                        <XCircle className="h-4 w-4 mr-2 mt-0.5 text-red-600" />
+                        Nhận hỗ trợ ưu tiên
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+
+                <div className="mt-4 bg-green-50 p-4 rounded-lg border-l-4 border-green-400">
+                  <h4 className="font-medium text-green-700 mb-2 flex items-center">
+                    <Clock className="h-4 w-4 mr-2" />
+                    Quy Trình Xác Minh Nhanh Chóng
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-3 text-sm">
+                    <div className="text-center">
+                      <Badge className="bg-green-100 text-green-800 mb-2">Bước 1</Badge>
+                      <p className="text-gray-700">Tải lên giấy tờ</p>
+                    </div>
+                    <div className="text-center">
+                      <Badge className="bg-blue-100 text-blue-800 mb-2">Bước 2</Badge>
+                      <p className="text-gray-700">Chụp ảnh chân dung</p>
+                    </div>
+                    <div className="text-center">
+                      <Badge className="bg-purple-100 text-purple-800 mb-2">Bước 3</Badge>
+                      <p className="text-gray-700">Hệ thống kiểm tra</p>
+                    </div>
+                    <div className="text-center">
+                      <Badge className="bg-orange-100 text-orange-800 mb-2">Bước 4</Badge>
+                      <p className="text-gray-700">Xác minh hoàn tất</p>
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-600 mt-3 text-center">
+                    ⏰ Thời gian xử lý: 15-30 phút (trong giờ hành chính) | 2-4 giờ (ngoài giờ)
+                  </p>
+                </div>
+
+                <div className="mt-4 bg-yellow-50 p-4 rounded-lg">
+                  <h4 className="font-medium text-yellow-700 mb-2 flex items-center">
+                    <Shield className="h-4 w-4 mr-2" />
+                    Cam Kết Bảo Mật Thông Tin
+                  </h4>
+                  <p className="text-sm text-gray-700">
+                    Chúng tôi cam kết bảo mật tuyệt đối thông tin cá nhân của quý khách. Dữ liệu được mã hóa 
+                    end-to-end và chỉ được sử dụng cho mục đích xác minh danh tính. Thông tin sẽ được lưu trữ 
+                    an toàn theo quy định pháp luật và có thể được xóa theo yêu cầu của khách hàng.
+                  </p>
+                </div>
+              </div>
+
+              <Separator />
+
+              <div>
+                <h3 className="text-lg font-semibold mb-3 flex items-center">
                   <Clock className="h-5 w-5 mr-2 text-blue-600" />
                   Thời Gian & Đặt Xe
                 </h3>

@@ -10,3 +10,4 @@ export { default as HowItWorks } from './HowItWorks';
 export { default as HomePage } from './HomePage';
 export { default as VehiclesPage } from './VehiclesPage';
 export { default as DetailsPage } from './DetailsPage';
+export { default as PolicyPage } from './PolicyPage';

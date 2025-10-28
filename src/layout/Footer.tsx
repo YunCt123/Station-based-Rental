@@ -34,13 +34,13 @@ const Footer: React.FC = () => {
                 </a>
               </li>
               <li>
-                <a href="#" className="text-gray-300 hover:text-white transition-colors duration-200 text-sm">
-                  Safety
+                <a href="/how-it-works" className="text-gray-300 hover:text-white transition-colors duration-200 text-sm">
+                  How It Works
                 </a>
               </li>
               <li>
-                <a href="#" className="text-gray-300 hover:text-white transition-colors duration-200 text-sm">
-                  Terms of Service
+                <a href="/policy" className="text-gray-300 hover:text-white transition-colors duration-200 text-sm">
+                  Policy & Terms
                 </a>
               </li>
             </ul>

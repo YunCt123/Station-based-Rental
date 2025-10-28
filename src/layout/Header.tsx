@@ -99,6 +99,16 @@ const Navbar = ({ user, onLogout }: NavbarProps) => {
             >
               {t("common.howItWorks")}
             </Link>
+            <Link
+              to="/policy"
+              className={`text-sm font-medium transition-colors duration-200 ${
+                isActive("/policy")
+                  ? "text-primary"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Policy
+            </Link>
           </div>
 
           {/* User Menu / Auth Buttons */}
@@ -228,6 +238,17 @@ const Navbar = ({ user, onLogout }: NavbarProps) => {
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 {t("common.howItWorks")}
+              </Link>
+              <Link
+                to="/policy"
+                className={`block px-3 py-2 rounded-md text-base font-medium transition-colors duration-200 ${
+                  isActive("/policy")
+                    ? "text-primary bg-primary-light"
+                    : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+                }`}
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                Policy
               </Link>
 
               <div className="border-t border-border pt-3 mt-3">

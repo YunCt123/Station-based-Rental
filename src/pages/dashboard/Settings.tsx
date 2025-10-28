@@ -323,13 +323,13 @@ const Settings = () => {
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <Tabs defaultValue="profile" className="space-y-8">
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="profile">{t("settings.profile")}</TabsTrigger>
-            <TabsTrigger value="documents">Documents</TabsTrigger>
+            {/* <TabsTrigger value="documents">Documents</TabsTrigger> */}
             <TabsTrigger value="security">{t("settings.security")}</TabsTrigger>
-            <TabsTrigger value="notifications">
+            {/* <TabsTrigger value="notifications">
               {t("settings.notifications")}
-            </TabsTrigger>
+            </TabsTrigger> */}
             <TabsTrigger value="billing">{t("settings.billing")}</TabsTrigger>
             <TabsTrigger value="language">{t("settings.language")}</TabsTrigger>
           </TabsList>
@@ -794,9 +794,9 @@ const Settings = () => {
           </TabsContent>
 
           {/* Documents Tab */}
-          <TabsContent value="documents">
+          {/* <TabsContent value="documents"> */}
             {/* <DriverLicense /> */}
-          </TabsContent>
+          {/* </TabsContent> */}
 
           {/* Security Tab */}
           <TabsContent value="security">
@@ -843,7 +843,7 @@ const Settings = () => {
                 </CardContent>
               </Card>
 
-              <Card>
+              {/* <Card>
                 <CardHeader>
                   <CardTitle>{t("common.twoFactorAuthentication")}</CardTitle>
                 </CardHeader>
@@ -868,12 +868,12 @@ const Settings = () => {
                     <Switch />
                   </div>
                 </CardContent>
-              </Card>
+              </Card> */}
             </div>
           </TabsContent>
 
           {/* Notifications Tab */}
-          <TabsContent value="notifications">
+          {/* <TabsContent value="notifications">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center">
@@ -963,12 +963,12 @@ const Settings = () => {
                 <Button>Save Preferences</Button>
               </CardContent>
             </Card>
-          </TabsContent>
+          </TabsContent> */}
 
           {/* Billing Tab */}
           <TabsContent value="billing">
             <div className="space-y-6">
-              <Card>
+              {/* <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center">
                     <CreditCard className="h-5 w-5 mr-2" />
@@ -998,7 +998,7 @@ const Settings = () => {
                     <Button variant="outline">Add New Payment Method</Button>
                   </div>
                 </CardContent>
-              </Card>
+              </Card> */}
 
               <Card>
                 <CardHeader>
@@ -1083,7 +1083,7 @@ const Settings = () => {
 
                 <Separator />
 
-                <div>
+                {/* <div>
                   <h3 className="text-lg font-semibold mb-4">
                     Language Preferences
                   </h3>
@@ -1111,7 +1111,7 @@ const Settings = () => {
                       <Switch defaultChecked={language === "vi"} />
                     </div>
                   </div>
-                </div>
+                </div> */}
 
                 <Button>{t("settings.saveChanges")}</Button>
               </CardContent>

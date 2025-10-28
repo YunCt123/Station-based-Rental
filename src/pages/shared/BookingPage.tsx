@@ -316,7 +316,7 @@ const BookingPage: React.FC = () => {
           ) : (
             <Button
               type="primary"
-              onClick={() => navigate("/profile/verification")}
+              onClick={() => navigate("/settings")}
             >
               Start Verification Process
             </Button>

@@ -15,6 +15,7 @@ import type { Vehicle } from "@/types/vehicle";
 
 const DetailsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  // const navigate = useNavigate();
   const [selectedRental, setSelectedRental] = useState<"hourly" | "daily">(
     "daily"
   );

@@ -25,8 +25,11 @@ function normalize(raw: any, opts: { requireTokens?: boolean } = {}): AuthRespon
   const unwrapped = unwrap(raw);
   console.debug("[authService] raw:", raw);
   console.debug("[authService] unwrapped:", unwrapped);
+  console.debug("[authService] unwrapped.data:", unwrapped?.data);
 
-  const user = unwrapped?.user || {};
+  const user = unwrapped?.user || unwrapped?.data || unwrapped || {};
+  console.debug("[authService] extracted user:", user);
+  
   const tokensObj = unwrapped?.tokens || {};
 
   const accessToken =
@@ -47,7 +50,20 @@ function normalize(raw: any, opts: { requireTokens?: boolean } = {}): AuthRespon
     throw new Error("Missing access token in server response");
   }
 
+  const normalizedUser = {
+    id: user.id || user._id || "",
+    name: user.name || "",
+    email: user.email || "",
+    role: user.role || "user",
+    phoneNumber: user.phoneNumber,
+    dateOfBirth: user.dateOfBirth,
+    isVerified: user.isVerified,
+  };
+  
+  console.debug("[authService] normalizedUser:", normalizedUser);
+
   return {
+    user: normalizedUser,
     user: {
       id: user.id || user._id || "",
       name: user.name || "",
@@ -75,4 +91,24 @@ export async function register(payload: {
 }) {
   const { data } = await api.post("/auth/register", payload);
   return normalize(data, { requireTokens: false });
+}
+
+export async function getCurrentUser() {
+  console.log("🔍 [authService] getCurrentUser called");
+  try {
+    // Backend doesn't have /auth/me, so we'll need to get user from JWT or use a different approach
+    // For now, let's try to get from localStorage if available
+    const user = localStorage.getItem("user");
+    if (user) {
+      const userData = JSON.parse(user);
+      console.log("� [authService] Using cached user:", userData);
+      return { user: userData, tokens: { accessToken: "", refreshToken: "" } };
+    }
+    
+    // If no cached user, throw error to let hook fallback
+    throw new Error("No current user available");
+  } catch (error) {
+    console.error("💥 [authService] getCurrentUser error:", error);
+    throw error;
+  }
 }

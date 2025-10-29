@@ -71,6 +71,7 @@ export interface Vehicle {
   availability?: VehicleAvailability;
   lock_version?: number;
   priceDetail?: string;
+  stationId?: string;
 }
 
 // Backend vehicle data structure (from API)

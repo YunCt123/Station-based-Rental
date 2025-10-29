@@ -11,8 +11,10 @@ import { UserOutlined, LoginOutlined, SafetyCertificateOutlined } from "@ant-des
 import dayjs from "dayjs";
 import { bookingService, type PriceBreakdown } from "../../services/bookingService";
 import { vehicleService } from "../../services/vehicleService";
+import { userService } from "../../services/userService";
 import type { Vehicle } from "../../types/vehicle";
 import { getCurrentUser, isUserVerified, getVerificationStatusMessage } from "../../utils/auth";
+import { useAutoRefreshUser } from "../../hooks/useAutoRefreshUser";
 
 // Components
 import BookingSteps from "../../components/booking/BookingSteps";
@@ -41,6 +43,49 @@ const BookingPage: React.FC = () => {
   const [vehicle, setVehicle] = useState<Vehicle | null>(null);
   const [loadingVehicle, setLoadingVehicle] = useState(true);
   const [user, setUser] = useState(() => getCurrentUser());
+
+  // Auto-refresh user data when component mounts
+  useAutoRefreshUser(setUser);
+
+  // Function to refresh user data from API
+  const refreshUserData = async () => {
+    try {
+      console.log('🔄 [BookingPage] Refreshing user data from API...');
+      const freshUserData = await userService.getCurrentUser();
+      console.log('✅ [BookingPage] Fresh user data received:', freshUserData);
+      
+      // Map UserProfile to User format for compatibility
+      const mappedUser = {
+        id: freshUserData._id,
+        name: freshUserData.name,
+        email: freshUserData.email,
+        role: freshUserData.role,
+        phoneNumber: freshUserData.phoneNumber,
+        dateOfBirth: freshUserData.dateOfBirth,
+        isVerified: freshUserData.isVerified,
+        licenseNumber: freshUserData.licenseNumber,
+        licenseExpiry: freshUserData.licenseExpiry ? new Date(freshUserData.licenseExpiry) : undefined,
+        licenseClass: freshUserData.licenseClass,
+        idCardFront: freshUserData.idCardFront,
+        idCardBack: freshUserData.idCardBack,
+        driverLicense: freshUserData.driverLicense,
+        selfiePhoto: freshUserData.selfiePhoto,
+        verificationStatus: freshUserData.verificationStatus,
+        rejectionReason: freshUserData.rejectionReason,
+        verifiedBy: freshUserData.verifiedBy,
+        verifiedAt: freshUserData.verifiedAt ? new Date(freshUserData.verifiedAt) : undefined,
+      };
+      
+      // Update localStorage with fresh data
+      localStorage.setItem('user', JSON.stringify(mappedUser));
+      setUser(mappedUser);
+      
+      message.success('User data refreshed successfully');
+    } catch (error) {
+      console.error('❌ [BookingPage] Failed to refresh user data:', error);
+      message.error('Failed to refresh user data. Please try logging in again.');
+    }
+  };
 
   // const [uploadStatus, setUploadStatus] = useState<{
   //   [key: string]: DocumentUploadStatus["status"];
@@ -110,10 +155,23 @@ const BookingPage: React.FC = () => {
 
   // Auth watcher
   useEffect(() => {
-    const checkAuthState = () => setUser(getCurrentUser());
+    const checkAuthState = () => {
+      const currentUser = getCurrentUser();
+      console.log('🔍 [BookingPage] Auth state check:', {
+        user: currentUser,
+        verificationStatus: currentUser?.verificationStatus,
+        isVerified: currentUser?.isVerified,
+        isUserVerified: isUserVerified(currentUser),
+        timestamp: new Date().toISOString()
+      });
+      setUser(currentUser);
+    };
     checkAuthState();
     const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === "user" || e.key === "access_token") checkAuthState();
+      if (e.key === "user" || e.key === "access_token") {
+        console.log('📢 [BookingPage] Storage changed:', e.key);
+        checkAuthState();
+      }
     };
     window.addEventListener("storage", handleStorageChange);
     return () => window.removeEventListener("storage", handleStorageChange);
@@ -290,6 +348,8 @@ const BookingPage: React.FC = () => {
         <p className="text-gray-600 mb-4">
           Your account needs to be verified before you can make a booking.
         </p>
+        
+        
         <div className="mb-6">
           <p className="text-sm font-medium">
             Status: <span className={`${
@@ -324,12 +384,21 @@ const BookingPage: React.FC = () => {
           <Button onClick={() => navigate("/")}>
             Back to Home
           </Button>
+          <Button 
+            type="dashed" 
+            onClick={() => {
+              // Force refresh user data from API
+              refreshUserData();
+            }}
+          >
+            Refresh
+          </Button>
         </div>
       </Card>
     </div>
   );
 
-  // ---- Render ----
+
   return (
     <div className="max-w-4xl mx-auto p-4">
       {!user ? (

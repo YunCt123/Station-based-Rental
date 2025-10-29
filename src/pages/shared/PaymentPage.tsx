@@ -501,7 +501,7 @@ const PaymentPage: React.FC = () => {
             loading={loading}
             className="flex items-center gap-2"
           >
-            🔄 Refresh
+            Refresh
           </Button>
         </div>
         <Text type="secondary">
@@ -658,7 +658,8 @@ const PaymentPage: React.FC = () => {
                   <Text className="font-semibold">{booking.vehicle_snapshot.name}</Text>
                   <br />
                   <Text className="text-sm text-gray-500">
-                    {booking.vehicle_snapshot.type} • {booking.vehicle_snapshot.licensePlate}
+                    • {booking.vehicle_snapshot.type} <br/>
+                    • {booking.vehicle_snapshot.brand}
                   </Text>
                 </>
               )}
@@ -775,7 +776,7 @@ const PaymentPage: React.FC = () => {
                   );
                 })()}
                 <div className="text-xs text-gray-500 mt-2">
-                  * Remaining balance will be charged at pickup
+                  * Remaining balance will be charged at return time
                 </div>
               </div>
             )}

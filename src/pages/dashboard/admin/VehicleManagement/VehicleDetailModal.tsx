@@ -15,9 +15,8 @@ import {
 } from 'antd';
 import {
   CarOutlined,
-  BatteryTwoTone,
+  ThunderboltOutlined,
   EnvironmentOutlined,
-  StarOutlined,
   FileTextOutlined
 } from '@ant-design/icons';
 
@@ -234,7 +233,7 @@ const VehicleDetailModal: React.FC<VehicleDetailModalProps> = ({
             {/* Battery Information */}
             <div className="mb-4">
               <Text strong>
-                <BatteryTwoTone /> Thông tin pin
+                <ThunderboltOutlined /> Thông tin pin
               </Text>
               <div className="mt-2">
                 <Row gutter={16}>

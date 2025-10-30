@@ -1,0 +1,490 @@
+import React, { useEffect } from 'react';
+import {
+  Modal,
+  Form,
+  Input,
+  Select,
+  InputNumber,
+  Upload,
+  Button,
+  Row,
+  Col,
+  Switch,
+  Space,
+  Divider
+} from 'antd';
+import { UploadOutlined, PlusOutlined } from '@ant-design/icons';
+import type { UploadFile } from 'antd/es/upload/interface';
+
+const { Option } = Select;
+const { TextArea } = Input;
+
+interface Vehicle {
+  _id?: string;
+  name: string;
+  brand: string;
+  model: string;
+  type: string;
+  year: number;
+  seats: number;
+  batteryLevel: number;
+  battery_kWh: number;
+  status: 'AVAILABLE' | 'RENTED' | 'MAINTENANCE' | 'RESERVED';
+  image: string;
+  licensePlate: string;
+  odo_km: number;
+  station_id?: string;
+  pricePerHour: number;
+  pricePerDay: number;
+  currency: string;
+  condition: string;
+  range: number;
+  features: string[];
+  tags: string[];
+  description?: string;
+}
+
+interface VehicleFormModalProps {
+  visible: boolean;
+  vehicle: Vehicle | null;
+  onCancel: () => void;
+  onSubmit: (values: Vehicle) => Promise<void>;
+}
+
+const VehicleFormModal: React.FC<VehicleFormModalProps> = ({
+  visible,
+  vehicle,
+  onCancel,
+  onSubmit
+}) => {
+  const [form] = Form.useForm();
+  const isEditing = !!vehicle;
+
+  useEffect(() => {
+    if (visible) {
+      if (vehicle) {
+        form.setFieldsValue({
+          ...vehicle,
+          features: vehicle.features || [],
+          tags: vehicle.tags || []
+        });
+      } else {
+        form.resetFields();
+      }
+    }
+  }, [visible, vehicle, form]);
+
+  const handleSubmit = async () => {
+    try {
+      const values = await form.validateFields();
+      await onSubmit(values);
+    } catch (error) {
+      console.error('Validation failed:', error);
+    }
+  };
+
+  const vehicleTypes = [
+    'Sedan EV',
+    'SUV EV', 
+    'Hatchback EV',
+    'Crossover EV',
+    'MPV EV',
+    'Coupe EV',
+    'Convertible EV',
+    'Pickup EV'
+  ];
+
+  const vehicleBrands = [
+    'VinFast',
+    'Tesla',
+    'BMW',
+    'Mercedes-Benz',
+    'Audi',
+    'Hyundai',
+    'Kia',
+    'Nissan',
+    'BYD',
+    'Polestar'
+  ];
+
+  const vehicleConditions = [
+    'Excellent',
+    'Very Good', 
+    'Good',
+    'Fair',
+    'Needs Repair'
+  ];
+
+  const vehicleStatuses = [
+    { value: 'AVAILABLE', label: 'Có sẵn' },
+    { value: 'RENTED', label: 'Đang thuê' },
+    { value: 'MAINTENANCE', label: 'Bảo trì' },
+    { value: 'RESERVED', label: 'Đã đặt' }
+  ];
+
+  const commonFeatures = [
+    'Auto Parking',
+    'Smart Cabin',
+    'Fast Charging',
+    'Autopilot',
+    'Wireless Charging',
+    'Premium Audio',
+    'Heated Seats',
+    'Sunroof',
+    'Navigation',
+    'Blind Spot Monitor',
+    'Lane Keeping Assist',
+    'Adaptive Cruise Control'
+  ];
+
+  const commonTags = [
+    'Premium',
+    'Electric',
+    'Family',
+    'Luxury',
+    'Eco-Friendly',
+    'Compact',
+    'Spacious',
+    'High-Tech',
+    'Long Range',
+    'Fast Charging'
+  ];
+
+  return (
+    <Modal
+      title={isEditing ? 'Chỉnh sửa xe' : 'Thêm xe mới'}
+      open={visible}
+      onCancel={onCancel}
+      onOk={handleSubmit}
+      width={900}
+      okText={isEditing ? 'Cập nhật' : 'Tạo mới'}
+      cancelText="Hủy"
+      destroyOnClose
+    >
+      <Form
+        form={form}
+        layout="vertical"
+        initialValues={{
+          currency: 'VND',
+          status: 'AVAILABLE',
+          condition: 'Excellent',
+          batteryLevel: 100,
+          seats: 5
+        }}
+      >
+        <Row gutter={16}>
+          {/* Basic Information */}
+          <Col span={24}>
+            <h3>Thông tin cơ bản</h3>
+            <Divider />
+          </Col>
+          
+          <Col span={12}>
+            <Form.Item
+              name="name"
+              label="Tên xe"
+              rules={[{ required: true, message: 'Vui lòng nhập tên xe' }]}
+            >
+              <Input placeholder="VD: VinFast VF 8 Eco" />
+            </Form.Item>
+          </Col>
+          
+          <Col span={12}>
+            <Form.Item
+              name="licensePlate"
+              label="Biển số xe"
+              rules={[{ required: true, message: 'Vui lòng nhập biển số xe' }]}
+            >
+              <Input placeholder="VD: 30A-12345" />
+            </Form.Item>
+          </Col>
+
+          <Col span={8}>
+            <Form.Item
+              name="brand"
+              label="Hãng xe"
+              rules={[{ required: true, message: 'Vui lòng chọn hãng xe' }]}
+            >
+              <Select placeholder="Chọn hãng xe">
+                {vehicleBrands.map(brand => (
+                  <Option key={brand} value={brand}>{brand}</Option>
+                ))}
+              </Select>
+            </Form.Item>
+          </Col>
+
+          <Col span={8}>
+            <Form.Item
+              name="model"
+              label="Model"
+              rules={[{ required: true, message: 'Vui lòng nhập model' }]}
+            >
+              <Input placeholder="VD: VF 8 Eco" />
+            </Form.Item>
+          </Col>
+
+          <Col span={8}>
+            <Form.Item
+              name="type"
+              label="Loại xe"
+              rules={[{ required: true, message: 'Vui lòng chọn loại xe' }]}
+            >
+              <Select placeholder="Chọn loại xe">
+                {vehicleTypes.map(type => (
+                  <Option key={type} value={type}>{type}</Option>
+                ))}
+              </Select>
+            </Form.Item>
+          </Col>
+
+          <Col span={6}>
+            <Form.Item
+              name="year"
+              label="Năm sản xuất"
+              rules={[{ required: true, message: 'Vui lòng nhập năm sản xuất' }]}
+            >
+              <InputNumber 
+                min={2020} 
+                max={new Date().getFullYear() + 1}
+                style={{ width: '100%' }}
+                placeholder="2024"
+              />
+            </Form.Item>
+          </Col>
+
+          <Col span={6}>
+            <Form.Item
+              name="seats"
+              label="Số ghế"
+              rules={[{ required: true, message: 'Vui lòng nhập số ghế' }]}
+            >
+              <InputNumber 
+                min={2} 
+                max={8}
+                style={{ width: '100%' }}
+                placeholder="5"
+              />
+            </Form.Item>
+          </Col>
+
+          <Col span={6}>
+            <Form.Item
+              name="status"
+              label="Trạng thái"
+              rules={[{ required: true, message: 'Vui lòng chọn trạng thái' }]}
+            >
+              <Select>
+                {vehicleStatuses.map(status => (
+                  <Option key={status.value} value={status.value}>
+                    {status.label}
+                  </Option>
+                ))}
+              </Select>
+            </Form.Item>
+          </Col>
+
+          <Col span={6}>
+            <Form.Item
+              name="condition"
+              label="Tình trạng"
+              rules={[{ required: true, message: 'Vui lòng chọn tình trạng' }]}
+            >
+              <Select>
+                {vehicleConditions.map(condition => (
+                  <Option key={condition} value={condition}>
+                    {condition}
+                  </Option>
+                ))}
+              </Select>
+            </Form.Item>
+          </Col>
+
+          {/* Technical Specifications */}
+          <Col span={24}>
+            <h3>Thông số kỹ thuật</h3>
+            <Divider />
+          </Col>
+
+          <Col span={8}>
+            <Form.Item
+              name="battery_kWh"
+              label="Dung lượng pin (kWh)"
+              rules={[{ required: true, message: 'Vui lòng nhập dung lượng pin' }]}
+            >
+              <InputNumber 
+                min={30} 
+                max={200}
+                step={0.1}
+                style={{ width: '100%' }}
+                placeholder="87.7"
+              />
+            </Form.Item>
+          </Col>
+
+          <Col span={8}>
+            <Form.Item
+              name="batteryLevel"
+              label="Mức pin hiện tại (%)"
+              rules={[{ required: true, message: 'Vui lòng nhập mức pin' }]}
+            >
+              <InputNumber 
+                min={0} 
+                max={100}
+                style={{ width: '100%' }}
+                placeholder="85"
+              />
+            </Form.Item>
+          </Col>
+
+          <Col span={8}>
+            <Form.Item
+              name="range"
+              label="Quãng đường (km)"
+              rules={[{ required: true, message: 'Vui lòng nhập quãng đường' }]}
+            >
+              <InputNumber 
+                min={100} 
+                max={1000}
+                style={{ width: '100%' }}
+                placeholder="425"
+              />
+            </Form.Item>
+          </Col>
+
+          <Col span={12}>
+            <Form.Item
+              name="odo_km"
+              label="Số km đã đi"
+              rules={[{ required: true, message: 'Vui lòng nhập số km đã đi' }]}
+            >
+              <InputNumber 
+                min={0}
+                style={{ width: '100%' }}
+                placeholder="12500"
+              />
+            </Form.Item>
+          </Col>
+
+          {/* Pricing */}
+          <Col span={24}>
+            <h3>Giá thuê</h3>
+            <Divider />
+          </Col>
+
+          <Col span={8}>
+            <Form.Item
+              name="pricePerHour"
+              label="Giá thuê/giờ"
+              rules={[{ required: true, message: 'Vui lòng nhập giá thuê theo giờ' }]}
+            >
+              <InputNumber 
+                min={50000}
+                style={{ width: '100%' }}
+                placeholder="520000"
+                formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+              />
+            </Form.Item>
+          </Col>
+
+          <Col span={8}>
+            <Form.Item
+              name="pricePerDay"
+              label="Giá thuê/ngày"
+              rules={[{ required: true, message: 'Vui lòng nhập giá thuê theo ngày' }]}
+            >
+              <InputNumber 
+                min={500000}
+                style={{ width: '100%' }}
+                placeholder="3120000"
+                formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+              />
+            </Form.Item>
+          </Col>
+
+          <Col span={8}>
+            <Form.Item
+              name="currency"
+              label="Đơn vị tiền tệ"
+              rules={[{ required: true, message: 'Vui lòng chọn đơn vị tiền tệ' }]}
+            >
+              <Select>
+                <Option value="VND">VND</Option>
+                <Option value="USD">USD</Option>
+              </Select>
+            </Form.Item>
+          </Col>
+
+          {/* Features & Tags */}
+          <Col span={24}>
+            <h3>Tính năng & Tags</h3>
+            <Divider />
+          </Col>
+
+          <Col span={12}>
+            <Form.Item
+              name="features"
+              label="Tính năng"
+            >
+              <Select
+                mode="multiple"
+                placeholder="Chọn tính năng"
+                style={{ width: '100%' }}
+              >
+                {commonFeatures.map(feature => (
+                  <Option key={feature} value={feature}>{feature}</Option>
+                ))}
+              </Select>
+            </Form.Item>
+          </Col>
+
+          <Col span={12}>
+            <Form.Item
+              name="tags"
+              label="Tags"
+            >
+              <Select
+                mode="tags"
+                placeholder="Chọn hoặc nhập tags"
+                style={{ width: '100%' }}
+              >
+                {commonTags.map(tag => (
+                  <Option key={tag} value={tag}>{tag}</Option>
+                ))}
+              </Select>
+            </Form.Item>
+          </Col>
+
+          {/* Image & Description */}
+          <Col span={24}>
+            <h3>Hình ảnh & Mô tả</h3>
+            <Divider />
+          </Col>
+
+          <Col span={24}>
+            <Form.Item
+              name="image"
+              label="URL hình ảnh"
+              rules={[{ required: true, message: 'Vui lòng nhập URL hình ảnh' }]}
+            >
+              <Input placeholder="https://example.com/vehicle-image.jpg" />
+            </Form.Item>
+          </Col>
+
+          <Col span={24}>
+            <Form.Item
+              name="description"
+              label="Mô tả"
+            >
+              <TextArea 
+                rows={3} 
+                placeholder="Mô tả chi tiết về xe..."
+              />
+            </Form.Item>
+          </Col>
+        </Row>
+      </Form>
+    </Modal>
+  );
+};
+
+export default VehicleFormModal;

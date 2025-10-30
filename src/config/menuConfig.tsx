@@ -10,7 +10,9 @@ import {
   WrenchScrewdriverIcon,
   UserIcon,
   CurrencyDollarIcon,
-  BoltIcon
+  BoltIcon,
+  BuildingStorefrontIcon,
+  Cog6ToothIcon
 } from '@heroicons/react/24/outline';
 
 import type { SidebarSection } from '../types/sidebar';
@@ -174,6 +176,20 @@ export const getMenuSections = (): SidebarSection[] => [
             roles: [UserRole.ADMIN]
           }
         ]
+      },
+      {
+        id: 'vehicle-management',
+        title: 'Quản lý xe',
+        icon: <Cog6ToothIcon className="w-5 h-5" />,
+        path: '/admin/vehicles',
+        roles: [UserRole.ADMIN]
+      },
+      {
+        id: 'station-management',
+        title: 'Quản lý trạm',
+        icon: <BuildingStorefrontIcon className="w-5 h-5" />,
+        path: '/admin/stations',
+        roles: [UserRole.ADMIN]
       },
       {
         id: 'transaction-history',

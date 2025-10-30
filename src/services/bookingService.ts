@@ -422,6 +422,40 @@ export class BookingService {
     }
   }
 
+  // ✅ NEW: Get bookings by station (for staff)
+  async getStationBookings(
+    stationId: string, 
+    status: 'HELD' | 'CONFIRMED' | 'CANCELLED' = 'CONFIRMED'
+  ): Promise<Booking[]> {
+    try {
+      console.log('[BookingService] Getting station bookings:', { stationId, status });
+      
+      const response = await api.get<ApiResponse<Booking[]>>(
+        `/bookings/station/${stationId}?status=${status}`
+      );
+      
+      if (response.data.success && response.data.data) {
+        console.log('[BookingService] Station bookings retrieved:', {
+          count: response.data.data.length,
+          bookings: response.data.data.map(b => ({
+            id: b._id,
+            status: b.status,
+            startAt: b.start_at,
+            endAt: b.end_at,
+            vehicle: b.vehicle_snapshot?.name || 'Unknown',
+            user: 'Customer' // Will be populated by backend
+          }))
+        });
+        return response.data.data;
+      }
+      
+      return [];
+    } catch (error: any) {
+      console.error('[BookingService] Get station bookings error:', error);
+      return [];
+    }
+  }
+
   // Create deposit payment for booking
   async createDepositPayment(request: PaymentCreateRequest): Promise<PaymentResponse> {
     try {

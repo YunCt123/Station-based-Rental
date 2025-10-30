@@ -27,6 +27,7 @@ import {
 import type { ColumnsType } from 'antd/es/table';
 import VehicleFormModal from './VehicleFormModal';
 import VehicleDetailModal from './VehicleDetailModal';
+import { adminVehicleService, type AdminVehicle } from '../../../../services/adminVehicleService';
 
 const { Option } = Select;
 

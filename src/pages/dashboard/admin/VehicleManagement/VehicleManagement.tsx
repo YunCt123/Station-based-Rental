@@ -8,11 +8,9 @@ import {
   Tag,
   Modal,
   message,
-  Dropdown,
   Tooltip,
   Image,
-  Select,
-  Form
+  Select
 } from 'antd';
 import {
   PlusOutlined,
@@ -20,9 +18,7 @@ import {
   DeleteOutlined,
   SearchOutlined,
   EyeOutlined,
-  FilterOutlined,
-  ExportOutlined,
-  MoreOutlined
+  ExportOutlined
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import VehicleFormModal from './VehicleFormModal';
@@ -30,6 +26,24 @@ import VehicleDetailModal from './VehicleDetailModal';
 import { adminVehicleService, type AdminVehicle } from '../../../../services/adminVehicleService';
 
 const { Option } = Select;
+
+// Form values interface
+interface VehicleFormValues {
+  name: string;
+  year: number;
+  brand: string;
+  model: string;
+  type: string;
+  seats: number;
+  pricePerHour: number;
+  battery_kWh: number;
+  features: string[];
+  condition: 'excellent' | 'good' | 'fair';
+  description: string;
+  tags: string[];
+  image: string;
+  station_id: string;
+}
 
 // Temporary interface - will be replaced with actual API interface
 interface Vehicle {
@@ -80,55 +94,113 @@ const VehicleManagement: React.FC = () => {
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
 
   // Load vehicles data
-  const loadVehicles = async () => {
+  const loadVehicles = async (forceRefresh = false) => {
     setLoading(true);
     try {
-      // TODO: Replace with actual API call
-      // const response = await vehicleService.getAllVehicles();
-      // setVehicles(response.data);
+      console.log('Loading vehicles...', forceRefresh ? '(forced refresh)' : '');
+      const response = await adminVehicleService.getAllVehicles({
+        limit: 100,
+        page: 1,
+        sort: '-updatedAt' // Sort by most recently updated
+      });
       
-      // Mock data for now
-      const mockVehicles: Vehicle[] = [
-        {
-          _id: '1',
-          name: 'VinFast VF 8 Eco',
-          brand: 'VinFast',
-          model: 'VF 8 Eco',
-          type: 'SUV EV',
-          year: 2024,
-          seats: 5,
-          batteryLevel: 85,
-          battery_kWh: 87.7,
-          status: 'AVAILABLE',
-          image: 'https://static-cms-prod.vinfastauto.com/SUV-co-trung-vf-8-eco.jpg',
-          licensePlate: '30A-12345',
-          odo_km: 12500,
-          station_id: {
-            _id: 'station1',
-            name: 'EV Station - Nguyen Hue',
-            city: 'Ho Chi Minh'
-          },
-          pricePerHour: 520000,
-          pricePerDay: 3120000,
-          currency: 'VND',
-          condition: 'Excellent',
-          range: 425,
-          features: ['Auto Parking', 'Smart Cabin', 'Fast Charging'],
-          tags: ['Premium', 'Electric', 'Family'],
-          rating: 4.8,
-          reviewCount: 142,
-          trips: 256,
-          createdAt: '2024-01-15T00:00:00Z',
-          updatedAt: '2024-10-31T00:00:00Z'
-        }
-      ];
-      setVehicles(mockVehicles);
+      console.log('Vehicles API response:', response);
+      
+      if (response.success && response.data) {
+        // Transform API data to match component interface
+        const transformedVehicles: Vehicle[] = response.data.map(vehicle => {
+          console.log('Transforming vehicle:', vehicle);
+          return {
+            _id: vehicle._id,
+            name: vehicle.name,
+            brand: vehicle.brand || 'Unknown',
+            model: vehicle.model || '',
+            type: vehicle.type || 'Car',
+            year: vehicle.year,
+            seats: vehicle.seats,
+            batteryLevel: vehicle.batteryLevel || vehicle.battery_soc || 80,
+            battery_kWh: vehicle.battery_kWh || 50,
+            status: vehicle.status,
+            image: vehicle.image || '/placeholder-vehicle.jpg',
+            licensePlate: `${vehicle.brand}-${vehicle._id.slice(-4)}`, // Generate if not available
+            odo_km: vehicle.odo_km || vehicle.mileage || 0,
+            station_id: vehicle.station_id ? {
+              _id: vehicle.station_id,
+              name: vehicle.station_name || 'Unknown Station',
+              city: 'Ho Chi Minh'
+            } : undefined,
+            pricePerHour: vehicle.pricePerHour || vehicle.pricing?.hourly || 100000,
+            pricePerDay: vehicle.pricePerDay || vehicle.pricing?.daily || 600000,
+            currency: vehicle.pricing?.currency || 'VND',
+            condition: vehicle.condition || 'good',
+            range: vehicle.range || 300,
+            features: vehicle.features || [],
+            tags: vehicle.tags || [],
+            rating: vehicle.rating || 4.0,
+            reviewCount: vehicle.reviewCount || 0,
+            trips: vehicle.trips || 0,
+            createdAt: vehicle.createdAt,
+            updatedAt: vehicle.updatedAt
+          };
+        });
+        
+        console.log('Transformed vehicles:', transformedVehicles);
+        setVehicles(transformedVehicles);
+      } else {
+        console.error('Failed to load vehicles:', response);
+        message.error('Không thể tải danh sách xe');
+      }
     } catch (error) {
       console.error('Error loading vehicles:', error);
-      message.error('Failed to load vehicles');
+      message.error('Lỗi khi tải danh sách xe');
     } finally {
       setLoading(false);
     }
+  };
+
+  // Update a specific vehicle in the state
+  const updateVehicleInState = (updatedVehicle: Vehicle) => {
+    setVehicles(prevVehicles => 
+      prevVehicles.map(vehicle => 
+        vehicle._id === updatedVehicle._id ? updatedVehicle : vehicle
+      )
+    );
+  };
+
+  // Transform API vehicle to component vehicle
+  const transformApiVehicle = (apiVehicle: AdminVehicle): Vehicle => {
+    return {
+      _id: apiVehicle._id,
+      name: apiVehicle.name,
+      brand: apiVehicle.brand || 'Unknown',
+      model: apiVehicle.model || '',
+      type: apiVehicle.type || 'Car',
+      year: apiVehicle.year,
+      seats: apiVehicle.seats,
+      batteryLevel: apiVehicle.batteryLevel || apiVehicle.battery_soc || 80,
+      battery_kWh: apiVehicle.battery_kWh || 50,
+      status: apiVehicle.status,
+      image: apiVehicle.image || '/placeholder-vehicle.jpg',
+      licensePlate: `${apiVehicle.brand}-${apiVehicle._id.slice(-4)}`,
+      odo_km: apiVehicle.odo_km || apiVehicle.mileage || 0,
+      station_id: apiVehicle.station_id ? {
+        _id: apiVehicle.station_id,
+        name: apiVehicle.station_name || 'Unknown Station',
+        city: 'Ho Chi Minh'
+      } : undefined,
+      pricePerHour: apiVehicle.pricePerHour || apiVehicle.pricing?.hourly || 100000,
+      pricePerDay: apiVehicle.pricePerDay || apiVehicle.pricing?.daily || 600000,
+      currency: apiVehicle.pricing?.currency || 'VND',
+      condition: apiVehicle.condition || 'good',
+      range: apiVehicle.range || 300,
+      features: apiVehicle.features || [],
+      tags: apiVehicle.tags || [],
+      rating: apiVehicle.rating || 4.0,
+      reviewCount: apiVehicle.reviewCount || 0,
+      trips: apiVehicle.trips || 0,
+      createdAt: apiVehicle.createdAt,
+      updatedAt: apiVehicle.updatedAt
+    };
   };
 
   useEffect(() => {
@@ -155,10 +227,13 @@ const VehicleManagement: React.FC = () => {
       okType: 'danger',
       onOk: async () => {
         try {
-          // TODO: Replace with actual API call
-          // await vehicleService.deleteVehicle(vehicle._id);
-          message.success('Xóa xe thành công');
-          loadVehicles();
+          const response = await adminVehicleService.deleteVehicle(vehicle._id);
+          if (response.success) {
+            message.success('Xóa xe thành công');
+            loadVehicles();
+          } else {
+            message.error('Xóa xe thất bại');
+          }
         } catch (error) {
           console.error('Error deleting vehicle:', error);
           message.error('Xóa xe thất bại');
@@ -172,23 +247,91 @@ const VehicleManagement: React.FC = () => {
     setIsDetailModalVisible(true);
   };
 
-  const handleFormSubmit = async (values: any) => {
+  const handleFormSubmit = async (values: VehicleFormValues) => {
     try {
+      console.log('Form submit values:', values);
+      console.log('Editing vehicle:', editingVehicle);
+      
       if (editingVehicle) {
-        // TODO: Replace with actual API call
-        // await vehicleService.updateVehicle(editingVehicle._id, values);
-        message.success('Cập nhật xe thành công');
+        console.log('Updating vehicle with ID:', editingVehicle._id);
+        const updateData = {
+          name: values.name,
+          year: values.year,
+          brand: values.brand,
+          model: values.model,
+          type: values.type,
+          seats: values.seats,
+          pricePerHour: values.pricePerHour,
+          battery_kWh: values.battery_kWh,
+          features: values.features,
+          condition: values.condition,
+          description: values.description,
+          tags: values.tags,
+          image: values.image,
+          station_id: values.station_id
+        };
+        
+        console.log('Update data:', updateData);
+        const response = await adminVehicleService.updateVehicle(editingVehicle._id, updateData);
+        console.log('Update response:', response);
+        
+        if (response.success) {
+          message.success('Cập nhật xe thành công');
+          console.log('Updated vehicle data:', response.data);
+          
+          // Update the specific vehicle in state instead of reloading all
+          if (response.data) {
+            const updatedVehicle = transformApiVehicle(response.data);
+            updateVehicleInState(updatedVehicle);
+          }
+        } else {
+          message.error('Cập nhật xe thất bại');
+          console.error('Update failed:', response);
+        }
       } else {
-        // TODO: Replace with actual API call
-        // await vehicleService.createVehicle(values);
-        message.success('Tạo xe mới thành công');
+        const createData = {
+          name: values.name,
+          year: values.year,
+          brand: values.brand,
+          model: values.model,
+          type: values.type,
+          seats: values.seats,
+          pricePerHour: values.pricePerHour,
+          battery_kWh: values.battery_kWh,
+          features: values.features,
+          condition: values.condition,
+          description: values.description,
+          tags: values.tags,
+          image: values.image,
+          station_id: values.station_id
+        };
+        
+        console.log('Create data:', createData);
+        const response = await adminVehicleService.createVehicle(createData);
+        console.log('Create response:', response);
+        
+        if (response.success) {
+          message.success('Tạo xe mới thành công');
+        } else {
+          message.error('Tạo xe mới thất bại');
+        }
       }
+      
+      // Close modal and reset state
       setIsFormModalVisible(false);
       setEditingVehicle(null);
-      loadVehicles();
+      
+      // Only reload if it was a create operation or update failed
+      if (!editingVehicle) {
+        console.log('Reloading vehicles after create...');
+        setTimeout(() => {
+          loadVehicles(true); // Force refresh
+        }, 500);
+      }
+      
     } catch (error) {
       console.error('Error saving vehicle:', error);
-      message.error('Lưu xe thất bại');
+      message.error(editingVehicle ? 'Cập nhật xe thất bại' : 'Tạo xe mới thất bại');
     }
   };
 

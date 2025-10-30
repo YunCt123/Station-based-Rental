@@ -22,15 +22,29 @@ import {
   EyeOutlined,
   ExportOutlined,
   EnvironmentOutlined,
-  ThunderboltOutlined,
-  CarOutlined
+  ThunderboltOutlined
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import StationFormModal from './StationFormModal';
 import StationDetailModal from './StationDetailModal';
-import { adminStationService, type AdminStation } from '../../../../services/adminStationService';
+import { adminStationService } from '../../../../services/adminStationService';
 
 const { Option } = Select;
+
+// Form values interface
+interface StationFormValues {
+  name: string;
+  address: string;
+  city: string;
+  latitude: number;
+  longitude: number;
+  capacity: number;
+  openTime: string;
+  closeTime: string;
+  amenities: string[];
+  phone: string;
+  email: string;
+}
 
 // Temporary interface - will be replaced with actual API interface
 interface Station {
@@ -88,34 +102,36 @@ const StationManagement: React.FC = () => {
   const loadStations = async () => {
     setLoading(true);
     try {
-      // TODO: Replace with actual API call
-      // const response = await stationService.getAllStations();
-      // setStations(response.data);
+      const response = await adminStationService.getAllStations({
+        limit: 100,
+        page: 1,
+        sort: '-createdAt'
+      });
       
-      // Mock data for now
-      const mockStations: Station[] = [
-        {
-          _id: '1',
-          name: 'EV Station - Nguyen Hue',
-          address: '70 Nguyen Hue, Ben Nghe Ward, District 1',
-          city: 'Ho Chi Minh',
+      if (response.success && response.data) {
+        // Transform API data to match component interface
+        const transformedStations: Station[] = response.data.map(station => ({
+          _id: station._id,
+          name: station.name,
+          address: station.address || '',
+          city: station.city,
           geo: {
-            coordinates: [106.7018, 10.7763]
+            coordinates: station.geo.coordinates
           },
-          totalSlots: 20,
-          amenities: ['wifi', 'cafe', 'restroom', 'parking'],
-          fastCharging: true,
-          rating: 4.5,
+          totalSlots: station.totalSlots,
+          amenities: station.amenities,
+          fastCharging: station.fastCharging,
+          rating: station.rating?.avg || 0,
           operatingHours: {
-            open: '06:00',
-            close: '22:00'
+            open: station.operatingHours?.mon_fri?.split('-')[0] || '06:00',
+            close: station.operatingHours?.mon_fri?.split('-')[1] || '22:00'
           },
-          status: 'ACTIVE',
-          image: 'https://cafefcdn.com/thumb_w/640/203337114487263232/2021/2/21/photo1613878387404-16138783959871816506468.jpg',
+          status: station.status === 'UNDER_MAINTENANCE' ? 'MAINTENANCE' : station.status as 'ACTIVE' | 'INACTIVE',
+          image: station.image || '/placeholder-station.jpg',
           metrics: {
-            availableSlots: 15,
-            occupiedSlots: 3,
-            maintenanceSlots: 2
+            availableSlots: station.metrics?.vehicles_available || 0,
+            occupiedSlots: station.metrics?.vehicles_in_use || 0,
+            maintenanceSlots: station.totalSlots - (station.metrics?.vehicles_available || 0) - (station.metrics?.vehicles_in_use || 0)
           },
           pricing: {
             parkingFee: 10000,
@@ -124,52 +140,20 @@ const StationManagement: React.FC = () => {
           },
           contact: {
             phone: '+84123456789',
-            email: 'nguyenhue@evstation.com'
+            email: `${station.name.toLowerCase().replace(/\s+/g, '')}@evstation.com`
           },
-          description: 'Trạm sạc điện hiện đại tại trung tâm thành phố với đầy đủ tiện ích.',
-          createdAt: '2024-01-15T00:00:00Z',
-          updatedAt: '2024-10-31T00:00:00Z'
-        },
-        {
-          _id: '2',
-          name: 'EV Station - District 7',
-          address: 'Crescent Mall, District 7',
-          city: 'Ho Chi Minh',
-          geo: {
-            coordinates: [106.7019, 10.7764]
-          },
-          totalSlots: 15,
-          amenities: ['wifi', 'shopping', 'restroom'],
-          fastCharging: true,
-          rating: 4.2,
-          operatingHours: {
-            open: '08:00',
-            close: '20:00'
-          },
-          status: 'ACTIVE',
-          image: 'https://example.com/station2.jpg',
-          metrics: {
-            availableSlots: 12,
-            occupiedSlots: 2,
-            maintenanceSlots: 1
-          },
-          pricing: {
-            parkingFee: 15000,
-            chargingFee: 4000,
-            currency: 'VND'
-          },
-          contact: {
-            phone: '+84987654321',
-            email: 'district7@evstation.com'
-          },
-          createdAt: '2024-02-20T00:00:00Z',
-          updatedAt: '2024-10-31T00:00:00Z'
-        }
-      ];
-      setStations(mockStations);
+          description: `Trạm sạc ${station.name} tại ${station.city}`,
+          createdAt: station.createdAt,
+          updatedAt: station.updatedAt
+        }));
+        
+        setStations(transformedStations);
+      } else {
+        message.error('Không thể tải danh sách trạm');
+      }
     } catch (error) {
       console.error('Error loading stations:', error);
-      message.error('Failed to load stations');
+      message.error('Lỗi khi tải danh sách trạm');
     } finally {
       setLoading(false);
     }
@@ -199,10 +183,13 @@ const StationManagement: React.FC = () => {
       okType: 'danger',
       onOk: async () => {
         try {
-          // TODO: Replace with actual API call
-          // await stationService.deleteStation(station._id);
-          message.success('Xóa trạm thành công');
-          loadStations();
+          const response = await adminStationService.deleteStation(station._id);
+          if (response.success) {
+            message.success('Xóa trạm thành công');
+            loadStations();
+          } else {
+            message.error('Xóa trạm thất bại');
+          }
         } catch (error) {
           console.error('Error deleting station:', error);
           message.error('Xóa trạm thất bại');
@@ -216,23 +203,68 @@ const StationManagement: React.FC = () => {
     setIsDetailModalVisible(true);
   };
 
-  const handleFormSubmit = async (values: any) => {
+  const handleFormSubmit = async (values: StationFormValues) => {
     try {
       if (editingStation) {
-        // TODO: Replace with actual API call
-        // await stationService.updateStation(editingStation._id, values);
-        message.success('Cập nhật trạm thành công');
+        const response = await adminStationService.updateStation(editingStation._id, {
+          name: values.name,
+          address: values.address,
+          city: values.city,
+          coordinates: {
+            lat: values.latitude,
+            lng: values.longitude
+          },
+          capacity: values.capacity,
+          operatingHours: {
+            open: values.openTime,
+            close: values.closeTime
+          },
+          amenities: values.amenities,
+          contactInfo: {
+            phone: values.phone,
+            email: values.email
+          }
+        });
+        
+        if (response.success) {
+          message.success('Cập nhật trạm thành công');
+        } else {
+          message.error('Cập nhật trạm thất bại');
+        }
       } else {
-        // TODO: Replace with actual API call
-        // await stationService.createStation(values);
-        message.success('Tạo trạm mới thành công');
+        const response = await adminStationService.createStation({
+          name: values.name,
+          address: values.address,
+          city: values.city,
+          coordinates: {
+            lat: values.latitude,
+            lng: values.longitude
+          },
+          capacity: values.capacity,
+          operatingHours: {
+            open: values.openTime,
+            close: values.closeTime
+          },
+          amenities: values.amenities,
+          contactInfo: {
+            phone: values.phone,
+            email: values.email
+          }
+        });
+        
+        if (response.success) {
+          message.success('Tạo trạm mới thành công');
+        } else {
+          message.error('Tạo trạm mới thất bại');
+        }
       }
+      
       setIsFormModalVisible(false);
       setEditingStation(null);
       loadStations();
     } catch (error) {
       console.error('Error saving station:', error);
-      message.error('Lưu trạm thất bại');
+      message.error(editingStation ? 'Cập nhật trạm thất bại' : 'Tạo trạm mới thất bại');
     }
   };
 
@@ -266,7 +298,7 @@ const StationManagement: React.FC = () => {
 
   // Calculate utilization rate
   const getUtilizationRate = (station: Station) => {
-    const { availableSlots, occupiedSlots, maintenanceSlots } = station.metrics;
+    const { availableSlots, occupiedSlots } = station.metrics;
     const totalActive = availableSlots + occupiedSlots;
     return totalActive > 0 ? (occupiedSlots / totalActive) * 100 : 0;
   };

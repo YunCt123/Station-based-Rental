@@ -17,10 +17,7 @@ import {
 import {
   EnvironmentOutlined,
   ThunderboltOutlined,
-  PhoneOutlined,
-  MailOutlined,
   ClockCircleOutlined,
-  CarOutlined,
   CheckCircleOutlined
 } from '@ant-design/icons';
 
@@ -71,6 +68,18 @@ const StationDetailModal: React.FC<StationDetailModalProps> = ({
   onCancel
 }) => {
   if (!station) return null;
+
+  // Safe access to nested properties
+  const coordinates = station.geo?.coordinates || [0, 0];
+  const rating = station.rating || { avg: 0, count: 0 };
+  const operatingHours = station.operatingHours || {};
+  const metrics = station.metrics || {
+    vehicles_total: 0,
+    vehicles_available: 0,
+    vehicles_in_use: 0,
+    utilization_rate: 0
+  };
+  const amenities = station.amenities || [];
 
   // Get status color
   const getStatusColor = (status: string) => {
@@ -198,7 +207,7 @@ const StationDetailModal: React.FC<StationDetailModalProps> = ({
               <Text strong>Tọa độ GPS</Text>
               <div className="mt-1">
                 <Text code>
-                  {station.geo.coordinates[1].toFixed(6)}, {station.geo.coordinates[0].toFixed(6)}
+                  {coordinates[1].toFixed(6)}, {coordinates[0].toFixed(6)}
                 </Text>
               </div>
             </div>
@@ -207,9 +216,9 @@ const StationDetailModal: React.FC<StationDetailModalProps> = ({
             <div className="mb-4">
               <Text strong>Đánh giá</Text>
               <div className="mt-1">
-                <Rate disabled defaultValue={station.rating.avg} style={{ fontSize: 16 }} />
+                <Rate disabled defaultValue={rating.avg} style={{ fontSize: 16 }} />
                 <div className="text-sm text-gray-500">
-                  {station.rating.avg.toFixed(1)}/5 ({station.rating.count} đánh giá)
+                  {rating.avg.toFixed(1)}/5 ({rating.count} đánh giá)
                 </div>
               </div>
             </div>
@@ -228,17 +237,17 @@ const StationDetailModal: React.FC<StationDetailModalProps> = ({
               </Descriptions.Item>
               <Descriptions.Item label="Xe có sẵn">
                 <span style={{ color: '#52c41a', fontWeight: 600 }}>
-                  {station.metrics.vehicles_available}
+                  {metrics.vehicles_available}
                 </span>
               </Descriptions.Item>
               <Descriptions.Item label="Xe đang sử dụng">
                 <span style={{ color: '#1890ff', fontWeight: 600 }}>
-                  {station.metrics.vehicles_in_use}
+                  {metrics.vehicles_in_use}
                 </span>
               </Descriptions.Item>
               <Descriptions.Item label="Tổng xe">
                 <span style={{ color: '#722ed1', fontWeight: 600 }}>
-                  {station.metrics.vehicles_total}
+                  {metrics.vehicles_total}
                 </span>
               </Descriptions.Item>
             </Descriptions>
@@ -249,8 +258,8 @@ const StationDetailModal: React.FC<StationDetailModalProps> = ({
             <div className="mb-4">
               <Text strong>Tỷ lệ sử dụng</Text>
               <Progress
-                percent={Math.round(station.metrics.utilization_rate * 100)}
-                strokeColor={getUtilizationColor(station.metrics.utilization_rate)}
+                percent={Math.round(metrics.utilization_rate * 100)}
+                strokeColor={getUtilizationColor(metrics.utilization_rate)}
                 className="mt-2"
               />
             </div>
@@ -263,22 +272,22 @@ const StationDetailModal: React.FC<StationDetailModalProps> = ({
                 <ClockCircleOutlined /> Giờ hoạt động
               </Text>
               <div className="mt-2">
-                {station.operatingHours.mon_fri && (
+                {operatingHours.mon_fri && (
                   <div className="mb-1">
                     <Text>Thứ 2-6: </Text>
-                    <Text strong>{station.operatingHours.mon_fri}</Text>
+                    <Text strong>{operatingHours.mon_fri}</Text>
                   </div>
                 )}
-                {station.operatingHours.weekend && (
+                {operatingHours.weekend && (
                   <div className="mb-1">
                     <Text>Cuối tuần: </Text>
-                    <Text strong>{station.operatingHours.weekend}</Text>
+                    <Text strong>{operatingHours.weekend}</Text>
                   </div>
                 )}
-                {station.operatingHours.holiday && (
+                {operatingHours.holiday && (
                   <div className="mb-1">
                     <Text>Ngày lễ: </Text>
-                    <Text strong>{station.operatingHours.holiday}</Text>
+                    <Text strong>{operatingHours.holiday}</Text>
                   </div>
                 )}
               </div>
@@ -310,7 +319,7 @@ const StationDetailModal: React.FC<StationDetailModalProps> = ({
         <Col span={8}>
           <Card title="Tiện ích & Dịch vụ" className="mb-4">
             <List
-              dataSource={station.amenities}
+              dataSource={amenities}
               renderItem={(amenity) => (
                 <List.Item style={{ padding: '8px 0', border: 'none' }}>
                   <Space>
@@ -340,7 +349,7 @@ const StationDetailModal: React.FC<StationDetailModalProps> = ({
               <Col span={12}>
                 <Card size="small" style={{ textAlign: 'center' }}>
                   <div className="text-2xl font-bold text-green-600">
-                    {station.metrics.vehicles_available}
+                    {metrics.vehicles_available}
                   </div>
                   <div className="text-sm text-gray-500">Xe sẵn sàng</div>
                 </Card>
@@ -348,7 +357,7 @@ const StationDetailModal: React.FC<StationDetailModalProps> = ({
               <Col span={12}>
                 <Card size="small" style={{ textAlign: 'center' }}>
                   <div className="text-2xl font-bold text-orange-600">
-                    {station.metrics.vehicles_in_use}
+                    {metrics.vehicles_in_use}
                   </div>
                   <div className="text-sm text-gray-500">Đang sử dụng</div>
                 </Card>
@@ -356,7 +365,7 @@ const StationDetailModal: React.FC<StationDetailModalProps> = ({
               <Col span={12}>
                 <Card size="small" style={{ textAlign: 'center' }}>
                   <div className="text-2xl font-bold text-purple-600">
-                    {Math.round(station.metrics.utilization_rate * 100)}%
+                    {Math.round(metrics.utilization_rate * 100)}%
                   </div>
                   <div className="text-sm text-gray-500">Tỷ lệ sử dụng</div>
                 </Card>
@@ -379,7 +388,7 @@ const StationDetailModal: React.FC<StationDetailModalProps> = ({
               </div>
               <div className="flex justify-between py-1">
                 <Text>Số tiện ích:</Text>
-                <Text strong>{station.amenities.length}</Text>
+                <Text strong>{amenities.length}</Text>
               </div>
             </div>
           </Card>

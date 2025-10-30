@@ -128,7 +128,12 @@ export const adminVehicleService = {
         }
       });
 
+      console.log(`[adminVehicleService] Getting vehicles with filters:`, filters);
+      console.log(`[adminVehicleService] API URL: /vehicles?${params.toString()}`);
+      
       const response = await api.get(`/vehicles?${params.toString()}`);
+      console.log(`[adminVehicleService] Get vehicles response:`, response.data);
+      
       return response.data;
     } catch (error) {
       console.error('Error fetching vehicles:', error);
@@ -180,7 +185,9 @@ export const adminVehicleService = {
   // Update vehicle
   async updateVehicle(id: string, vehicleData: UpdateVehicleRequest): Promise<VehicleResponse> {
     try {
+      console.log(`[adminVehicleService] Updating vehicle ${id} with data:`, vehicleData);
       const response = await api.patch(`/vehicles/${id}`, vehicleData);
+      console.log(`[adminVehicleService] Update response:`, response.data);
       return response.data;
     } catch (error) {
       console.error('Error updating vehicle:', error);

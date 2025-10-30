@@ -41,18 +41,23 @@ export interface PriceBreakdown {
   daily_rate?: number;
   currency: string;
   deposit: number;
+  total_price?: number; // Backend uses snake_case
+  base_price?: number;
+  insurance_price?: number;
+  taxes?: number;
   policy_version?: string;
   
   // Legacy/calculated fields (for compatibility)
   basePrice?: number;
   insurancePrice?: number;
-  taxes?: number;
-  totalPrice?: number;
+  totalPrice?: number; // Frontend uses camelCase
   details?: {
-    rawBase: number;
-    peakMultiplier: number;
-    weekendMultiplier: number;
-    hours: number;
+    rawBase?: number;
+    rentalType?: string;
+    hours?: number;
+    days?: number;
+    peakMultiplier?: number;
+    weekendMultiplier?: number;
   };
 }
 

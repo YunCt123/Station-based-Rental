@@ -141,28 +141,29 @@ const VehicleReserved = () => {
       const booking = item as Booking;
       return {
         id: booking._id,
-        name: booking.vehicle_snapshot?.name || 'Unknown Vehicle',
-        brand: booking.vehicle_snapshot?.brand || 'Unknown',
-        model: '',
-        type: booking.vehicle_snapshot?.type || 'Unknown',
-        year: new Date().getFullYear(),
-        // ✅ FIX: Get image from populated vehicle_id object
-        image: (booking.vehicle_id as any)?.image || (booking as any).vehicle?.image || '/placeholder-vehicle.jpg',
-        batteryLevel: 80, // Not available in booking snapshot
-        location: booking.station_snapshot?.name || 'Unknown Station',
+        // ✅ Vehicle info from populated vehicle_id according to API docs
+        name: (booking.vehicle_id as any)?.name || booking.vehicle_snapshot?.name || 'Unknown Vehicle',
+        brand: (booking.vehicle_id as any)?.brand || booking.vehicle_snapshot?.brand || 'Unknown',
+        model: (booking.vehicle_id as any)?.model || '',
+        type: (booking.vehicle_id as any)?.type || booking.vehicle_snapshot?.type || 'Unknown',
+        year: (booking.vehicle_id as any)?.year || new Date().getFullYear(),
+        // ✅ Image from populated vehicle_id object according to API docs
+        image: (booking.vehicle_id as any)?.image || '/placeholder-vehicle.jpg',
+        batteryLevel: (booking.vehicle_id as any)?.batteryLevel || 80,
+        location: (booking.station_id as any)?.name || booking.station_snapshot?.name || 'Unknown Station',
         status: booking.status,
-        pricePerHour: (booking as any).pricing?.hourly_rate || booking.pricing_snapshot?.hourly_rate || 0,
-        pricePerDay: (booking as any).pricing?.daily_rate || booking.pricing_snapshot?.daily_rate || 0,
-        currency: (booking as any).pricing?.currency || booking.pricing_snapshot?.currency || 'VND',
-        seats: 4, // Not available in booking snapshot
-        // ✅ FIX: Get customer data from populated user_id object or user field
-        customerName: (booking.user_id as any)?.name || (booking as any).user?.name || 'Customer',
-        customerEmail: (booking.user_id as any)?.email || (booking as any).user?.email || '',
-        customerPhone: (booking.user_id as any)?.phoneNumber || (booking as any).user?.phoneNumber || '',
+        pricePerHour: booking.pricing_snapshot?.hourly_rate || 0,
+        pricePerDay: booking.pricing_snapshot?.daily_rate || 0,
+        currency: booking.pricing_snapshot?.currency || 'VND',
+        seats: (booking.vehicle_id as any)?.seats || 4,
+        // ✅ Customer info from populated user_id according to API docs
+        customerName: (booking.user_id as any)?.name || 'Customer',
+        customerEmail: (booking.user_id as any)?.email || '',
+        customerPhone: (booking.user_id as any)?.phoneNumber || '',
         startAt: booking.start_at,
         endAt: booking.end_at,
-        totalPrice: (booking as any).pricing?.total_price || booking.pricing_snapshot?.totalPrice || 0,
-        deposit: (booking as any).pricing?.deposit || booking.pricing_snapshot?.deposit || 0,
+        totalPrice: booking.pricing_snapshot?.total_price || booking.pricing_snapshot?.totalPrice || 0,
+        deposit: booking.pricing_snapshot?.deposit || 0,
         insurance: booking.insurance_option || false
       };
     } else {
@@ -198,11 +199,17 @@ const VehicleReserved = () => {
   const columns = [
     {
       title: 'Hình ảnh',
-      dataIndex: 'image',
       key: 'image',
-      render: (img: string) => (
-        <img src={img} alt="vehicle" style={{ width: 80, height: 50, objectFit: 'cover', borderRadius: 4 }} />
-      ),
+      render: (_: unknown, record: Booking | StationRental) => {
+        const display = getDisplayData(record);
+        return (
+          <img 
+            src={display.image} 
+            alt="vehicle" 
+            style={{ width: 80, height: 50, objectFit: 'cover', borderRadius: 4 }} 
+          />
+        );
+      },
     },
     {
       title: 'Xe & Khách hàng',

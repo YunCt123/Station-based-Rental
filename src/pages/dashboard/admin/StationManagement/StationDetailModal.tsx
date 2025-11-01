@@ -23,12 +23,44 @@ import {
   ClockCircleOutlined,
   CheckCircleOutlined,
   CarOutlined,
-  ReloadOutlined
+  ReloadOutlined,
+  UserOutlined,
+  TeamOutlined
 } from '@ant-design/icons';
 import { stationService } from '@/services/stationService';
 import type { Vehicle } from '@/types/vehicle';
+import { LeafletMap } from '@/components/LeafletMap';
+import api from '@/services/api';
 
 const { Title, Text } = Typography;
+
+interface User {
+  _id: string;
+  name: string;
+  email: string;
+  phoneNumber?: string; // Backend uses phoneNumber, not phone
+  role: string;
+  avatar?: string;
+  status: string;
+  createdAt: string;
+}
+
+interface StationStaffResponse {
+  station: {
+    id: string;
+    name: string;
+    address: string;
+    city: string;
+    status: string;
+  };
+  manager: User | null;
+  staff: User[];
+  summary: {
+    total_staff: number;
+    has_manager: boolean;
+    active_staff: number;
+  };
+}
 
 interface Station {
   _id: string;
@@ -51,6 +83,8 @@ interface Station {
     holiday?: string;
   };
   status: 'ACTIVE' | 'INACTIVE' | 'UNDER_MAINTENANCE';
+  manager_id?: string;
+  staff_ids?: string[];
   metrics: {
     vehicles_total: number;
     vehicles_available: number;
@@ -84,6 +118,22 @@ const StationDetailModal: React.FC<StationDetailModalProps> = ({
     loading: false
   });
 
+  const [stationStaff, setStationStaff] = useState<{
+    manager: User | null;
+    staff: User[];
+    summary: {
+      total_staff: number;
+      has_manager: boolean;
+      active_staff: number;
+    } | null;
+    loading: boolean;
+  }>({
+    manager: null,
+    staff: [],
+    summary: null,
+    loading: false
+  });
+
   // Fetch station vehicles when modal opens
   const fetchStationVehicles = React.useCallback(async () => {
     if (!station?._id) return;
@@ -102,11 +152,39 @@ const StationDetailModal: React.FC<StationDetailModalProps> = ({
     }
   }, [station?._id]);
 
+  // Fetch station staff information using new API
+  const fetchStationStaff = React.useCallback(async () => {
+    if (!station?._id) return;
+    
+    setStationStaff(prev => ({ ...prev, loading: true }));
+    try {
+      console.log('🔍 Fetching station staff for:', station._id);
+      const response = await api.get<{
+        success: boolean;
+        data: StationStaffResponse;
+      }>(`/stations/${station._id}/staff`);
+      
+      console.log('✅ Station staff response:', response.data);
+      
+      const staffData = response.data.data;
+      setStationStaff({
+        manager: staffData.manager,
+        staff: staffData.staff,
+        summary: staffData.summary,
+        loading: false
+      });
+    } catch (error) {
+      console.error('❌ Error fetching station staff:', error);
+      setStationStaff(prev => ({ ...prev, loading: false }));
+    }
+  }, [station?._id]);
+
   useEffect(() => {
     if (visible && station?._id) {
       fetchStationVehicles();
+      fetchStationStaff();
     }
-  }, [visible, station?._id, fetchStationVehicles]);
+  }, [visible, station?._id, fetchStationVehicles, fetchStationStaff]);
 
   if (!station) return null;
 
@@ -264,6 +342,29 @@ const StationDetailModal: React.FC<StationDetailModalProps> = ({
                 </div>
               </div>
             </div>
+
+            {/* Location Map */}
+            <div className="mb-4">
+              <Text strong>Vị trí trạm</Text>
+              <div className="mt-2">
+                <LeafletMap
+                  station={{
+                    id: station._id,
+                    name: station.name,
+                    address: station.address || '',
+                    city: station.city,
+                    coordinates: {
+                      lat: coordinates[1] || 0,
+                      lng: coordinates[0] || 0,
+                    },
+                    availableVehicles: stationVehicles.vehicles.filter(v => v.availability === 'available').length
+                  }}
+                  height="250px"
+                  showControls={true}
+                  showNearbyStations={true}
+                />
+              </div>
+            </div>
           </Card>
         </Col>
 
@@ -328,6 +429,66 @@ const StationDetailModal: React.FC<StationDetailModalProps> = ({
 
             <Divider />
 
+            {/* Manager and Staff Information */}
+            <div className="mb-4">
+
+                  {/* Manager */}
+                  {stationStaff.manager ? (
+                    <div className="mb-3">
+                      <Text strong>
+                        <UserOutlined /> Quản lý trạm:
+                      </Text>
+                      <div className="mt-1 p-2 bg-gray-50 rounded">
+                        <div>
+                          <Text strong>{stationStaff.manager.name}</Text>
+                        </div>
+                        <div className="text-sm text-gray-600">
+                          <div>{stationStaff.manager.email}</div>
+                          {stationStaff.manager.phoneNumber && (
+                            <div>{stationStaff.manager.phoneNumber}</div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="mb-3">
+                      <Text strong>
+                        <UserOutlined /> Quản lý trạm:
+                      </Text>
+                      <div className="mt-1 text-gray-500">Chưa có quản lý được chỉ định</div>
+                    </div>
+                  )}
+
+                  {/* Staff */}
+                  <div>
+                    <Text strong>
+                      <TeamOutlined /> Nhân viên ({stationStaff.staff.length}):
+                    </Text>
+                    {stationStaff.staff.length > 0 ? (
+                      <div className="mt-1">
+                        {stationStaff.staff.map((staffMember) => (
+                          <div key={staffMember._id} className="p-2 bg-gray-50 rounded mb-2">
+                            <div>
+                              <Text strong>{staffMember.name}</Text>
+                            </div>
+                            <div className="text-sm text-gray-600">
+                              <div>{staffMember.email}</div>
+                              {staffMember.phoneNumber && (
+                                <div>{staffMember.phoneNumber}</div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="mt-1 text-gray-500">Chưa có nhân viên nào được chỉ định</div>
+                    )}
+                  </div>
+                </div>
+            
+
+            <Divider />
+
             {/* Utilization Rate */}
             <div className="mb-4">
               <Text strong>Tỷ lệ sử dụng</Text>
@@ -383,7 +544,7 @@ const StationDetailModal: React.FC<StationDetailModalProps> = ({
             {/* Timestamps */}
             <Divider />
             <div className="text-sm text-gray-500">
-              <div>Tạo: {new Date(station.createdAt).toLocaleString()}</div>
+
               <div>Cập nhật: {new Date(station.updatedAt).toLocaleString()}</div>
             </div>
           </Card>
@@ -397,11 +558,10 @@ const StationDetailModal: React.FC<StationDetailModalProps> = ({
               renderItem={(amenity) => (
                 <List.Item style={{ padding: '8px 0', border: 'none' }}>
                   <Space>
-                    <span style={{ fontSize: '16px' }}>
+                    {/* <span style={{ fontSize: '16px' }}>
                       {amenityIcons[amenity] || '•'}
-                    </span>
+                    </span> */}
                     <Text>{amenityLabels[amenity] || amenity}</Text>
-                    <CheckCircleOutlined style={{ color: '#52c41a' }} />
                   </Space>
                 </List.Item>
               )}
@@ -467,7 +627,6 @@ const StationDetailModal: React.FC<StationDetailModalProps> = ({
               <Space>
                 <CarOutlined />
                 Danh sách xe tại trạm
-                <Tag color="blue">{stationVehicles.count} xe</Tag>
               </Space>
             } 
             className="mt-4"
@@ -575,7 +734,22 @@ const StationDetailModal: React.FC<StationDetailModalProps> = ({
           </Card>
 
           {/* Quick Actions Info */}
-          <Card title="Thông tin quản lý" className="mt-4" size="small">
+          <Card 
+            title="Thông tin quản lý" 
+            className="mt-4" 
+            size="small"
+            extra={
+              <Button 
+                size="small" 
+                icon={<ReloadOutlined />}
+                onClick={fetchStationStaff}
+                loading={stationStaff.loading}
+                type="link"
+              >
+                Làm mới
+              </Button>
+            }
+          >
             <div className="text-sm">
               <div className="flex justify-between py-1">
                 <Text>Trạng thái:</Text>
@@ -590,6 +764,26 @@ const StationDetailModal: React.FC<StationDetailModalProps> = ({
               <div className="flex justify-between py-1">
                 <Text>Số tiện ích:</Text>
                 <Text strong>{amenities.length}</Text>
+              </div>
+              <div className="flex justify-between py-1">
+                <Text>Quản lý:</Text>
+                <Text strong>
+                  {stationStaff.loading ? (
+                    <Spin size="small" />
+                  ) : (
+                    stationStaff.manager ? stationStaff.manager.name : 'Chưa có'
+                  )}
+                </Text>
+              </div>
+              <div className="flex justify-between py-1">
+                <Text>Nhân viên:</Text>
+                <Text strong>
+                  {stationStaff.loading ? (
+                    <Spin size="small" />
+                  ) : (
+                    `${stationStaff.staff.length} người`
+                  )}
+                </Text>
               </div>
             </div>
           </Card>

@@ -27,7 +27,7 @@ import { adminVehicleService, type AdminVehicle } from '../../../../services/adm
 
 const { Option } = Select;
 
-// Form values interface
+// Form values interface matching backend requirements
 interface VehicleFormValues {
   name: string;
   year: number;
@@ -36,13 +36,19 @@ interface VehicleFormValues {
   type: string;
   seats: number;
   pricePerHour: number;
+  pricePerDay: number;
   battery_kWh: number;
+  batteryLevel: number;
+  range: number;
+  odo_km: number;
   features: string[];
   condition: 'excellent' | 'good' | 'fair';
   description: string;
   tags: string[];
   image: string;
   station_id: string;
+  status: 'AVAILABLE' | 'RENTED' | 'MAINTENANCE' | 'RESERVED';
+  currency: string;
 }
 
 // Temporary interface - will be replaced with actual API interface
@@ -262,13 +268,19 @@ const VehicleManagement: React.FC = () => {
           type: values.type,
           seats: values.seats,
           pricePerHour: values.pricePerHour,
+          pricePerDay: values.pricePerDay,
           battery_kWh: values.battery_kWh,
-          features: values.features,
+          batteryLevel: values.batteryLevel,
+          range: values.range,
+          odo_km: values.odo_km,
+          features: values.features || [],
           condition: values.condition,
           description: values.description,
-          tags: values.tags,
+          tags: values.tags || [],
           image: values.image,
-          station_id: values.station_id
+          station_id: values.station_id,
+          status: values.status,
+          active: true
         };
         
         console.log('Update data:', updateData);
@@ -297,13 +309,19 @@ const VehicleManagement: React.FC = () => {
           type: values.type,
           seats: values.seats,
           pricePerHour: values.pricePerHour,
+          pricePerDay: values.pricePerDay,
           battery_kWh: values.battery_kWh,
-          features: values.features,
+          batteryLevel: values.batteryLevel,
+          range: values.range,
+          odo_km: values.odo_km,
+          features: values.features || [],
           condition: values.condition,
           description: values.description,
-          tags: values.tags,
+          tags: values.tags || [],
           image: values.image,
-          station_id: values.station_id
+          station_id: values.station_id,
+          status: values.status || 'AVAILABLE',
+          active: true
         };
         
         console.log('Create data:', createData);

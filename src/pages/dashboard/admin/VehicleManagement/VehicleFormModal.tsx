@@ -5,19 +5,39 @@ import {
   Input,
   Select,
   InputNumber,
-  Upload,
-  Button,
   Row,
   Col,
-  Switch,
-  Space,
   Divider
 } from 'antd';
-import { UploadOutlined, PlusOutlined } from '@ant-design/icons';
-import type { UploadFile } from 'antd/es/upload/interface';
+// import { UploadOutlined, PlusOutlined } from '@ant-design/icons';
+// import type { UploadFile } from 'antd/es/upload/interface';
 
 const { Option } = Select;
 const { TextArea } = Input;
+
+// Form values interface matching backend requirements
+interface VehicleFormValues {
+  name: string;
+  year: number;
+  brand: string;
+  model: string;
+  type: string;
+  seats: number;
+  pricePerHour: number;
+  pricePerDay: number;
+  battery_kWh: number;
+  batteryLevel: number;
+  range: number;
+  odo_km: number;
+  features: string[];
+  condition: 'excellent' | 'good' | 'fair';
+  description: string;
+  tags: string[];
+  image: string;
+  station_id: string;
+  status: 'AVAILABLE' | 'RENTED' | 'MAINTENANCE' | 'RESERVED';
+  currency: string;
+}
 
 interface Vehicle {
   _id?: string;
@@ -48,7 +68,7 @@ interface VehicleFormModalProps {
   visible: boolean;
   vehicle: Vehicle | null;
   onCancel: () => void;
-  onSubmit: (values: Vehicle) => Promise<void>;
+  onSubmit: (values: VehicleFormValues) => Promise<void>;
 }
 
 const VehicleFormModal: React.FC<VehicleFormModalProps> = ({
@@ -108,11 +128,9 @@ const VehicleFormModal: React.FC<VehicleFormModalProps> = ({
   ];
 
   const vehicleConditions = [
-    'Excellent',
-    'Very Good', 
-    'Good',
-    'Fair',
-    'Needs Repair'
+    { value: 'excellent', label: 'Excellent' },
+    { value: 'good', label: 'Good' },
+    { value: 'fair', label: 'Fair' }
   ];
 
   const vehicleStatuses = [
@@ -167,9 +185,14 @@ const VehicleFormModal: React.FC<VehicleFormModalProps> = ({
         initialValues={{
           currency: 'VND',
           status: 'AVAILABLE',
-          condition: 'Excellent',
+          condition: 'excellent',
           batteryLevel: 100,
-          seats: 5
+          seats: 5,
+          range: 300,
+          odo_km: 0,
+          pricePerDay: 1500000,
+          features: [],
+          tags: []
         }}
       >
         <Row gutter={16}>
@@ -291,8 +314,8 @@ const VehicleFormModal: React.FC<VehicleFormModalProps> = ({
             >
               <Select>
                 {vehicleConditions.map(condition => (
-                  <Option key={condition} value={condition}>
-                    {condition}
+                  <Option key={condition.value} value={condition.value}>
+                    {condition.label}
                   </Option>
                 ))}
               </Select>

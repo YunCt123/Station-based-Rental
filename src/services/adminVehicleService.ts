@@ -56,12 +56,18 @@ export interface CreateVehicleRequest {
   image?: string;
   station_id?: string;
   pricePerHour?: number;
+  pricePerDay?: number;
   battery_kWh?: number;
+  batteryLevel?: number;
+  range?: number;
+  odo_km?: number;
   seats?: number;
   features?: string[];
   condition?: 'excellent' | 'good' | 'fair';
   description?: string;
   tags?: string[];
+  status?: 'AVAILABLE' | 'RESERVED' | 'RENTED' | 'MAINTENANCE';
+  active?: boolean;
 }
 
 export interface UpdateVehicleRequest {
@@ -76,6 +82,9 @@ export interface UpdateVehicleRequest {
   batteryLevel?: number;
   battery_kWh?: number;
   pricePerHour?: number;
+  pricePerDay?: number;
+  range?: number;
+  odo_km?: number;
   seats?: number;
   features?: string[];
   condition?: 'excellent' | 'good' | 'fair';
@@ -232,10 +241,10 @@ export const adminVehicleService = {
   },
 
   // Bulk operations
-  async bulkUpdateStatus(vehicleIds: string[], status: string): Promise<{ success: boolean; updated: number }> {
+  async bulkUpdateStatus(vehicleIds: string[], status: 'AVAILABLE' | 'RESERVED' | 'RENTED' | 'MAINTENANCE'): Promise<{ success: boolean; updated: number }> {
     try {
       const promises = vehicleIds.map(id => 
-        this.updateVehicleStatus(id, status as any)
+        this.updateVehicleStatus(id, status)
       );
       
       const results = await Promise.allSettled(promises);

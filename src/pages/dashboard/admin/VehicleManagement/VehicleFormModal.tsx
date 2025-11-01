@@ -8,11 +8,15 @@ import {
   Row,
   Col,
   Divider,
-  Spin
+  Spin,
+  Upload,
+  Button,
+  message
 } from 'antd';
+import { UploadOutlined, PlusOutlined } from '@ant-design/icons';
+import type { UploadFile } from 'antd/es/upload/interface';
 import { adminStationService, type AdminStation } from '../../../../services/adminStationService';
-// import { UploadOutlined, PlusOutlined } from '@ant-design/icons';
-// import type { UploadFile } from 'antd/es/upload/interface';
+import api from '../../../../services/api';
 
 const { Option } = Select;
 const { TextArea } = Input;
@@ -87,7 +91,85 @@ const VehicleFormModal: React.FC<VehicleFormModalProps> = ({
   const [form] = Form.useForm();
   const [stations, setStations] = useState<AdminStation[]>([]);
   const [loadingStations, setLoadingStations] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [imageFileList, setImageFileList] = useState<UploadFile[]>([]);
   const isEditing = !!vehicle;
+
+  // Upload image to backend
+  const uploadVehicleImage = async (file: File): Promise<string> => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      setUploadingImage(true);
+      
+      // Try to upload to vehicles endpoint (if exists) or fallback to general upload
+      const response = await api.post('/upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      
+      // Backend should return { success: true, data: { url: "..." } } or { url: "..." }
+      const imageUrl = response.data.data?.url || response.data.url || response.data.secure_url;
+      
+      if (!imageUrl) {
+        throw new Error('No image URL returned from server');
+      }
+      
+      message.success('Tải ảnh lên thành công');
+      return imageUrl;
+    } catch (error: unknown) {
+      console.error('Upload image error:', error);
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : 'Unknown error occurred';
+      message.error('Tải ảnh lên thất bại: ' + errorMessage);
+      throw error;
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  // Handle file upload
+  const handleImageUpload = async (file: File) => {
+    try {
+      const imageUrl = await uploadVehicleImage(file);
+      
+      // Set the image URL in form
+      form.setFieldValue('image', imageUrl);
+      
+      // Update file list for UI
+      setImageFileList([{
+        uid: '-1',
+        name: file.name,
+        status: 'done',
+        url: imageUrl,
+      }]);
+      
+      return false; // Prevent default upload behavior
+    } catch (uploadError) {
+      console.error('Failed to upload image:', uploadError);
+      return false;
+    }
+  };
+
+  // Validate image file
+  const beforeUpload = (file: File) => {
+    const isImage = file.type.startsWith('image/');
+    if (!isImage) {
+      message.error('Chỉ có thể tải lên file hình ảnh!');
+      return false;
+    }
+    
+    const isLt10M = file.size / 1024 / 1024 < 10;
+    if (!isLt10M) {
+      message.error('Kích thước ảnh phải nhỏ hơn 10MB!');
+      return false;
+    }
+    
+    return true;
+  };
 
   // Load stations when modal opens
   useEffect(() => {
@@ -147,8 +229,19 @@ const VehicleFormModal: React.FC<VehicleFormModalProps> = ({
         
         console.log('Setting form values for edit:', formValues);
         form.setFieldsValue(formValues);
+        
+        // Set existing image for file list display
+        if (vehicle.image) {
+          setImageFileList([{
+            uid: '-1',
+            name: 'Current Image',
+            status: 'done',
+            url: vehicle.image,
+          }]);
+        }
       } else {
         form.resetFields();
+        setImageFileList([]);
       }
     }
   }, [visible, vehicle, form]);
@@ -565,13 +658,54 @@ const VehicleFormModal: React.FC<VehicleFormModalProps> = ({
             <Divider />
           </Col>
 
-          <Col span={24}>
+          {/* Image Upload Section */}
+          <Col span={12}>
+            <Form.Item
+              label="Tải ảnh từ máy tính"
+            >
+              <Upload
+                fileList={imageFileList}
+                beforeUpload={beforeUpload}
+                customRequest={({ file }) => handleImageUpload(file as File)}
+                onRemove={() => {
+                  setImageFileList([]);
+                  form.setFieldValue('image', '');
+                }}
+                maxCount={1}
+                accept="image/*"
+                listType="picture-card"
+                className="vehicle-image-upload"
+              >
+                {imageFileList.length === 0 && (
+                  <div style={{ textAlign: 'center' }}>
+                    <PlusOutlined style={{ fontSize: '16px' }} />
+                    <div style={{ marginTop: 8, fontSize: '12px' }}>Tải ảnh lên</div>
+                  </div>
+                )}
+              </Upload>
+              {uploadingImage && (
+                <div style={{ marginTop: 8 }}>
+                  <Spin size="small" /> Đang tải ảnh lên...
+                </div>
+              )}
+            </Form.Item>
+          </Col>
+
+          <Col span={12}>
             <Form.Item
               name="image"
-              label="URL hình ảnh"
-              rules={[{ required: true, message: 'Vui lòng nhập URL hình ảnh' }]}
+              label="Hoặc nhập URL hình ảnh"
+              rules={[{ required: true, message: 'Vui lòng tải ảnh lên hoặc nhập URL hình ảnh' }]}
             >
-              <Input placeholder="https://example.com/vehicle-image.jpg" />
+              <Input 
+                placeholder="https://example.com/vehicle-image.jpg"
+                onChange={(e) => {
+                  // Clear uploaded file when user types URL
+                  if (e.target.value && imageFileList.length > 0) {
+                    setImageFileList([]);
+                  }
+                }}
+              />
             </Form.Item>
           </Col>
 

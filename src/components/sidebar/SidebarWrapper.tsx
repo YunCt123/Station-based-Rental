@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { Sidebar } from './Sidebar';
 import { useUserRole, useUserSession } from '../../hooks/useSidebar';
 import { getMenuSections } from '../../config/menuConfig';
@@ -65,8 +65,11 @@ export const SidebarWrapper: React.FC<SidebarWrapperProps> = ({
       }
     };
 
-    loadUserInfo();
-  }, [currentRole, updateUserInfo]);
+    // Only load user info once when component mounts
+    if (!realUserInfo) {
+      loadUserInfo();
+    }
+  }, []); // Empty dependency array để chỉ chạy một lần khi mount
 
   // Get menu sections dynamically based on current role
   const menuSections = React.useMemo(() => getMenuSections(), []);

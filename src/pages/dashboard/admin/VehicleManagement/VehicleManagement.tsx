@@ -24,6 +24,7 @@ import type { ColumnsType } from 'antd/es/table';
 import VehicleFormModal from './VehicleFormModal';
 import VehicleDetailModal from './VehicleDetailModal';
 import { adminVehicleService, type AdminVehicle } from '../../../../services/adminVehicleService';
+import { adminStationService } from '../../../../services/adminStationService';
 
 const { Option } = Select;
 
@@ -79,6 +80,7 @@ interface Vehicle {
   range: number;
   features: string[];
   tags: string[];
+  description?: string;
   rating: number;
   reviewCount: number;
   trips: number;
@@ -143,6 +145,7 @@ const VehicleManagement: React.FC = () => {
             range: vehicle.range || 300,
             features: vehicle.features || [],
             tags: vehicle.tags || [],
+            description: vehicle.description || '',
             rating: vehicle.rating || 4.0,
             reviewCount: vehicle.reviewCount || 0,
             trips: vehicle.trips || 0,
@@ -202,6 +205,7 @@ const VehicleManagement: React.FC = () => {
       range: apiVehicle.range || 300,
       features: apiVehicle.features || [],
       tags: apiVehicle.tags || [],
+      description: apiVehicle.description || '',
       rating: apiVehicle.rating || 4.0,
       reviewCount: apiVehicle.reviewCount || 0,
       trips: apiVehicle.trips || 0,
@@ -254,6 +258,30 @@ const VehicleManagement: React.FC = () => {
     setIsDetailModalVisible(true);
   };
 
+  // Helper function to get station name by ID
+  const getStationName = async (stationId: string): Promise<string> => {
+    try {
+      const response = await adminStationService.getStationById(stationId);
+      return response.success ? response.data.name : '';
+    } catch (error) {
+      console.error('Error fetching station name:', error);
+      return '';
+    }
+  };
+
+  // Helper function to create synchronized pricing data
+  const createPricingData = (pricePerHour: number, pricePerDay: number, currency: string = 'VND') => {
+    return {
+      pricePerHour,
+      pricePerDay,
+      pricing: {
+        hourly: pricePerHour,
+        daily: pricePerDay,
+        currency
+      }
+    };
+  };
+
   const handleFormSubmit = async (values: VehicleFormValues) => {
     try {
       console.log('=== FORM SUBMIT DEBUG ===');
@@ -276,6 +304,17 @@ const VehicleManagement: React.FC = () => {
       
       console.log('Validated pricing:', { pricePerHour, pricePerDay });
       
+      // Get station name if station_id is provided
+      let stationName = '';
+      if (values.station_id) {
+        stationName = await getStationName(values.station_id);
+        console.log('Station name:', stationName);
+      }
+
+      // Create synchronized pricing data
+      const pricingData = createPricingData(pricePerHour, pricePerDay, values.currency);
+      console.log('Pricing data:', pricingData);
+      
       if (editingVehicle) {
         console.log('=== UPDATE OPERATION ===');
         console.log('Updating vehicle with ID:', editingVehicle._id);
@@ -288,8 +327,7 @@ const VehicleManagement: React.FC = () => {
           type: values.type,
           licensePlate: values.licensePlate,
           seats: Number(values.seats),
-          pricePerHour: pricePerHour,
-          pricePerDay: pricePerDay,
+          ...pricingData, // Spread synchronized pricing
           battery_kWh: Number(values.battery_kWh),
           batteryLevel: Number(values.batteryLevel),
           range: Number(values.range),
@@ -300,6 +338,7 @@ const VehicleManagement: React.FC = () => {
           tags: values.tags || [],
           image: values.image,
           station_id: values.station_id || undefined,
+          station_name: stationName, // Add station name
           status: values.status,
           active: true
         };
@@ -336,8 +375,7 @@ const VehicleManagement: React.FC = () => {
           type: values.type,
           licensePlate: values.licensePlate,
           seats: Number(values.seats),
-          pricePerHour: pricePerHour,
-          pricePerDay: pricePerDay,
+          ...pricingData, // Spread synchronized pricing
           battery_kWh: Number(values.battery_kWh),
           batteryLevel: Number(values.batteryLevel),
           range: Number(values.range),
@@ -348,6 +386,7 @@ const VehicleManagement: React.FC = () => {
           tags: values.tags || [],
           image: values.image,
           station_id: values.station_id || undefined,
+          station_name: stationName, // Add station name
           status: values.status || 'AVAILABLE',
           active: true
         };

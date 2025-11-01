@@ -57,8 +57,14 @@ export interface CreateVehicleRequest {
   image?: string;
   licensePlate?: string;
   station_id?: string;
+  station_name?: string;
   pricePerHour?: number;
   pricePerDay?: number;
+  pricing?: {
+    hourly?: number;
+    daily?: number;
+    currency?: string;
+  };
   battery_kWh?: number;
   batteryLevel?: number;
   range?: number;
@@ -81,11 +87,17 @@ export interface UpdateVehicleRequest {
   image?: string;
   licensePlate?: string;
   station_id?: string;
+  station_name?: string;
   status?: 'AVAILABLE' | 'RESERVED' | 'RENTED' | 'MAINTENANCE';
   batteryLevel?: number;
   battery_kWh?: number;
   pricePerHour?: number;
   pricePerDay?: number;
+  pricing?: {
+    hourly?: number;
+    daily?: number;
+    currency?: string;
+  };
   range?: number;
   odo_km?: number;
   seats?: number;

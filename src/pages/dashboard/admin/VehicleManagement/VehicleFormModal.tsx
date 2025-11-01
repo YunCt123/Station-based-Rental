@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Modal,
   Form,
@@ -7,8 +7,10 @@ import {
   InputNumber,
   Row,
   Col,
-  Divider
+  Divider,
+  Spin
 } from 'antd';
+import { adminStationService, type AdminStation } from '../../../../services/adminStationService';
 // import { UploadOutlined, PlusOutlined } from '@ant-design/icons';
 // import type { UploadFile } from 'antd/es/upload/interface';
 
@@ -83,7 +85,34 @@ const VehicleFormModal: React.FC<VehicleFormModalProps> = ({
   onSubmit
 }) => {
   const [form] = Form.useForm();
+  const [stations, setStations] = useState<AdminStation[]>([]);
+  const [loadingStations, setLoadingStations] = useState(false);
   const isEditing = !!vehicle;
+
+  // Load stations when modal opens
+  useEffect(() => {
+    if (visible) {
+      loadStations();
+    }
+  }, [visible]);
+
+  const loadStations = async () => {
+    setLoadingStations(true);
+    try {
+      const response = await adminStationService.getAllStations({
+        status: 'ACTIVE',
+        limit: 100
+      });
+      
+      if (response.success && response.data) {
+        setStations(response.data);
+      }
+    } catch (error) {
+      console.error('Error loading stations:', error);
+    } finally {
+      setLoadingStations(false);
+    }
+  };
 
   useEffect(() => {
     if (visible) {
@@ -346,6 +375,29 @@ const VehicleFormModal: React.FC<VehicleFormModalProps> = ({
                 {vehicleConditions.map(condition => (
                   <Option key={condition.value} value={condition.value}>
                     {condition.label}
+                  </Option>
+                ))}
+              </Select>
+            </Form.Item>
+          </Col>
+
+          <Col span={6}>
+            <Form.Item
+              name="station_id"
+              label="Trạm xe"
+              rules={[{ required: true, message: 'Vui lòng chọn trạm xe' }]}
+            >
+              <Select 
+                placeholder="Chọn trạm xe"
+                loading={loadingStations}
+                showSearch
+                filterOption={(input, option) =>
+                  String(option?.children || '').toLowerCase().includes(input.toLowerCase())
+                }
+              >
+                {stations.map(station => (
+                  <Option key={station._id} value={station._id}>
+                    {station.name} - {station.city}
                   </Option>
                 ))}
               </Select>

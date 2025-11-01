@@ -9,6 +9,7 @@ export interface AdminVehicle {
   model: string;
   type: string;
   image?: string;
+  licensePlate?: string;
   station_id?: string;
   station_name?: string;
   status: 'AVAILABLE' | 'RESERVED' | 'RENTED' | 'MAINTENANCE';
@@ -54,6 +55,7 @@ export interface CreateVehicleRequest {
   model?: string;
   type?: string;
   image?: string;
+  licensePlate?: string;
   station_id?: string;
   pricePerHour?: number;
   pricePerDay?: number;
@@ -77,6 +79,7 @@ export interface UpdateVehicleRequest {
   model?: string;
   type?: string;
   image?: string;
+  licensePlate?: string;
   station_id?: string;
   status?: 'AVAILABLE' | 'RESERVED' | 'RENTED' | 'MAINTENANCE';
   batteryLevel?: number;

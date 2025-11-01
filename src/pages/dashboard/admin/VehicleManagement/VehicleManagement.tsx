@@ -34,6 +34,7 @@ interface VehicleFormValues {
   brand: string;
   model: string;
   type: string;
+  licensePlate: string;
   seats: number;
   pricePerHour: number;
   pricePerDay: number;
@@ -128,7 +129,7 @@ const VehicleManagement: React.FC = () => {
             battery_kWh: vehicle.battery_kWh || 50,
             status: vehicle.status,
             image: vehicle.image || '/placeholder-vehicle.jpg',
-            licensePlate: `${vehicle.brand}-${vehicle._id.slice(-4)}`, // Generate if not available
+            licensePlate: vehicle.licensePlate || `${vehicle.brand}-${vehicle._id.slice(-4)}`, // Use real licensePlate or fallback
             odo_km: vehicle.odo_km || vehicle.mileage || 0,
             station_id: vehicle.station_id ? {
               _id: vehicle.station_id,
@@ -187,7 +188,7 @@ const VehicleManagement: React.FC = () => {
       battery_kWh: apiVehicle.battery_kWh || 50,
       status: apiVehicle.status,
       image: apiVehicle.image || '/placeholder-vehicle.jpg',
-      licensePlate: `${apiVehicle.brand}-${apiVehicle._id.slice(-4)}`,
+      licensePlate: apiVehicle.licensePlate || `${apiVehicle.brand}-${apiVehicle._id.slice(-4)}`, // Use real licensePlate or fallback
       odo_km: apiVehicle.odo_km || apiVehicle.mileage || 0,
       station_id: apiVehicle.station_id ? {
         _id: apiVehicle.station_id,
@@ -255,37 +256,60 @@ const VehicleManagement: React.FC = () => {
 
   const handleFormSubmit = async (values: VehicleFormValues) => {
     try {
-      console.log('Form submit values:', values);
+      console.log('=== FORM SUBMIT DEBUG ===');
+      console.log('Raw form values:', values);
       console.log('Editing vehicle:', editingVehicle);
       
+      // Validate and transform pricing values
+      const pricePerHour = Number(values.pricePerHour);
+      const pricePerDay = Number(values.pricePerDay);
+      
+      if (isNaN(pricePerHour) || pricePerHour <= 0) {
+        message.error('Giá thuê theo giờ không hợp lệ');
+        return;
+      }
+      
+      if (isNaN(pricePerDay) || pricePerDay <= 0) {
+        message.error('Giá thuê theo ngày không hợp lệ');
+        return;
+      }
+      
+      console.log('Validated pricing:', { pricePerHour, pricePerDay });
+      
       if (editingVehicle) {
+        console.log('=== UPDATE OPERATION ===');
         console.log('Updating vehicle with ID:', editingVehicle._id);
+        
         const updateData = {
           name: values.name,
-          year: values.year,
+          year: Number(values.year),
           brand: values.brand,
           model: values.model,
           type: values.type,
-          seats: values.seats,
-          pricePerHour: values.pricePerHour,
-          pricePerDay: values.pricePerDay,
-          battery_kWh: values.battery_kWh,
-          batteryLevel: values.batteryLevel,
-          range: values.range,
-          odo_km: values.odo_km,
+          licensePlate: values.licensePlate,
+          seats: Number(values.seats),
+          pricePerHour: pricePerHour,
+          pricePerDay: pricePerDay,
+          battery_kWh: Number(values.battery_kWh),
+          batteryLevel: Number(values.batteryLevel),
+          range: Number(values.range),
+          odo_km: Number(values.odo_km),
           features: values.features || [],
           condition: values.condition,
-          description: values.description,
+          description: values.description || '',
           tags: values.tags || [],
           image: values.image,
-          station_id: values.station_id,
+          station_id: values.station_id || undefined,
           status: values.status,
           active: true
         };
         
-        console.log('Update data:', updateData);
+        console.log('=== UPDATE DATA ===');
+        console.log('Update payload:', updateData);
+        
         const response = await adminVehicleService.updateVehicle(editingVehicle._id, updateData);
-        console.log('Update response:', response);
+        console.log('=== UPDATE RESPONSE ===');
+        console.log('API response:', response);
         
         if (response.success) {
           message.success('Cập nhật xe thành công');
@@ -294,6 +318,7 @@ const VehicleManagement: React.FC = () => {
           // Update the specific vehicle in state instead of reloading all
           if (response.data) {
             const updatedVehicle = transformApiVehicle(response.data);
+            console.log('Transformed updated vehicle:', updatedVehicle);
             updateVehicleInState(updatedVehicle);
           }
         } else {
@@ -301,32 +326,38 @@ const VehicleManagement: React.FC = () => {
           console.error('Update failed:', response);
         }
       } else {
+        console.log('=== CREATE OPERATION ===');
+        
         const createData = {
           name: values.name,
-          year: values.year,
+          year: Number(values.year),
           brand: values.brand,
           model: values.model,
           type: values.type,
-          seats: values.seats,
-          pricePerHour: values.pricePerHour,
-          pricePerDay: values.pricePerDay,
-          battery_kWh: values.battery_kWh,
-          batteryLevel: values.batteryLevel,
-          range: values.range,
-          odo_km: values.odo_km,
+          licensePlate: values.licensePlate,
+          seats: Number(values.seats),
+          pricePerHour: pricePerHour,
+          pricePerDay: pricePerDay,
+          battery_kWh: Number(values.battery_kWh),
+          batteryLevel: Number(values.batteryLevel),
+          range: Number(values.range),
+          odo_km: Number(values.odo_km),
           features: values.features || [],
           condition: values.condition,
-          description: values.description,
+          description: values.description || '',
           tags: values.tags || [],
           image: values.image,
-          station_id: values.station_id,
+          station_id: values.station_id || undefined,
           status: values.status || 'AVAILABLE',
           active: true
         };
         
-        console.log('Create data:', createData);
+        console.log('=== CREATE DATA ===');
+        console.log('Create payload:', createData);
+        
         const response = await adminVehicleService.createVehicle(createData);
-        console.log('Create response:', response);
+        console.log('=== CREATE RESPONSE ===');
+        console.log('API response:', response);
         
         if (response.success) {
           message.success('Tạo xe mới thành công');

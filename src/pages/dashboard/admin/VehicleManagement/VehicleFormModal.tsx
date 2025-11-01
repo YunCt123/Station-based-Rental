@@ -22,6 +22,7 @@ interface VehicleFormValues {
   brand: string;
   model: string;
   type: string;
+  licensePlate: string;
   seats: number;
   pricePerHour: number;
   pricePerDay: number;
@@ -53,7 +54,11 @@ interface Vehicle {
   image: string;
   licensePlate: string;
   odo_km: number;
-  station_id?: string;
+  station_id?: string | {
+    _id: string;
+    name: string;
+    city: string;
+  };
   pricePerHour: number;
   pricePerDay: number;
   currency: string;
@@ -83,11 +88,36 @@ const VehicleFormModal: React.FC<VehicleFormModalProps> = ({
   useEffect(() => {
     if (visible) {
       if (vehicle) {
-        form.setFieldsValue({
-          ...vehicle,
+        // Map vehicle data to form values, handling nested structures
+        const formValues = {
+          name: vehicle.name,
+          brand: vehicle.brand,
+          model: vehicle.model,
+          type: vehicle.type,
+          year: vehicle.year,
+          licensePlate: vehicle.licensePlate,
+          seats: vehicle.seats,
+          pricePerHour: vehicle.pricePerHour,
+          pricePerDay: vehicle.pricePerDay,
+          battery_kWh: vehicle.battery_kWh,
+          batteryLevel: vehicle.batteryLevel,
+          range: vehicle.range,
+          odo_km: vehicle.odo_km,
           features: vehicle.features || [],
-          tags: vehicle.tags || []
-        });
+          condition: vehicle.condition,
+          description: vehicle.description || '',
+          tags: vehicle.tags || [],
+          image: vehicle.image,
+          // Handle nested station_id properly
+          station_id: (vehicle.station_id && typeof vehicle.station_id === 'object') 
+            ? (vehicle.station_id as { _id: string; name: string; city: string })._id 
+            : vehicle.station_id as string,
+          status: vehicle.status,
+          currency: vehicle.currency || 'VND'
+        };
+        
+        console.log('Setting form values for edit:', formValues);
+        form.setFieldsValue(formValues);
       } else {
         form.resetFields();
       }
@@ -401,7 +431,7 @@ const VehicleFormModal: React.FC<VehicleFormModalProps> = ({
               rules={[{ required: true, message: 'Vui lòng nhập giá thuê theo giờ' }]}
             >
               <InputNumber 
-                min={50000}
+                min={1}
                 style={{ width: '100%' }}
                 placeholder="520000"
                 formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
@@ -416,7 +446,7 @@ const VehicleFormModal: React.FC<VehicleFormModalProps> = ({
               rules={[{ required: true, message: 'Vui lòng nhập giá thuê theo ngày' }]}
             >
               <InputNumber 
-                min={500000}
+                min={10}
                 style={{ width: '100%' }}
                 placeholder="3120000"
                 formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}

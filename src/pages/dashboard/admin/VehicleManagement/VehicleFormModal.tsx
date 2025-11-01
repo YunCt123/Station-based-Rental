@@ -8,7 +8,6 @@ import {
   Row,
   Col,
   Divider,
-  Spin,
   Upload,
   Button,
   message
@@ -91,83 +90,111 @@ const VehicleFormModal: React.FC<VehicleFormModalProps> = ({
   const [form] = Form.useForm();
   const [stations, setStations] = useState<AdminStation[]>([]);
   const [loadingStations, setLoadingStations] = useState(false);
-  const [uploadingImage, setUploadingImage] = useState(false);
   const [imageFileList, setImageFileList] = useState<UploadFile[]>([]);
   const isEditing = !!vehicle;
 
-  // Upload image to backend
-  const uploadVehicleImage = async (file: File): Promise<string> => {
+  // Upload image to backend immediately when selected
+  const uploadImageToCloudinary = async (file: File): Promise<string> => {
     const formData = new FormData();
-    formData.append('file', file);
+    formData.append('image', file);
 
     try {
-      setUploadingImage(true);
+      console.log('=== UPLOADING IMAGE TO CLOUDINARY ===');
+      console.log('File:', file);
       
-      // Try to upload to vehicles endpoint (if exists) or fallback to general upload
-      const response = await api.post('/upload', formData, {
+      const response = await api.post('/upload/vehicle-image', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
       
-      // Backend should return { success: true, data: { url: "..." } } or { url: "..." }
-      const imageUrl = response.data.data?.url || response.data.url || response.data.secure_url;
+      console.log('Upload response:', response.data);
       
-      if (!imageUrl) {
-        throw new Error('No image URL returned from server');
+      if (response.data.success && response.data.data?.url) {
+        const cloudinaryUrl = response.data.data.url;
+        console.log('Cloudinary URL:', cloudinaryUrl);
+        return cloudinaryUrl;
+      } else {
+        throw new Error('No URL returned from upload service');
       }
-      
-      message.success('Tải ảnh lên thành công');
-      return imageUrl;
-    } catch (error: unknown) {
-      console.error('Upload image error:', error);
-      const errorMessage = error instanceof Error 
-        ? error.message 
-        : 'Unknown error occurred';
-      message.error('Tải ảnh lên thất bại: ' + errorMessage);
+    } catch (error) {
+      console.error('Image upload error:', error);
       throw error;
-    } finally {
-      setUploadingImage(false);
     }
   };
 
-  // Handle file upload
+  // Handle file selection - upload immediately to get Cloudinary URL
   const handleImageUpload = async (file: File) => {
     try {
-      const imageUrl = await uploadVehicleImage(file);
+      console.log('=== HANDLE IMAGE UPLOAD DEBUG ===');
+      console.log('Received file:', file);
       
-      // Set the image URL in form
-      form.setFieldValue('image', imageUrl);
+      // Show uploading state
+      setImageFileList([{
+        uid: '-1',
+        name: file.name,
+        status: 'uploading',
+      }]);
       
-      // Update file list for UI
+      message.loading('Đang tải ảnh lên...', 0);
+      
+      // Upload to Cloudinary immediately
+      const cloudinaryUrl = await uploadImageToCloudinary(file);
+      
+      // Update UI with success
       setImageFileList([{
         uid: '-1',
         name: file.name,
         status: 'done',
-        url: imageUrl,
+        url: cloudinaryUrl,
       }]);
       
+      // Set the Cloudinary URL in form field
+      form.setFieldValue('image', cloudinaryUrl);
+      console.log('Form updated with Cloudinary URL:', cloudinaryUrl);
+      
+      message.destroy(); // Clear loading message
+      message.success('Tải ảnh lên thành công!');
+      
       return false; // Prevent default upload behavior
-    } catch (uploadError) {
-      console.error('Failed to upload image:', uploadError);
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      
+      // Update UI with error
+      setImageFileList([{
+        uid: '-1',
+        name: file.name,
+        status: 'error',
+      }]);
+      
+      message.destroy(); // Clear loading message
+      message.error('Tải ảnh lên thất bại. Vui lòng thử lại.');
       return false;
     }
   };
 
   // Validate image file
   const beforeUpload = (file: File) => {
+    console.log('=== BEFORE UPLOAD DEBUG ===');
+    console.log('File:', file);
+    console.log('File type:', file.type);
+    console.log('File size:', file.size);
+    
     const isImage = file.type.startsWith('image/');
     if (!isImage) {
+      console.error('Invalid file type:', file.type);
       message.error('Chỉ có thể tải lên file hình ảnh!');
       return false;
     }
     
     const isLt10M = file.size / 1024 / 1024 < 10;
     if (!isLt10M) {
+      console.error('File too large:', file.size);
       message.error('Kích thước ảnh phải nhỏ hơn 10MB!');
       return false;
     }
     
+    console.log('File validation passed');
     return true;
   };
 
@@ -249,7 +276,16 @@ const VehicleFormModal: React.FC<VehicleFormModalProps> = ({
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields();
-      await onSubmit(values);
+      
+      console.log('=== HANDLE SUBMIT DEBUG ===');
+      console.log('Form values:', values);
+      console.log('Image URL in form:', values.image);
+      
+      // Always send as JSON since image is already uploaded to Cloudinary
+      const submitData: VehicleFormValues = values;
+      
+      console.log('Submitting JSON data:', submitData);
+      await onSubmit(submitData);
     } catch (error) {
       console.error('Validation failed:', error);
     }
@@ -666,8 +702,21 @@ const VehicleFormModal: React.FC<VehicleFormModalProps> = ({
               <Upload
                 fileList={imageFileList}
                 beforeUpload={beforeUpload}
-                customRequest={({ file }) => handleImageUpload(file as File)}
+                customRequest={({ file }) => {
+                  console.log('=== CUSTOM REQUEST DEBUG ===');
+                  console.log('Received file:', file);
+                  console.log('File type:', typeof file);
+                  
+                  if (file instanceof File) {
+                    console.log('File is instance of File, calling handleImageUpload');
+                    handleImageUpload(file);
+                  } else {
+                    console.error('File is not a File instance:', file);
+                    message.error('Có lỗi khi xử lý file');
+                  }
+                }}
                 onRemove={() => {
+                  console.log('Removing image file');
                   setImageFileList([]);
                   form.setFieldValue('image', '');
                 }}
@@ -683,11 +732,6 @@ const VehicleFormModal: React.FC<VehicleFormModalProps> = ({
                   </div>
                 )}
               </Upload>
-              {uploadingImage && (
-                <div style={{ marginTop: 8 }}>
-                  <Spin size="small" /> Đang tải ảnh lên...
-                </div>
-              )}
             </Form.Item>
           </Col>
 

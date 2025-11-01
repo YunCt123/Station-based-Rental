@@ -207,7 +207,7 @@ const StationDetailModal: React.FC<StationDetailModalProps> = ({
               <Text strong>Tọa độ GPS</Text>
               <div className="mt-1">
                 <Text code>
-                  {coordinates[1].toFixed(6)}, {coordinates[0].toFixed(6)}
+                  {(coordinates[1] || 0).toFixed(6)}, {(coordinates[0] || 0).toFixed(6)}
                 </Text>
               </div>
             </div>
@@ -216,9 +216,9 @@ const StationDetailModal: React.FC<StationDetailModalProps> = ({
             <div className="mb-4">
               <Text strong>Đánh giá</Text>
               <div className="mt-1">
-                <Rate disabled defaultValue={rating.avg} style={{ fontSize: 16 }} />
+                <Rate disabled defaultValue={rating.avg || 0} style={{ fontSize: 16 }} />
                 <div className="text-sm text-gray-500">
-                  {rating.avg.toFixed(1)}/5 ({rating.count} đánh giá)
+                  {(rating.avg || 0).toFixed(1)}/5 ({rating.count || 0} đánh giá)
                 </div>
               </div>
             </div>
@@ -258,8 +258,8 @@ const StationDetailModal: React.FC<StationDetailModalProps> = ({
             <div className="mb-4">
               <Text strong>Tỷ lệ sử dụng</Text>
               <Progress
-                percent={Math.round(metrics.utilization_rate * 100)}
-                strokeColor={getUtilizationColor(metrics.utilization_rate)}
+                percent={Math.round((metrics.utilization_rate || 0) * 100)}
+                strokeColor={getUtilizationColor(metrics.utilization_rate || 0)}
                 className="mt-2"
               />
             </div>
@@ -365,7 +365,7 @@ const StationDetailModal: React.FC<StationDetailModalProps> = ({
               <Col span={12}>
                 <Card size="small" style={{ textAlign: 'center' }}>
                   <div className="text-2xl font-bold text-purple-600">
-                    {Math.round(metrics.utilization_rate * 100)}%
+                    {Math.round((metrics.utilization_rate || 0) * 100)}%
                   </div>
                   <div className="text-sm text-gray-500">Tỷ lệ sử dụng</div>
                 </Card>

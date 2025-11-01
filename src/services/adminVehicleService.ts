@@ -196,9 +196,33 @@ export const adminVehicleService = {
   },
 
   // Create new vehicle
-  async createVehicle(vehicleData: CreateVehicleRequest): Promise<VehicleResponse> {
+  async createVehicle(vehicleData: CreateVehicleRequest | FormData): Promise<VehicleResponse> {
     try {
-      const response = await api.post('/vehicles', vehicleData);
+      const isFormData = vehicleData instanceof FormData;
+      console.log('=== CREATE VEHICLE API CALL ===');
+      console.log('Is FormData:', isFormData);
+      
+      if (isFormData) {
+        console.log('FormData contents:');
+        for (const pair of vehicleData.entries()) {
+          console.log(pair[0] + ':', pair[1]);
+        }
+      } else {
+        console.log('JSON data:', vehicleData);
+      }
+      
+      const headers = isFormData 
+        ? { 'Content-Type': 'multipart/form-data' }
+        : { 'Content-Type': 'application/json' };
+        
+      console.log('Request headers:', headers);
+      
+      const response = await api.post('/vehicles', vehicleData, { headers });
+      
+      console.log('=== CREATE RESPONSE ===');
+      console.log('Response data:', response.data);
+      console.log('Image URL in response:', response.data?.data?.image);
+      
       return response.data;
     } catch (error) {
       console.error('Error creating vehicle:', error);
@@ -207,11 +231,33 @@ export const adminVehicleService = {
   },
 
   // Update vehicle
-  async updateVehicle(id: string, vehicleData: UpdateVehicleRequest): Promise<VehicleResponse> {
+  async updateVehicle(id: string, vehicleData: UpdateVehicleRequest | FormData): Promise<VehicleResponse> {
     try {
-      console.log(`[adminVehicleService] Updating vehicle ${id} with data:`, vehicleData);
-      const response = await api.patch(`/vehicles/${id}`, vehicleData);
-      console.log(`[adminVehicleService] Update response:`, response.data);
+      console.log(`=== UPDATE VEHICLE API CALL (${id}) ===`);
+      const isFormData = vehicleData instanceof FormData;
+      console.log('Is FormData:', isFormData);
+      
+      if (isFormData) {
+        console.log('FormData contents:');
+        for (const pair of vehicleData.entries()) {
+          console.log(pair[0] + ':', pair[1]);
+        }
+      } else {
+        console.log('JSON data:', vehicleData);
+      }
+      
+      const headers = isFormData 
+        ? { 'Content-Type': 'multipart/form-data' }
+        : { 'Content-Type': 'application/json' };
+        
+      console.log('Request headers:', headers);
+      
+      const response = await api.patch(`/vehicles/${id}`, vehicleData, { headers });
+      
+      console.log('=== UPDATE RESPONSE ===');
+      console.log('Response data:', response.data);
+      console.log('Image URL in response:', response.data?.data?.image);
+      
       return response.data;
     } catch (error) {
       console.error('Error updating vehicle:', error);

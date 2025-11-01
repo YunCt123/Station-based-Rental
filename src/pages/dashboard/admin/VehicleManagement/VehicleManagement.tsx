@@ -285,12 +285,15 @@ const VehicleManagement: React.FC = () => {
   const handleFormSubmit = async (values: VehicleFormValues) => {
     try {
       console.log('=== FORM SUBMIT DEBUG ===');
-      console.log('Raw form values:', values);
+      console.log('Form values:', values);
       console.log('Editing vehicle:', editingVehicle);
       
+      // Always handle as JSON since image is already uploaded to Cloudinary
+      const formValues = values;
+      
       // Validate and transform pricing values
-      const pricePerHour = Number(values.pricePerHour);
-      const pricePerDay = Number(values.pricePerDay);
+      const pricePerHour = Number(formValues.pricePerHour);
+      const pricePerDay = Number(formValues.pricePerDay);
       
       if (isNaN(pricePerHour) || pricePerHour <= 0) {
         message.error('Giá thuê theo giờ không hợp lệ');
@@ -306,104 +309,102 @@ const VehicleManagement: React.FC = () => {
       
       // Get station name if station_id is provided
       let stationName = '';
-      if (values.station_id) {
-        stationName = await getStationName(values.station_id);
+      if (formValues.station_id) {
+        stationName = await getStationName(formValues.station_id);
         console.log('Station name:', stationName);
       }
 
       // Create synchronized pricing data
-      const pricingData = createPricingData(pricePerHour, pricePerDay, values.currency);
+      const pricingData = createPricingData(pricePerHour, pricePerDay, formValues.currency);
       console.log('Pricing data:', pricingData);
-      
-      if (editingVehicle) {
-        console.log('=== UPDATE OPERATION ===');
-        console.log('Updating vehicle with ID:', editingVehicle._id);
         
-        const updateData = {
-          name: values.name,
-          year: Number(values.year),
-          brand: values.brand,
-          model: values.model,
-          type: values.type,
-          licensePlate: values.licensePlate,
-          seats: Number(values.seats),
-          ...pricingData, // Spread synchronized pricing
-          battery_kWh: Number(values.battery_kWh),
-          batteryLevel: Number(values.batteryLevel),
-          range: Number(values.range),
-          odo_km: Number(values.odo_km),
-          features: values.features || [],
-          condition: values.condition,
-          description: values.description || '',
-          tags: values.tags || [],
-          image: values.image,
-          station_id: values.station_id || undefined,
-          station_name: stationName, // Add station name
-          status: values.status,
-          active: true
-        };
-        
-        console.log('=== UPDATE DATA ===');
-        console.log('Update payload:', updateData);
-        
-        const response = await adminVehicleService.updateVehicle(editingVehicle._id, updateData);
-        console.log('=== UPDATE RESPONSE ===');
-        console.log('API response:', response);
-        
-        if (response.success) {
-          message.success('Cập nhật xe thành công');
-          console.log('Updated vehicle data:', response.data);
+        if (editingVehicle) {
+          console.log('=== UPDATE OPERATION ===');
+          console.log('Updating vehicle with ID:', editingVehicle._id);
           
-          // Update the specific vehicle in state instead of reloading all
-          if (response.data) {
-            const updatedVehicle = transformApiVehicle(response.data);
-            console.log('Transformed updated vehicle:', updatedVehicle);
-            updateVehicleInState(updatedVehicle);
+          const updateData = {
+            name: formValues.name,
+            year: Number(formValues.year),
+            brand: formValues.brand,
+            model: formValues.model,
+            type: formValues.type,
+            licensePlate: formValues.licensePlate,
+            seats: Number(formValues.seats),
+            ...pricingData, // Spread synchronized pricing
+            batteryLevel: Number(formValues.batteryLevel),
+            battery_kWh: Number(formValues.battery_kWh),
+            range: Number(formValues.range),
+            odo_km: Number(formValues.odo_km),
+            features: formValues.features || [],
+            condition: formValues.condition,
+            description: formValues.description || '',
+            tags: formValues.tags || [],
+            image: formValues.image,
+            station_id: formValues.station_id || undefined,
+            station_name: stationName, // Add station name
+            status: formValues.status || 'AVAILABLE',
+          };
+          
+          console.log('=== UPDATE DATA ===');
+          console.log('Update payload:', updateData);
+          
+          const response = await adminVehicleService.updateVehicle(editingVehicle._id, updateData);
+          console.log('=== UPDATE RESPONSE ===');
+          console.log('API response:', response);
+          
+          if (response.success) {
+            message.success('Cập nhật xe thành công');
+            console.log('Updated vehicle data:', response.data);
+            
+            // Update the specific vehicle in state instead of reloading all
+            if (response.data) {
+              const updatedVehicle = transformApiVehicle(response.data);
+              console.log('Transformed updated vehicle:', updatedVehicle);
+              updateVehicleInState(updatedVehicle);
+            }
+          } else {
+            message.error('Cập nhật xe thất bại');
+            console.error('Update failed:', response);
           }
         } else {
-          message.error('Cập nhật xe thất bại');
-          console.error('Update failed:', response);
+          console.log('=== CREATE OPERATION ===');
+          const createData = {
+            name: formValues.name,
+            year: Number(formValues.year),
+            brand: formValues.brand,
+            model: formValues.model,
+            type: formValues.type,
+            licensePlate: formValues.licensePlate,
+            seats: Number(formValues.seats),
+            ...pricingData, // Spread synchronized pricing
+            battery_kWh: Number(formValues.battery_kWh),
+            batteryLevel: Number(formValues.batteryLevel),
+            range: Number(formValues.range),
+            odo_km: Number(formValues.odo_km),
+            features: formValues.features || [],
+            condition: formValues.condition,
+            description: formValues.description || '',
+            tags: formValues.tags || [],
+            image: formValues.image,
+            station_id: formValues.station_id || undefined,
+            station_name: stationName, // Add station name
+            status: formValues.status || 'AVAILABLE',
+            active: true
+          };
+          
+          console.log('=== CREATE DATA ===');
+          console.log('Create payload:', createData);
+          
+          const response = await adminVehicleService.createVehicle(createData);
+          console.log('=== CREATE RESPONSE ===');
+          console.log('API response:', response);
+          
+          if (response.success) {
+            message.success('Tạo xe mới thành công');
+          } else {
+            message.error('Tạo xe mới thất bại');
+          }
         }
-      } else {
-        console.log('=== CREATE OPERATION ===');
-        
-        const createData = {
-          name: values.name,
-          year: Number(values.year),
-          brand: values.brand,
-          model: values.model,
-          type: values.type,
-          licensePlate: values.licensePlate,
-          seats: Number(values.seats),
-          ...pricingData, // Spread synchronized pricing
-          battery_kWh: Number(values.battery_kWh),
-          batteryLevel: Number(values.batteryLevel),
-          range: Number(values.range),
-          odo_km: Number(values.odo_km),
-          features: values.features || [],
-          condition: values.condition,
-          description: values.description || '',
-          tags: values.tags || [],
-          image: values.image,
-          station_id: values.station_id || undefined,
-          station_name: stationName, // Add station name
-          status: values.status || 'AVAILABLE',
-          active: true
-        };
-        
-        console.log('=== CREATE DATA ===');
-        console.log('Create payload:', createData);
-        
-        const response = await adminVehicleService.createVehicle(createData);
-        console.log('=== CREATE RESPONSE ===');
-        console.log('API response:', response);
-        
-        if (response.success) {
-          message.success('Tạo xe mới thành công');
-        } else {
-          message.error('Tạo xe mới thất bại');
-        }
-      }
       
       // Close modal and reset state
       setIsFormModalVisible(false);
@@ -422,6 +423,10 @@ const VehicleManagement: React.FC = () => {
       message.error(editingVehicle ? 'Cập nhật xe thất bại' : 'Tạo xe mới thất bại');
     }
   };
+          
+          
+      
+
 
   // Get status color
   const getStatusColor = (status: string) => {

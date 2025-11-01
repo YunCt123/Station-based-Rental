@@ -28,14 +28,20 @@ export const SidebarWrapper: React.FC<SidebarWrapperProps> = ({
   const navigate = useNavigate();
   const [isCollapsed, setIsCollapsed] = React.useState(false);
   const [realUserInfo, setRealUserInfo] = useState<UserDisplayInfo | null>(null);
+  const hasLoadedUserInfo = useRef(false);
 
-  // Load real user info from API
+  // Load real user info from API - only once
   useEffect(() => {
     const loadUserInfo = async () => {
+      // Prevent multiple calls
+      if (hasLoadedUserInfo.current) return;
+      hasLoadedUserInfo.current = true;
+
       try {
         // First check localStorage for basic auth data
         const authUser = getCurrentUser();
         if (authUser) {
+          console.log('Loading user info from API...');
           // Try to get detailed user info from API
           const userProfile = await userService.getCurrentUser();
           const realUserData: UserDisplayInfo = {
@@ -45,6 +51,7 @@ export const SidebarWrapper: React.FC<SidebarWrapperProps> = ({
             avatar: null // Will be added later when backend supports it
           };
           
+          console.log('User info loaded successfully:', realUserData);
           setRealUserInfo(realUserData);
           // Update localStorage with fresh data
           updateUserInfo(realUserData);
@@ -65,11 +72,8 @@ export const SidebarWrapper: React.FC<SidebarWrapperProps> = ({
       }
     };
 
-    // Only load user info once when component mounts
-    if (!realUserInfo) {
-      loadUserInfo();
-    }
-  }, []); // Empty dependency array để chỉ chạy một lần khi mount
+    loadUserInfo();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Get menu sections dynamically based on current role
   const menuSections = React.useMemo(() => getMenuSections(), []);

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Modal,
   Descriptions,
@@ -12,14 +12,21 @@ import {
   Typography,
   Space,
   Rate,
-  List
+  List,
+  Spin,
+  Button,
+  Tabs
 } from 'antd';
 import {
   EnvironmentOutlined,
   ThunderboltOutlined,
   ClockCircleOutlined,
-  CheckCircleOutlined
+  CheckCircleOutlined,
+  CarOutlined,
+  ReloadOutlined
 } from '@ant-design/icons';
+import { stationService } from '@/services/stationService';
+import type { Vehicle } from '@/types/vehicle';
 
 const { Title, Text } = Typography;
 
@@ -67,6 +74,40 @@ const StationDetailModal: React.FC<StationDetailModalProps> = ({
   station,
   onCancel
 }) => {
+  const [stationVehicles, setStationVehicles] = useState<{
+    vehicles: Vehicle[];
+    count: number;
+    loading: boolean;
+  }>({
+    vehicles: [],
+    count: 0,
+    loading: false
+  });
+
+  // Fetch station vehicles when modal opens
+  const fetchStationVehicles = React.useCallback(async () => {
+    if (!station?._id) return;
+    
+    setStationVehicles(prev => ({ ...prev, loading: true }));
+    try {
+      const response = await stationService.getStationVehicles(station._id);
+      setStationVehicles({
+        vehicles: response.vehicles,
+        count: response.count,
+        loading: false
+      });
+    } catch (error) {
+      console.error('Error fetching station vehicles:', error);
+      setStationVehicles(prev => ({ ...prev, loading: false }));
+    }
+  }, [station?._id]);
+
+  useEffect(() => {
+    if (visible && station?._id) {
+      fetchStationVehicles();
+    }
+  }, [visible, station?._id, fetchStationVehicles]);
+
   if (!station) return null;
 
   // Safe access to nested properties
@@ -159,7 +200,8 @@ const StationDetailModal: React.FC<StationDetailModalProps> = ({
       open={visible}
       onCancel={onCancel}
       footer={null}
-      width={1200}
+      width={1400}
+      style={{ top: 20 }}
     >
       <Row gutter={24}>
         {/* Left Column - Image and Overview */}
@@ -236,18 +278,50 @@ const StationDetailModal: React.FC<StationDetailModalProps> = ({
                 <Text strong>{station.totalSlots}</Text>
               </Descriptions.Item>
               <Descriptions.Item label="Xe có sẵn">
-                <span style={{ color: '#52c41a', fontWeight: 600 }}>
-                  {metrics.vehicles_available}
-                </span>
+                <Space>
+                  <span style={{ color: '#52c41a', fontWeight: 600 }}>
+                    {stationVehicles.loading ? (
+                      <Spin size="small" />
+                    ) : (
+                      stationVehicles.vehicles.filter(v => v.availability === 'available').length
+                    )}
+                  </span>
+                  <Button 
+                    size="small" 
+                    type="link" 
+                    icon={<ReloadOutlined />}
+                    onClick={fetchStationVehicles}
+                    loading={stationVehicles.loading}
+                  >
+                    Làm mới
+                  </Button>
+                </Space>
               </Descriptions.Item>
               <Descriptions.Item label="Xe đang sử dụng">
                 <span style={{ color: '#1890ff', fontWeight: 600 }}>
-                  {metrics.vehicles_in_use}
+                  {stationVehicles.loading ? (
+                    <Spin size="small" />
+                  ) : (
+                    stationVehicles.vehicles.filter(v => v.availability === 'rented').length
+                  )}
+                </span>
+              </Descriptions.Item>
+              <Descriptions.Item label="Xe bảo trì">
+                <span style={{ color: '#faad14', fontWeight: 600 }}>
+                  {stationVehicles.loading ? (
+                    <Spin size="small" />
+                  ) : (
+                    stationVehicles.vehicles.filter(v => v.availability === 'maintenance').length
+                  )}
                 </span>
               </Descriptions.Item>
               <Descriptions.Item label="Tổng xe">
                 <span style={{ color: '#722ed1', fontWeight: 600 }}>
-                  {metrics.vehicles_total}
+                  {stationVehicles.loading ? (
+                    <Spin size="small" />
+                  ) : (
+                    stationVehicles.count
+                  )}
                 </span>
               </Descriptions.Item>
             </Descriptions>
@@ -336,7 +410,7 @@ const StationDetailModal: React.FC<StationDetailModalProps> = ({
           </Card>
 
           {/* Statistics */}
-          <Card title="Thống kê">
+          <Card title="Thống kê realtime">
             <Row gutter={[16, 16]}>
               <Col span={12}>
                 <Card size="small" style={{ textAlign: 'center' }}>
@@ -349,7 +423,11 @@ const StationDetailModal: React.FC<StationDetailModalProps> = ({
               <Col span={12}>
                 <Card size="small" style={{ textAlign: 'center' }}>
                   <div className="text-2xl font-bold text-green-600">
-                    {metrics.vehicles_available}
+                    {stationVehicles.loading ? (
+                      <Spin size="small" />
+                    ) : (
+                      stationVehicles.vehicles.filter(v => v.availability === 'available').length
+                    )}
                   </div>
                   <div className="text-sm text-gray-500">Xe sẵn sàng</div>
                 </Card>
@@ -357,7 +435,11 @@ const StationDetailModal: React.FC<StationDetailModalProps> = ({
               <Col span={12}>
                 <Card size="small" style={{ textAlign: 'center' }}>
                   <div className="text-2xl font-bold text-orange-600">
-                    {metrics.vehicles_in_use}
+                    {stationVehicles.loading ? (
+                      <Spin size="small" />
+                    ) : (
+                      stationVehicles.vehicles.filter(v => v.availability === 'rented').length
+                    )}
                   </div>
                   <div className="text-sm text-gray-500">Đang sử dụng</div>
                 </Card>
@@ -365,12 +447,131 @@ const StationDetailModal: React.FC<StationDetailModalProps> = ({
               <Col span={12}>
                 <Card size="small" style={{ textAlign: 'center' }}>
                   <div className="text-2xl font-bold text-purple-600">
-                    {Math.round((metrics.utilization_rate || 0) * 100)}%
+                    {stationVehicles.loading ? (
+                      <Spin size="small" />
+                    ) : (
+                      stationVehicles.count > 0 
+                        ? Math.round((stationVehicles.vehicles.filter(v => v.availability === 'rented').length / stationVehicles.count) * 100)
+                        : 0
+                    )}%
                   </div>
                   <div className="text-sm text-gray-500">Tỷ lệ sử dụng</div>
                 </Card>
               </Col>
             </Row>
+          </Card>
+
+          {/* Vehicle List */}
+          <Card 
+            title={
+              <Space>
+                <CarOutlined />
+                Danh sách xe tại trạm
+                <Tag color="blue">{stationVehicles.count} xe</Tag>
+              </Space>
+            } 
+            className="mt-4"
+            extra={
+              <Button 
+                size="small" 
+                icon={<ReloadOutlined />}
+                onClick={fetchStationVehicles}
+                loading={stationVehicles.loading}
+              >
+                Làm mới
+              </Button>
+            }
+          >
+            {stationVehicles.loading ? (
+              <div style={{ textAlign: 'center', padding: '20px' }}>
+                <Spin size="large" />
+                <div style={{ marginTop: '10px' }}>Đang tải danh sách xe...</div>
+              </div>
+            ) : (
+              <Tabs defaultActiveKey="all" size="small">
+                <Tabs.TabPane 
+                  tab={`Tất cả (${stationVehicles.count})`} 
+                  key="all"
+                >
+                  <List
+                    dataSource={stationVehicles.vehicles}
+                    renderItem={(vehicle) => (
+                      <List.Item>
+                        <List.Item.Meta
+                          avatar={
+                            <Image
+                              src={vehicle.image}
+                              alt={vehicle.name}
+                              width={60}
+                              height={40}
+                              style={{ borderRadius: 4 }}
+                              placeholder
+                            />
+                          }
+                          title={
+                            <Space>
+                              <Text strong>{vehicle.name}</Text>
+                              <Tag color={
+                                vehicle.availability === 'available' ? 'green' :
+                                vehicle.availability === 'rented' ? 'blue' : 'orange'
+                              }>
+                                {vehicle.availability === 'available' ? 'Có sẵn' :
+                                 vehicle.availability === 'rented' ? 'Đang thuê' : 'Bảo trì'}
+                              </Tag>
+                            </Space>
+                          }
+                          description={
+                            <Space>
+                              <Text type="secondary">{vehicle.brand} {vehicle.model}</Text>
+                              <Text type="secondary">•</Text>
+                              <Text type="secondary">Pin: {vehicle.batteryLevel}%</Text>
+                              <Text type="secondary">•</Text>
+                              <Text type="secondary">{vehicle.pricePerHour?.toLocaleString()}đ/h</Text>
+                            </Space>
+                          }
+                        />
+                      </List.Item>
+                    )}
+                    locale={{ emptyText: 'Không có xe nào tại trạm này' }}
+                  />
+                </Tabs.TabPane>
+                <Tabs.TabPane 
+                  tab={`Có sẵn (${stationVehicles.vehicles.filter(v => v.availability === 'available').length})`} 
+                  key="available"
+                >
+                  <List
+                    dataSource={stationVehicles.vehicles.filter(v => v.availability === 'available')}
+                    renderItem={(vehicle) => (
+                      <List.Item>
+                        <List.Item.Meta
+                          avatar={
+                            <Image
+                              src={vehicle.image}
+                              alt={vehicle.name}
+                              width={60}
+                              height={40}
+                              style={{ borderRadius: 4 }}
+                              placeholder
+                            />
+                          }
+                          title={<Text strong>{vehicle.name}</Text>}
+                          description={
+                            <Space>
+                              <Text type="secondary">{vehicle.brand} {vehicle.model}</Text>
+                              <Text type="secondary">•</Text>
+                              <Text type="secondary">Pin: {vehicle.batteryLevel}%</Text>
+                              <Text type="secondary">•</Text>
+                              <Text type="secondary">{vehicle.pricePerHour?.toLocaleString()}đ/h</Text>
+                            </Space>
+                          }
+                        />
+                      </List.Item>
+                    )}
+                    locale={{ emptyText: 'Không có xe nào sẵn sàng' }}
+                  />
+                </Tabs.TabPane>
+              </Tabs>
+            )}
           </Card>
 
           {/* Quick Actions Info */}

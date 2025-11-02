@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import logoImage from "../assets/logo.jpg";
 import { Car, User, Menu, X, LogOut, Settings, History } from "lucide-react";
 import {
   DropdownMenu,
@@ -54,7 +55,7 @@ const Navbar = ({ user, onLogout }: NavbarProps) => {
             <div className="p-2 bg-gradient-primary rounded-lg group-hover:scale-105 transition-transform duration-200">
               <Car className="h-6 w-6 text-white" />
             </div>
-            <span className="text-xl font-bold text-gradient">EVRentals</span>
+            <img src={logoImage} alt="EVRentals Logo" className="h-12 w-auto hover:scale-110 transition-transform duration-300" />
           </Link>
 
           {/* Desktop Navigation */}
@@ -137,19 +138,19 @@ const Navbar = ({ user, onLogout }: NavbarProps) => {
                   <DropdownMenuItem asChild>
                     <Link to="/dashboard" className="flex items-center">
                       <User className="mr-2 h-4 w-4" />
-                      {t("nav.dashboard")}
+                      Bảng điều khiển
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
                     <Link to="/bookings" className="flex items-center">
                       <History className="mr-2 h-4 w-4" />
-                      {t("nav.bookings")}
+                      Lịch sử đặt chỗ
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
                     <Link to="/settings" className="flex items-center">
                       <Settings className="mr-2 h-4 w-4" />
-                      {t("nav.settings")}
+                      Cài đặt
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
@@ -158,17 +159,17 @@ const Navbar = ({ user, onLogout }: NavbarProps) => {
                     className="text-destructive focus:text-destructive"
                   >
                     <LogOut className="mr-2 h-4 w-4" />
-                    {t("nav.logout")}
+                    Đăng xuất
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
               <>
                 <Button variant="ghost" asChild>
-                  <Link to="/login">{t("nav.login")}</Link>
+                  <Link to="/login">Đăng nhập</Link>
                 </Button>
                 <Button variant="default" asChild>
-                  <Link to="/register">{t("nav.register")}</Link>
+                  <Link to="/register">Đăng ký</Link>
                 </Button>
               </>
             )}

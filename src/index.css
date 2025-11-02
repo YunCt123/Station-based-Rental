@@ -268,3 +268,43 @@
 .leaflet-marker-pane,
 .leaflet-tooltip-pane,
 .leaflet-popup-pane { z-index: 400 !important; }
+
+
+/* ========= Toast Animations ========= */
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.98);
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+@keyframes toast-out {
+  from {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(12px) scale(0.98);
+  }
+}
+@keyframes toast-progress {
+  from { transform: scaleX(1); }
+  to   { transform: scaleX(0); }
+}
+
+/* sử dụng cho data-state của radix */
+.animate-toast-in {
+  animation: toast-in 240ms cubic-bezier(.21,.8,.32,1) both;
+}
+.animate-toast-out {
+  animation: toast-out 200ms ease-in forwards;
+}
+.animate-toast-progress {
+  animation: toast-progress var(--toast-duration, 4000ms) linear forwards;
+}

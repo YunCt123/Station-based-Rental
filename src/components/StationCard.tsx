@@ -18,7 +18,7 @@ const StationCard = ({ station }: StationCardProps) => {
     return (
         <Card
             className="w-full h-full shadow-md hover:shadow-lg transition-shadow duration-300"
-            imgAlt={`Image of ${station.name}`}
+            imgAlt={`Hình ảnh của ${station.name}`}
             imgSrc={station.image}
         >
             <div className="p-4 flex flex-col justify-between flex-grow">
@@ -28,7 +28,7 @@ const StationCard = ({ station }: StationCardProps) => {
                             {station.name}
                         </h5>
                         <Badge color={isInactive ? "failure" : "success"} className="ml-2 whitespace-nowrap">
-                            {isInactive ? "Inactive" : "Active"}
+                            {isInactive ? "Không hoạt động" : "Đang hoạt động"}
                         </Badge>
                     </div>
                     <div className="flex items-center text-sm text-gray-600 dark:text-gray-400 mb-2">
@@ -44,14 +44,14 @@ const StationCard = ({ station }: StationCardProps) => {
                                 <FaCar className="mr-2" />
                                 <span>{station.availableVehicles}/{station.totalSlots}</span>
                             </div>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">Available Vehicles</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">Phương tiện khả dụng</p>
                         </div>
                         {/* <div>
                             <div className={`flex items-center justify-center font-bold text-lg ${station.fastCharging ? 'text-yellow-400' : 'text-gray-400'}`}>
                                 <FaBolt className="mr-1" />
-                                <span>{station.fastCharging ? "Fast" : "Standard"}</span>
+                                <span>{station.fastCharging ? "Nhanh" : "Tiêu chuẩn"}</span>
                             </div>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">Charging</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">Sạc</p>
                         </div> */}
                     </div>
                 </div>
@@ -62,7 +62,7 @@ const StationCard = ({ station }: StationCardProps) => {
                     onClick={(e) => { if (isInactive) e.preventDefault(); }}
                     aria-disabled={isInactive}
                 >
-                    {isInactive ? 'Station Unavailable' : 'View Details'}
+                    {isInactive ? 'Trạm không khả dụng' : 'Xem chi tiết'}
                 </Link>
             </div>
         </Card>

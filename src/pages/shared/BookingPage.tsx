@@ -344,26 +344,26 @@ const BookingPage: React.FC = () => {
     <div className="max-w-md mx-auto mt-8">
       <Card className="text-center p-6">
         <SafetyCertificateOutlined className="text-4xl text-orange-500 mb-4" />
-        <h2 className="text-xl font-semibold mb-4">Account Verification Required</h2>
+        <h2 className="text-xl font-semibold mb-4">Xác minh tài khoản</h2>
         <p className="text-gray-600 mb-4">
-          Your account needs to be verified before you can make a booking.
+          Tài khoản của bạn cần được xác minh trước khi thực hiện đặt xe.
         </p>
         
         
         <div className="mb-6">
           <p className="text-sm font-medium">
-            Status: <span className={`${
+            Lý do: <span className={`${
               user?.verificationStatus === 'REJECTED' ? 'text-red-600' :
               user?.verificationStatus === 'PENDING' ? 'text-orange-600' : 'text-gray-600'
             }`}>
               {getVerificationStatusMessage(user)}
             </span>
           </p>
-          {user?.rejectionReason && (
+          {/* {user?.rejectionReason && (
             <p className="text-sm text-red-600 mt-2">
               Reason: {user.rejectionReason}
             </p>
-          )}
+          )} */}
         </div>
         <div className="space-x-4">
           {user?.verificationStatus === 'REJECTED' || user?.verificationStatus === 'PENDING' ? (
@@ -371,7 +371,7 @@ const BookingPage: React.FC = () => {
               type="primary"
               onClick={() => navigate("/profile/verification")}
             >
-              {user?.verificationStatus === 'REJECTED' ? 'Re-submit Documents' : 'Complete Verification'}
+              {user?.verificationStatus === 'REJECTED' ? 'Tải lại tài liệu' : 'Hoàn tất xác minh'}
             </Button>
           ) : (
             <Button
@@ -382,7 +382,7 @@ const BookingPage: React.FC = () => {
             </Button>
           )}
           <Button onClick={() => navigate("/")}>
-            Back to Home
+            Trở về trang chủ
           </Button>
           <Button 
             type="dashed" 
@@ -391,7 +391,7 @@ const BookingPage: React.FC = () => {
               refreshUserData();
             }}
           >
-            Refresh
+            tải lại
           </Button>
         </div>
       </Card>
@@ -412,13 +412,13 @@ const BookingPage: React.FC = () => {
           {loadingVehicle ? (
             <div className="flex justify-center items-center h-64">
               <Spin size="large" />
-              <span className="ml-3">Loading vehicle information...</span>
+              <span className="ml-3">Đang tải thông tin xe...</span>
             </div>
           ) : !vehicle ? (
             <div className="text-center p-8">
-              <p className="text-gray-500 mb-4">Vehicle not found</p>
+              <p className="text-gray-500 mb-4">Không tìm thấy xe</p>
               <Link to="/vehicles" className="text-blue-500 hover:underline">
-                ← Back to Vehicle Selection
+                ← Quay lại chọn xe
               </Link>
             </div>
           ) : (
@@ -433,37 +433,33 @@ const BookingPage: React.FC = () => {
                     vehicleId: vehicle?.id ?? vehicleId,
                     stationId: stationId ?? "default-station-id",
                     rental_type: "daily",
-                    rental_period: [dayjs().add(1, "day"), dayjs().add(2, "day")], // Tomorrow to day after tomorrow
+                    rental_period: [dayjs().add(1, "day"), dayjs().add(2, "day")], // Ngày mai đến ngày kia
                     rental_start_time: dayjs("09:00:00", "HH:mm:ss"),
                     rental_end_time: dayjs("18:00:00", "HH:mm:ss"),
                   }}
                   onValuesChange={(changedValues) => {
                     const current = form.getFieldsValue();
-                    console.log('📝 [BookingPage] Form values changed:', { changedValues, current });
+                    console.log('📝 [BookingPage] Giá trị form thay đổi:', { changedValues, current });
                     
-                    // 🔍 Check if insurance changed
                     if ('insurance_premium' in changedValues) {
-                      console.log('🛡️ [BookingPage] Insurance changed!', {
-                        'old': current.insurance_premium,
-                        'new': changedValues.insurance_premium,
-                        'will recalculate': true
+                      console.log('🛡️ [BookingPage] Bảo hiểm thay đổi!', {
+                        'cũ': current.insurance_premium,
+                        'mới': changedValues.insurance_premium,
+                        'sẽ tính lại': true
                       });
-                      // Immediate price recalculation for insurance changes
                       setTimeout(() => {
                         const updatedValues = form.getFieldsValue();
-                        console.log('💰 [BookingPage] Recalculating price due to insurance change:', updatedValues);
+                        console.log('💰 [BookingPage] Tính lại giá do thay đổi bảo hiểm:', updatedValues);
                         calculatePrice(updatedValues);
                       }, 100);
-                      return; // Exit early for insurance changes
+                      return;
                     }
                     
-                    // Handle rental type change with smart defaults
                     if (changedValues.rental_type) {
                       const now = dayjs();
                       const rentalType = changedValues.rental_type;
                       
                       if (rentalType === "hourly") {
-                        // For hourly: default to today, 4-hour window
                         const startTime = now.hour() < 22 ? now.add(1, 'hour').startOf('hour') : now.startOf('day').add(8, 'hour');
                         const endTime = startTime.add(4, 'hour');
                         
@@ -472,15 +468,13 @@ const BookingPage: React.FC = () => {
                           rental_end_time: endTime,
                         });
                         
-                        // Calculate price for hourly rental
                         setTimeout(() => {
                           const updatedValues = form.getFieldsValue();
-                          console.log('⏰ [BookingPage] Hourly price calculation with updated values:', updatedValues);
+                          console.log('⏰ [BookingPage] Tính giá thuê theo giờ với giá trị cập nhật:', updatedValues);
                           calculatePrice(updatedValues);
                         }, 100);
                         
                       } else if (rentalType === "daily") {
-                        // For daily: default to tomorrow, full day
                         const startDate = now.add(1, 'day');
                         const endDate = startDate.add(1, 'day');
                         
@@ -489,25 +483,23 @@ const BookingPage: React.FC = () => {
                           rental_start_time: dayjs("09:00:00", "HH:mm:ss"),
                         });
                         
-                        // Calculate price for daily rental
                         setTimeout(() => {
                           const updatedValues = form.getFieldsValue();
-                          console.log('📅 [BookingPage] Daily price calculation with updated values:', updatedValues);
+                          console.log('📅 [BookingPage] Tính giá thuê theo ngày với giá trị cập nhật:', updatedValues);
                           calculatePrice(updatedValues);
                         }, 100);
                       }
                       
-                      return; // Exit early to avoid duplicate calculations
+                      return;
                     }
                     
-                    // Handle other changes - calculate price based on current rental type
                     if (
                       changedValues.rental_period ||
                       changedValues.rental_start_time ||
                       changedValues.rental_end_time ||
                       changedValues.insurance_premium !== undefined
                     ) {
-                      console.log('🔄 [BookingPage] Form values changed:', {
+                      console.log('🔄 [BookingPage] Giá trị form thay đổi:', {
                         changedValues,
                         current,
                         'current.insurance_premium': current.insurance_premium
@@ -516,13 +508,11 @@ const BookingPage: React.FC = () => {
                       const rentalType = current.rental_type;
                       
                       if (rentalType === "hourly") {
-                        // For hourly rental: recalculate with current form values
-                        console.log('⏰ [BookingPage] Hourly price update with current values');
+                        console.log('⏰ [BookingPage] Cập nhật giá thuê theo giờ với giá trị hiện tại');
                         calculatePrice(current);
                         
                       } else if (rentalType === "daily") {
-                        // For daily rental: recalculate with current form values
-                        console.log('📅 [BookingPage] Daily price update with current values');
+                        console.log('📅 [BookingPage] Cập nhật giá thuê theo ngày với giá trị hiện tại');
                         calculatePrice(current);
                       }
                     }
@@ -530,28 +520,6 @@ const BookingPage: React.FC = () => {
                 >
                   <RentalPeriodForm />
                   <CustomerInformationForm />
-{/* 
-                  <DocumentUploadProgress uploadStatus={uploadStatus} />
-
-                  <DocumentUpload
-                    title="Driver's License"
-                    description="Please upload both sides of your driver's license"
-                    uploadProps={createDocumentUploadProps(DOCUMENT_TYPES.DRIVERS_LICENSE)}
-                  />
-
-                  <DocumentUpload
-                    title="National ID - Front"
-                    description="Please upload the front side of your national ID card"
-                    uploadProps={createDocumentUploadProps(DOCUMENT_TYPES.NATIONAL_ID_FRONT)}
-                  />
-
-                  <DocumentUpload
-                    title="National ID - Back"
-                    description="Please upload the back side of your national ID card"
-                    uploadProps={createDocumentUploadProps(DOCUMENT_TYPES.NATIONAL_ID_BACK)}
-                  />
-
-                  <UploadGuidelines /> */}
                   <InsuranceAndTermsForm loading={loading} />
                 </Form>
               </div>
@@ -560,7 +528,7 @@ const BookingPage: React.FC = () => {
                 {loadingVehicle ? (
                   <div className="flex justify-center items-center h-64">
                     <Spin size="large" />
-                    <span className="ml-3">Loading vehicle information...</span>
+                    <span className="ml-3">Đang tải thông tin xe...</span>
                   </div>
                 ) : (
                   <VehicleSummary

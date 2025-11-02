@@ -11,16 +11,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-// import {
-//   Select,
-//   SelectContent,
-//   SelectItem,
-//   SelectTrigger,
-//   SelectValue,
-// } from "@/components/ui/select";
 import { Eye, EyeOff, Mail, Lock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useTranslation } from "@/contexts/TranslationContext";
 import { login as loginApi } from "@/services/authService";
 
 interface User {
@@ -40,12 +32,10 @@ interface LoginProps {
 const LoginPage = ({ onLogin }: LoginProps) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  // const [role, setRole] = useState<"user" | "staff" | "admin">("user");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { t } = useTranslation();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,8 +46,8 @@ const LoginPage = ({ onLogin }: LoginProps) => {
       if (!res.tokens.accessToken) {
         console.error("[Login] Missing accessToken. Full response:", res);
         toast({
-          title: t("common.error"),
-          description: "Server response missing accessToken (inspect console).",
+          title: "Lỗi",
+          description: "Phản hồi từ máy chủ thiếu accessToken (kiểm tra console).",
           variant: "destructive",
         });
         return;
@@ -67,17 +57,16 @@ const LoginPage = ({ onLogin }: LoginProps) => {
         localStorage.setItem("refresh_token", res.tokens.refreshToken);
       onLogin(res.user);
       toast({
-        title: t("common.welcomeBack"),
-        description: t("common.signInSuccess"),
+        title: "Chào mừng trở lại",
+        description: "Đăng nhập thành công.",
       });
       const redirectPath =
         res.user.role === "admin"
           ? "/admin/dashboard"
           : res.user.role === "staff"
           ? "/staff/dashboard"
-          : "/"; // tùy chỉnh thêm nếu cần (staff -> '/staff-dashboard', v.v.)
+          : "/";
       navigate(redirectPath);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       console.error("[Login] Auth error raw:", err);
       const message =
@@ -85,9 +74,9 @@ const LoginPage = ({ onLogin }: LoginProps) => {
         err?.error ||
         err?.details ||
         JSON.stringify(err, null, 2) ||
-        t("login.invalidCredentials");
+        "Thông tin đăng nhập không hợp lệ.";
       toast({
-        title: t("common.error"),
+        title: "Lỗi",
         description: message,
         variant: "destructive",
       });
@@ -99,39 +88,19 @@ const LoginPage = ({ onLogin }: LoginProps) => {
   return (
     <div className="min-h-screen bg-gradient-hero flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-
-        {/* Login Card */}
         <Card className="shadow-premium">
           <CardHeader className="space-y-1">
             <CardTitle className="text-2xl font-bold text-center">
-              {t("common.welcomeBack")}
+              Chào mừng trở lại
             </CardTitle>
             <CardDescription className="text-center">
-              {t("common.signInToAccount")}
+              Đăng nhập vào tài khoản của bạn
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <form onSubmit={handleSubmit} className="space-y-4">
-              {/* <div className="space-y-2">
-                <Label htmlFor="role">{t("common.loginAs")}</Label>
-                <Select
-                  value={role}
-                  onValueChange={(value: "user" | "staff" | "admin") => setRole(value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="user">{t("common.customer")}</SelectItem>
-                    <SelectItem value="staff">{t("common.stationStaff")}</SelectItem>
-                    <SelectItem value="admin">{t("common.administrator")}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div> */}
-
-              {/* Email Field */}
               <div className="space-y-2">
-                <Label htmlFor="email">{t("common.emailAddress")}</Label>
+                <Label htmlFor="email">Địa chỉ email</Label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-5 w-5" />
                   <Input
@@ -146,15 +115,14 @@ const LoginPage = ({ onLogin }: LoginProps) => {
                 </div>
               </div>
 
-              {/* Password Field */}
               <div className="space-y-2">
-                <Label htmlFor="password">{t("common.password")}</Label>
+                <Label htmlFor="password">Mật khẩu</Label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-5 w-5" />
                   <Input
                     id="password"
                     type={showPassword ? "text" : "password"}
-                    placeholder={t("common.enterYourPassword")}
+                    placeholder="Nhập mật khẩu của bạn"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="pl-10 pr-10 text-black"
@@ -176,29 +144,26 @@ const LoginPage = ({ onLogin }: LoginProps) => {
                 </div>
               </div>
 
-              {/* Forgot Password */}
               <div className="text-right">
                 <Link
                   to="/forgot-password"
                   className="text-sm text-primary hover:text-primary-dark transition-colors"
                 >
-                  {t("common.forgotYourPassword")}
+                  Quên mật khẩu?
                 </Link>
               </div>
 
-              {/* Submit Button */}
               <Button
                 type="submit"
                 className="w-full btn-hero"
                 disabled={isLoading}
               >
-                {isLoading ? t("common.signingIn") : t("common.signIn")}
+                {isLoading ? "Đang đăng nhập..." : "Đăng nhập"}
               </Button>
             </form>
 
             <Separator />
 
-            {/* Social Login (Mock) */}
             <div className="space-y-3">
               <Button variant="outline" className="w-full" disabled>
                 <svg className="h-5 w-5 mr-2" viewBox="0 0 24 24">
@@ -219,7 +184,7 @@ const LoginPage = ({ onLogin }: LoginProps) => {
                     d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                   />
                 </svg>
-                {t("common.continueWithGoogle")}
+                Tiếp tục với Google
               </Button>
               <Button variant="outline" className="w-full" disabled>
                 <svg
@@ -229,28 +194,28 @@ const LoginPage = ({ onLogin }: LoginProps) => {
                 >
                   <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
                 </svg>
-                {t("common.continueWithFacebook")}
+                Tiếp tục với Facebook
               </Button>
             </div>
 
-            {/* Sign Up Link */}
             <div className="text-center text-sm">
               <span className="text-muted-foreground">
-                {t("common.dontHaveAnAccount")}{" "}
+                Bạn chưa có tài khoản?{" "}
               </span>
               <Link
                 to="/register"
                 className="text-primary hover:text-primary-dark font-medium transition-colors"
               >
-                {t("common.signUpNow")}
+                Đăng ký ngay
               </Link>
             </div>
           </CardContent>
         </Card>
 
-        {/* Demo Note */}
         <div className="mt-6 text-center">
-          <p className="text-white/80 text-sm">{t("common.demoNote")}</p>
+          <p className="text-white/80 text-sm">
+            Đây là tài khoản demo. Vui lòng không sử dụng thông tin cá nhân.
+          </p>
         </div>
       </div>
     </div>

@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import api from "./api";
-import { convertToVND } from "../lib/currency";
+import api from './api';
 
 // Types for API responses
 export interface ApiResponse<T> {
@@ -275,23 +274,16 @@ export class BookingService {
   // Calculate booking price before creating booking
   async calculatePrice(request: PriceCalculationRequest): Promise<PriceBreakdown> {
     try {
-      console.log('🚀 [Frontend] Original request (USD):', {
+      console.log('🚀 [Frontend] Original request (VND):', {
         ...request,
         timestamp: new Date().toISOString(),
         requestId: Math.random().toString(36).substr(2, 9)
       });
       
-      // 💱 Convert USD amounts to VND for backend
-      const testUsdAmount = 1; // Test with $1  
-      const vndEquivalent = convertToVND(testUsdAmount); // Get VND for $1
-      const usdToVndRate = vndEquivalent; // This is the current rate
-      
-      console.log('💱 [Frontend] Currency rate USD→VND:', usdToVndRate);
-      
-      // Send request with converted VND values (if needed)
+      // Send VND prices directly to backend
       const vndRequest = {
         ...request,
-        currency: 'VND' // Tell backend we're working with VND
+        currency: 'VND'
       };
       
       console.log('� [Frontend] Sending request to backend (VND):', vndRequest);
@@ -303,28 +295,22 @@ export class BookingService {
         
         console.log('📥 [Frontend] Raw backend response:', pricing);
         
-        // 💱 Convert VND response back to USD for frontend display
+        // Using VND response directly
         if (pricing.currency === 'VND' || !pricing.currency) {
-          console.log('🔄 [Frontend] Converting VND response to USD for display');
+          console.log('✅ [Frontend] Using VND response directly');
           
           pricing = {
             ...pricing,
-            // Convert all VND amounts to USD for frontend display
-            basePrice: pricing.basePrice ? Math.round(pricing.basePrice / usdToVndRate) : 0,
-            insurancePrice: pricing.insurancePrice ? Math.round(pricing.insurancePrice / usdToVndRate) : 0,
-            taxes: pricing.taxes ? Math.round(pricing.taxes / usdToVndRate) : 0,
-            totalPrice: pricing.totalPrice ? Math.round(pricing.totalPrice / usdToVndRate) : 0,
-            deposit: pricing.deposit ? Math.round(pricing.deposit / usdToVndRate) : 0,
-            currency: 'USD' // Frontend always displays USD
+            currency: 'VND' // Frontend now displays VND directly
           };
           
-          console.log('✅ [Frontend] Converted to USD for display:', pricing);
+          console.log('✅ [Frontend] VND pricing:', pricing);
         }
         
         // ✅ Validate and debug pricing
         this.validatePriceCalculation(request, pricing);
         
-        console.log('✅ [Frontend] Price calculation successful (converted to USD):', pricing);
+        console.log('✅ [Frontend] Price calculation successful (VND):', pricing);
         return pricing;
       } else {
         throw new Error('Price calculation failed: Invalid response');
@@ -442,7 +428,7 @@ export class BookingService {
       if (response.data.success && response.data.data) {
         console.log('[BookingService] Station bookings retrieved:', {
           count: response.data.data.length,
-          bookings: response.data.data.map(b => ({
+          bookings: response.data.data.map((b: any) => ({
             id: b._id,
             status: b.status,
             startAt: b.start_at,
@@ -958,7 +944,7 @@ export class BookingService {
       createdAt: new Date(booking.createdAt),
       updatedAt: new Date(booking.updatedAt),
       totalAmount: booking.pricing_snapshot?.totalPrice || 0,
-      currency: booking.pricing_snapshot?.currency || 'USD',
+      currency: booking.pricing_snapshot?.currency || 'VND',
       deposit: booking.pricing_snapshot?.deposit || 0,
       canConfirm: booking.status === 'HELD' && this.isWithinHoldPeriod(booking),
       canCancel: ['HELD', 'CONFIRMED'].includes(booking.status)
@@ -985,7 +971,7 @@ export class BookingService {
     const defaultRates = {
       hourly: 20,  // $20/hour
       daily: 135,  // $135/day
-      currency: 'USD'
+      currency: 'VND'
     };
     
     let basePrice = 0;

@@ -7,7 +7,6 @@ import {
   ExclamationCircleOutlined 
 } from "@ant-design/icons";
 import { bookingService } from "../../services/bookingService";
-import { convertToVND } from "../../lib/currency";
 import type { Booking, Payment } from "../../services/bookingService";
 
 const { Title, Text, Paragraph } = Typography;
@@ -341,7 +340,7 @@ const PaymentPage: React.FC = () => {
         taxes: pricing.taxes,
         insurance: pricing.insurance,
         totalPrice: pricing.totalPrice,
-        depositAmountUSD: pricing.deposit,
+        depositAmountVND: pricing.deposit,
         testAmountVND: testAmount
       });
       
@@ -700,31 +699,19 @@ const PaymentPage: React.FC = () => {
               <div className="space-y-2">
                 <div className="flex justify-between">
                   <Text>Daily Rate:</Text>
-                  <Text>${(() => {
-                    // 💱 Convert VND rate back to USD for display
+                  <Text>{(() => {
+                    // Display VND directly
                     const dailyRate = booking.pricing_snapshot.daily_rate || 0;
-                    if (booking.pricing_snapshot.currency === 'VND' || dailyRate > 1000) {
-                      const testUsdAmount = 1;
-                      const vndEquivalent = convertToVND(testUsdAmount);
-                      const usdToVndRate = vndEquivalent;
-                      return Math.round(dailyRate / usdToVndRate);
-                    }
-                    return dailyRate;
+                    return new Intl.NumberFormat('vi-VN').format(dailyRate) + ' VND';
                   })()}/day</Text>
                 </div>
                 {booking.pricing_snapshot.hourly_rate && (
                   <div className="flex justify-between">
                     <Text>Hourly Rate:</Text>
-                    <Text>${(() => {
-                      // 💱 Convert VND rate back to USD for display
+                    <Text>{(() => {
+                      // Display VND directly
                       const hourlyRate = booking.pricing_snapshot.hourly_rate;
-                      if (booking.pricing_snapshot.currency === 'VND' || hourlyRate > 100) {
-                        const testUsdAmount = 1;
-                        const vndEquivalent = convertToVND(testUsdAmount);
-                        const usdToVndRate = vndEquivalent;
-                        return Math.round(hourlyRate / usdToVndRate);
-                      }
-                      return hourlyRate;
+                      return new Intl.NumberFormat('vi-VN').format(hourlyRate) + ' VND';
                     })()}/hour</Text>
                   </div>
                 )}

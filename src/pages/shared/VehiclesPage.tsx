@@ -156,8 +156,8 @@ const Vehicles = () => {
         filters.minPrice = priceRange[0] * 23000;
         filters.maxPrice = priceRange[1] * 23000;
       } else {
-        filters.minPrice = priceRange[0];
-        filters.maxPrice = priceRange[1];
+        filters.minPrice = 0;
+        filters.maxPrice = 10000000;
       }
 
       // Map frontend sort to backend sort

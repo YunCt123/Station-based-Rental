@@ -3,7 +3,6 @@ import { Card, Typography, Table, Tag, Button, message, Space } from "antd";
 import { EyeOutlined, ReloadOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import { bookingService } from "../../services/bookingService";
-import { convertToVND } from "../../lib/currency";
 import type { Booking } from "../../services/bookingService";
 
 const { Title } = Typography;
@@ -14,28 +13,13 @@ const BookingsPage: React.FC = () => {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // 💱 Helper function to convert VND back to USD for display
-  const convertVndToUsd = (vndAmount: number): number => {
-    if (!vndAmount) return 0;
-    
-    // Get current USD→VND rate
-    const testUsdAmount = 1;
-    const vndEquivalent = convertToVND(testUsdAmount);
-    const usdToVndRate = vndEquivalent;
-    
-    // Convert VND back to USD
-    const usdAmount = Math.round(vndAmount / usdToVndRate);
-    
-    console.log('💱 [BookingsPage] VND→USD conversion:', {
-      vndAmount,
-      usdToVndRate,
-      usdAmount
-    });
-    
-    return usdAmount;
+  // Helper function to format VND price for display
+  const formatVndPrice = (vndAmount: number): string => {
+    if (!vndAmount) return '0 VND';
+    return new Intl.NumberFormat('vi-VN').format(vndAmount) + ' VND';
   };
 
-  // 💱 Helper function to format price for display
+  // Helper function to format price for display
   const formatPrice = (pricing?: { 
     total_price?: number;
     base_price?: number;
@@ -54,9 +38,9 @@ const BookingsPage: React.FC = () => {
     const total = pricing.total_price || 0;
     const deposit = pricing.deposit || 0;
 
-    // If currency is VND, convert to USD for display
+    // Display VND prices directly
     if ((pricing.currency === 'VND') || (total > 1000)) {
-      console.log('Converting VND to USD:', { 
+      console.log('Using VND prices directly:', { 
         total, 
         deposit,
         base: pricing.base_price,
@@ -66,12 +50,12 @@ const BookingsPage: React.FC = () => {
         hours: pricing.details?.hours
       });
       return {
-        total: convertVndToUsd(total),
-        deposit: convertVndToUsd(deposit)
+        total: total,
+        deposit: deposit
       };
     }
     
-    // Already in USD
+    // Already in VND
     return {
       total: total,
       deposit: deposit
@@ -187,10 +171,10 @@ const BookingsPage: React.FC = () => {
         return (
           <div>
             <div className="font-semibold">
-              ${prices.total}
+              {formatVndPrice(prices.total)}
             </div>
             <div className="text-xs text-gray-500">
-              Deposit: ${prices.deposit}
+              Deposit: {formatVndPrice(prices.deposit)}
             </div>
           </div>
         );

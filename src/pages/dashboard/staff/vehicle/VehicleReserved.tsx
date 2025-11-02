@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useMemo, useState } from 'react';
 import { stationService } from '../../../../services/stationService';
 import { bookingService, type Booking } from '../../../../services/bookingService';

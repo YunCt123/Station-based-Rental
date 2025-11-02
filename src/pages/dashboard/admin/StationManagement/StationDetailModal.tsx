@@ -21,7 +21,6 @@ import {
   EnvironmentOutlined,
   ThunderboltOutlined,
   ClockCircleOutlined,
-  CheckCircleOutlined,
   CarOutlined,
   ReloadOutlined,
   UserOutlined,
@@ -252,20 +251,20 @@ const StationDetailModal: React.FC<StationDetailModalProps> = ({
   };
 
   // Amenity icons
-  const amenityIcons: Record<string, React.ReactNode> = {
-    wifi: '📶',
-    cafe: '☕',
-    restroom: '🚻',
-    parking: '🅿️',
-    fast_charging: '⚡',
-    shopping: '🛍️',
-    atm: '🏧',
-    food_court: '🍽️',
-    security: '🔒',
-    waiting_area: '🪑',
-    phone_charging: '🔌',
-    air_conditioning: '❄️'
-  };
+  // const amenityIcons: Record<string, React.ReactNode> = {
+  //   wifi: '📶',
+  //   cafe: '☕',
+  //   restroom: '🚻',
+  //   parking: '🅿️',
+  //   fast_charging: '⚡',
+  //   shopping: '🛍️',
+  //   atm: '🏧',
+  //   food_court: '🍽️',
+  //   security: '🔒',
+  //   waiting_area: '🪑',
+  //   phone_charging: '🔌',
+  //   air_conditioning: '❄️'
+  // };
 
   return (
     <Modal

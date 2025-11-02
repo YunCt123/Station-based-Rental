@@ -9,10 +9,9 @@ import {
   Col,
   Divider,
   Upload,
-  Button,
   message
 } from 'antd';
-import { UploadOutlined, PlusOutlined } from '@ant-design/icons';
+import {  PlusOutlined } from '@ant-design/icons';
 import type { UploadFile } from 'antd/es/upload/interface';
 import { adminStationService, type AdminStation } from '../../../../services/adminStationService';
 import api from '../../../../services/api';

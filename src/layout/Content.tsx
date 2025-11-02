@@ -13,38 +13,34 @@ const Content: React.FC = () => {
   const [sortBy, setSortBy] = useState<string>('');
   const { toast } = useToast();
 
-  // Fetch vehicles from API
   useEffect(() => {
     const fetchVehicles = async () => {
       try {
         setIsLoading(true);
         setError(null);
         
-        console.log('🚗 Fetching vehicles from API...');
+        console.log('🚗 Đang tải danh sách phương tiện từ API...');
         
-        // Test connection first
         await vehicleService.testConnection();
         
-        // Get available vehicles (limit to 6 for homepage display)
         const { vehicles: fetchedVehicles } = await vehicleService.getAvailableVehicles(
           filters,
           { limit: 6, sort: sortBy || undefined }
         );
         
-        console.log('✅ Vehicles loaded:', fetchedVehicles.length);
+        console.log('✅ Đã tải phương tiện:', fetchedVehicles.length);
         setVehicles(fetchedVehicles);
         
       } catch (err: unknown) {
-        console.error('❌ Error fetching vehicles:', err);
-        const errorMessage = err instanceof Error ? err.message : 'Failed to load vehicles';
+        console.error('❌ Lỗi khi tải phương tiện:', err);
+        const errorMessage = err instanceof Error ? err.message : 'Không thể tải phương tiện';
         setError(errorMessage);
         toast({
-          title: "Error",
-          description: "Failed to load vehicles. Using fallback data.",
+          title: "Lỗi",
+          description: "Không thể tải phương tiện. Sử dụng dữ liệu dự phòng.",
           variant: "destructive",
         });
         
-        // Keep vehicles empty on error - we'll show error state
         setVehicles([]);
       } finally {
         setIsLoading(false);
@@ -54,10 +50,8 @@ const Content: React.FC = () => {
     fetchVehicles();
   }, [filters, sortBy, toast]);
 
-  // Handle filter changes
   const handleFilterChange = (filterKey: keyof VehicleSearchFilters, value: string) => {
     if (value === '' || value === 'all') {
-      // Remove filter if empty or "all"
       const newFilters = { ...filters };
       delete newFilters[filterKey];
       setFilters(newFilters);
@@ -66,7 +60,6 @@ const Content: React.FC = () => {
     }
   };
 
-  // Handle sort change
   const handleSortChange = (value: string) => {
     setSortBy(value === 'default' ? '' : value);
   };
@@ -74,17 +67,15 @@ const Content: React.FC = () => {
   return (  
     <div className="bg-gray-50 py-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Section header */}
         <div className="text-center mb-12">
           <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-            Available Electric Vehicles
+            Phương Tiện Điện Có Sẵn
           </h2>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Choose from our premium fleet of electric vehicles. All vehicles are regularly maintained and charged for your convenience.
+            Lựa chọn từ đội xe điện cao cấp của chúng tôi. Tất cả phương tiện đều được bảo trì và sạc đầy để bạn sử dụng.
           </p>
         </div>
 
-        {/* Filter bar */}
         <div className="flex flex-wrap items-center justify-between mb-8 p-4 bg-white rounded-lg shadow-sm">
           <div className="flex flex-wrap items-center space-x-4 mb-4 md:mb-0">
             <select 
@@ -92,20 +83,20 @@ const Content: React.FC = () => {
               onChange={(e) => handleFilterChange('type', e.target.value)}
               defaultValue=""
             >
-              <option value="">All Types</option>
+              <option value="">Tất Cả Loại</option>
               <option value="SUV">SUV</option>
               <option value="Sedan">Sedan</option>
               <option value="Crossover">Crossover</option>
               <option value="Hatchback">Hatchback</option>
-              <option value="Motorcycle">Motorcycle</option>
-              <option value="Scooter">Scooter</option>
+              <option value="Motorcycle">Xe Máy</option>
+              <option value="Scooter">Xe Tay Ga</option>
             </select>
             <select 
               className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               onChange={(e) => handleFilterChange('brand', e.target.value)}
               defaultValue=""
             >
-              <option value="">All Brands</option>
+              <option value="">Tất Cả Hãng</option>
               <option value="Tesla">Tesla</option>
               <option value="VinFast">VinFast</option>
               <option value="BMW">BMW</option>
@@ -118,32 +109,31 @@ const Content: React.FC = () => {
               onChange={(e) => handleFilterChange('search', e.target.value)}
               defaultValue=""
             >
-              <option value="">All Locations</option>
-              <option value="District 1">District 1 Station</option>
-              <option value="District 7">District 7 Station</option>
-              <option value="District 3">District 3 Station</option>
-              <option value="Airport">Airport Station</option>
-              <option value="Binh Thanh">Binh Thanh Station</option>
+              <option value="">Tất Cả Địa Điểm</option>
+              <option value="District 1">Trạm Quận 1</option>
+              <option value="District 7">Trạm Quận 7</option>
+              <option value="District 3">Trạm Quận 3</option>
+              <option value="Airport">Trạm Sân Bay</option>
+              <option value="Binh Thanh">Trạm Bình Thạnh</option>
             </select>
           </div>
           <div className="flex items-center space-x-2">
-            <span className="text-sm text-gray-600">Sort by:</span>
+            <span className="text-sm text-gray-600">Sắp xếp theo:</span>
             <select 
               className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               onChange={(e) => handleSortChange(e.target.value)}
               defaultValue="default"
             >
-              <option value="default">Default</option>
-              <option value="pricePerHour">Price: Low to High</option>
-              <option value="-pricePerHour">Price: High to Low</option>
-              <option value="-rating">Rating</option>
-              <option value="-batteryLevel">Battery Level</option>
-              <option value="-range">Range</option>
+              <option value="default">Mặc Định</option>
+              <option value="pricePerHour">Giá: Thấp đến Cao</option>
+              <option value="-pricePerHour">Giá: Cao đến Thấp</option>
+              <option value="-rating">Đánh Giá</option>
+              <option value="-batteryLevel">Mức Pin</option>
+              <option value="-range">Quãng Đường</option>
             </select>
           </div>
         </div>
 
-        {/* Vehicle grid with loading and error states */}
         <LoadingWrapper
           isLoading={isLoading}
           fallback={
@@ -161,13 +151,13 @@ const Content: React.FC = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">Failed to Load Vehicles</h3>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">Không Thể Tải Phương Tiện</h3>
               <p className="text-gray-600 mb-4">{error}</p>
               <button 
                 onClick={() => window.location.reload()} 
                 className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold transition-colors duration-200"
               >
-                Try Again
+                Thử Lại
               </button>
             </div>
           ) : vehicles.length === 0 ? (
@@ -177,8 +167,8 @@ const Content: React.FC = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                 </svg>
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">No Vehicles Found</h3>
-              <p className="text-gray-600">Try adjusting your filters or check back later.</p>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">Không Có Phương Tiện</h3>
+              <p className="text-gray-600">Hãy thử thay đổi bộ lọc hoặc quay lại sau.</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -189,41 +179,38 @@ const Content: React.FC = () => {
           )}
         </LoadingWrapper>
 
-        {/* Load more button - only show if we have vehicles and not in error state */}
         {!error && vehicles.length > 0 && (
           <div className="text-center mt-12">
             <button 
               onClick={() => {
-                // Navigate to vehicles page for more options
                 window.location.href = '/vehicles';
               }}
               className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-semibold transition-colors duration-200"
             >
-              View All Vehicles
+              Xem Tất Cả Phương Tiện
             </button>
           </div>
         )}
 
-        {/* Quick stats */}
         <div className="mt-16 bg-white rounded-2xl p-8 shadow-lg">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
             <div>
               <div className="text-3xl font-bold text-blue-600 mb-2">
                 {isLoading ? '...' : `${vehicles.length}+`}
               </div>
-              <div className="text-gray-600">Available Now</div>
+              <div className="text-gray-600">Có Sẵn Ngay</div>
             </div>
             <div>
               <div className="text-3xl font-bold text-green-600 mb-2">8</div>
-              <div className="text-gray-600">Charging Stations</div>
+              <div className="text-gray-600">Trạm Sạc</div>
             </div>
             <div>
               <div className="text-3xl font-bold text-purple-600 mb-2">24/7</div>
-              <div className="text-gray-600">Customer Support</div>
+              <div className="text-gray-600">Hỗ Trợ Khách Hàng</div>
             </div>
             <div>
               <div className="text-3xl font-bold text-amber-600 mb-2">95%</div>
-              <div className="text-gray-600">Customer Satisfaction</div>
+              <div className="text-gray-600">Hài Lòng Khách Hàng</div>
             </div>
           </div>
         </div>

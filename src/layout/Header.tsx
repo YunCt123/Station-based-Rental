@@ -35,10 +35,10 @@ const Navbar = ({ user, onLogout }: NavbarProps) => {
     localStorage.removeItem("access_token");
     localStorage.removeItem("refresh_token");
     
-    // Show success toast
+    // Hiển thị thông báo thành công
     toast({
-      title: "Logout Successful",
-      description: "You have successfully logged out!",
+      title: "Đăng xuất thành công",
+      description: "Bạn đã đăng xuất thành công!",
     });
     
     onLogout?.();
@@ -67,7 +67,7 @@ const Navbar = ({ user, onLogout }: NavbarProps) => {
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              {t("nav.home")}
+              Trang chủ
             </Link>
             <Link
               to="/vehicles"
@@ -77,7 +77,7 @@ const Navbar = ({ user, onLogout }: NavbarProps) => {
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              {t("nav.vehicles")}
+              Phương tiện
             </Link>
             <Link
               to="/stations"
@@ -87,7 +87,7 @@ const Navbar = ({ user, onLogout }: NavbarProps) => {
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              {t("nav.stations")}
+              Trạm
             </Link>
             <Link
               to="/how-it-works"
@@ -97,7 +97,7 @@ const Navbar = ({ user, onLogout }: NavbarProps) => {
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              {t("common.howItWorks")}
+              Cách hoạt động
             </Link>
             <Link
               to="/policy"
@@ -107,7 +107,7 @@ const Navbar = ({ user, onLogout }: NavbarProps) => {
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              Policy
+              Chính sách
             </Link>
           </div>
 

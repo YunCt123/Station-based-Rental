@@ -6,7 +6,7 @@ const Footer: React.FC = () => {
     <footer className="bg-gray-800 text-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-          {/* Company Info */}
+          {/* Thông tin công ty */}
           <div className="col-span-1 md:col-span-1">
             <div className="flex items-center mb-4">
               <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
@@ -15,113 +15,113 @@ const Footer: React.FC = () => {
               <span className="ml-2 text-xl font-bold">EVRentals</span>
             </div>
             <p className="text-gray-300 text-sm leading-relaxed">
-              Leading the future of sustainable transportation with premium electric vehicle rentals.
+              Dẫn đầu tương lai của giao thông bền vững với dịch vụ cho thuê xe điện cao cấp.
             </p>
           </div>
 
-          {/* Company Links */}
+          {/* Liên kết công ty */}
           <div>
-            <h3 className="text-lg font-semibold mb-4">Company</h3>
+            <h3 className="text-lg font-semibold mb-4">Công ty</h3>
             <ul className="space-y-2">
               <li>
                 <a href="#" className="text-gray-300 hover:text-white transition-colors duration-200 text-sm">
-                  About Us
+                  Về chúng tôi
                 </a>
               </li>
               <li>
                 <a href="#" className="text-gray-300 hover:text-white transition-colors duration-200 text-sm">
-                  Contact Us
+                  Liên hệ
                 </a>
               </li>
               <li>
                 <a href="/how-it-works" className="text-gray-300 hover:text-white transition-colors duration-200 text-sm">
-                  How It Works
+                  Cách hoạt động
                 </a>
               </li>
               <li>
                 <a href="/policy" className="text-gray-300 hover:text-white transition-colors duration-200 text-sm">
-                  Policy & Terms
+                  Chính sách & Điều khoản
                 </a>
               </li>
             </ul>
           </div>
 
-          {/* Support Links */}
+          {/* Liên kết hỗ trợ */}
           <div>
-            <h3 className="text-lg font-semibold mb-4">Support</h3>
+            <h3 className="text-lg font-semibold mb-4">Hỗ trợ</h3>
             <ul className="space-y-2">
               <li>
                 <a href="#" className="text-gray-300 hover:text-white transition-colors duration-200 text-sm">
-                  Help Center
+                  Trung tâm trợ giúp
                 </a>
               </li>
               <li>
                 <a href="#" className="text-gray-300 hover:text-white transition-colors duration-200 text-sm">
-                  Contact Us
+                  Liên hệ
                 </a>
               </li>
               <li>
                 <a href="#" className="text-gray-300 hover:text-white transition-colors duration-200 text-sm">
-                  Safety
+                  An toàn
                 </a>
               </li>
               <li>
                 <a href="#" className="text-gray-300 hover:text-white transition-colors duration-200 text-sm">
-                  Terms of Service
+                  Điều khoản dịch vụ
                 </a>
               </li>
             </ul>
           </div>
 
-          {/* Locations */}
+          {/* Địa điểm */}
           <div>
-            <h3 className="text-lg font-semibold mb-4">Locations</h3>
+            <h3 className="text-lg font-semibold mb-4">Địa điểm</h3>
             <ul className="space-y-2">
               <li>
                 <a href="#" className="text-gray-300 hover:text-white transition-colors duration-200 text-sm">
-                  District 1 Station
+                  Trạm Quận 1
                 </a>
               </li>
               <li>
                 <a href="#" className="text-gray-300 hover:text-white transition-colors duration-200 text-sm">
-                  District 7 Station
+                  Trạm Quận 7
                 </a>
               </li>
               <li>
                 <a href="#" className="text-gray-300 hover:text-white transition-colors duration-200 text-sm">
-                  Airport Station
+                  Trạm Sân bay
                 </a>
               </li>
               <li>
                 <a href="#" className="text-gray-300 hover:text-white transition-colors duration-200 text-sm">
-                  District 3 Station
+                  Trạm Quận 3
                 </a>
               </li>
             </ul>
           </div>
         </div>
 
-        {/* Newsletter subscription */}
+        {/* Đăng ký nhận tin */}
         <div className="mt-12 pt-8 border-t border-gray-700">
           <div className="flex flex-col md:flex-row items-center justify-between">
             <div className="mb-4 md:mb-0">
-              <h3 className="text-lg font-semibold mb-2">Stay updated with EVRentals</h3>
-              <p className="text-gray-300 text-sm">Get the latest news and offers delivered to your inbox.</p>
+              <h3 className="text-lg font-semibold mb-2">Cập nhật từ EVRentals</h3>
+              <p className="text-gray-300 text-sm">Nhận tin tức và ưu đãi mới nhất qua email của bạn.</p>
             </div>
             <div className="flex w-full md:w-auto">
               <input
                 type="email"
-                placeholder="Enter your email"
+                placeholder="Nhập email của bạn"
                 className="flex-1 md:w-64 px-4 py-2 bg-gray-700 border border-gray-600 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-white placeholder-gray-400"
               />
               <button className="bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded-r-lg font-medium transition-colors duration-200">
-                Subscribe
+                Đăng ký
               </button>
             </div>
           </div>
         </div>
 
-        {/* Social media and contact info */}
+        {/* Mạng xã hội và thông tin liên hệ */}
         <div className="mt-8 pt-8 border-t border-gray-700">
           <div className="flex flex-col md:flex-row items-center justify-between">
             <div className="flex items-center space-x-6 mb-4 md:mb-0">
@@ -135,7 +135,7 @@ const Footer: React.FC = () => {
               </div>
             </div>
             
-            {/* Social media links */}
+            {/* Liên kết mạng xã hội */}
             <div className="flex items-center space-x-4">
               <a href="#" className="text-gray-400 hover:text-white transition-colors duration-200">
                 <span className="sr-only">Facebook</span>
@@ -165,10 +165,10 @@ const Footer: React.FC = () => {
           </div>
         </div>
 
-        {/* Copyright */}
+        {/* Bản quyền */}
         <div className="mt-8 pt-8 border-t border-gray-700 text-center">
           <p className="text-gray-400 text-sm">
-            © 2024 EVRentals. All rights reserved.
+            © 2024 EVRentals. Bảo lưu mọi quyền.
           </p>
         </div>
       </div>

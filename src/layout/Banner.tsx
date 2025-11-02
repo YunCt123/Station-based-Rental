@@ -15,21 +15,21 @@ const Banner: React.FC = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Load real stats on component mount
+  // Tải số liệu thực tế khi component được mount
   useEffect(() => {
     const loadStats = async () => {
       try {
-        // Get total available vehicles
+        // Lấy tổng số xe có sẵn
         const { vehicles } = await vehicleService.getAvailableVehicles({}, { limit: 1000 });
         setTotalVehicles(vehicles.length);
 
-        // Get total stations
+        // Lấy tổng số trạm sạc
         const stationsData = await stationService.getAllStations();
         setTotalStations(stationsData.stations.length);
         
       } catch (error) {
-        console.error('Failed to load stats:', error);
-        // Keep default values if API fails
+        console.error('Không thể tải số liệu:', error);
+        // Giữ giá trị mặc định nếu API thất bại
         setTotalVehicles(50);
         setTotalStations(8);
       }
@@ -41,8 +41,8 @@ const Banner: React.FC = () => {
   const handleSearch = async () => {
     if (!location.trim()) {
       toast({
-        title: "Location Required",
-        description: "Please enter a pickup location to search.",
+        title: "Yêu cầu địa điểm",
+        description: "Vui lòng nhập địa điểm nhận xe để tìm kiếm.",
         variant: "destructive",
       });
       return;
@@ -50,8 +50,8 @@ const Banner: React.FC = () => {
 
     if (!pickupDate || !returnDate) {
       toast({
-        title: "Dates Required", 
-        description: "Please select both pickup and return dates.",
+        title: "Yêu cầu ngày tháng", 
+        description: "Vui lòng chọn cả ngày nhận và ngày trả xe.",
         variant: "destructive",
       });
       return;
@@ -59,8 +59,8 @@ const Banner: React.FC = () => {
 
     if (new Date(pickupDate) >= new Date(returnDate)) {
       toast({
-        title: "Invalid Dates",
-        description: "Return date must be after pickup date.",
+        title: "Ngày tháng không hợp lệ",
+        description: "Ngày trả xe phải sau ngày nhận xe.",
         variant: "destructive", 
       });
       return;
@@ -69,21 +69,21 @@ const Banner: React.FC = () => {
     try {
       setIsSearching(true);
       
-      console.log('🔍 Searching for vehicles:', { location, pickupDate, returnDate });
+      console.log('🔍 Đang tìm kiếm xe:', { location, pickupDate, returnDate });
       
-      // Search vehicles by location
+      // Tìm kiếm xe theo địa điểm
       const { vehicles } = await vehicleService.searchVehiclesByLocation(location);
       
       if (vehicles.length === 0) {
         toast({
-          title: "No Vehicles Found",
-          description: `No available vehicles found in "${location}". Try a different location.`,
+          title: "Không tìm thấy xe",
+          description: `Không có xe nào có sẵn tại "${location}". Vui lòng thử địa điểm khác.`,
           variant: "destructive",
         });
         return;
       }
 
-      // Navigate to vehicles page with search params
+      // Điều hướng đến trang xe với các tham số tìm kiếm
       const searchParams = new URLSearchParams({
         location: location,
         pickup: pickupDate,
@@ -93,16 +93,16 @@ const Banner: React.FC = () => {
       navigate(`/vehicles?${searchParams.toString()}`);
       
       toast({
-        title: "Search Successful",
-        description: `Found ${vehicles.length} available vehicles in ${location}`,
+        title: "Tìm kiếm thành công",
+        description: `Đã tìm thấy ${vehicles.length} xe có sẵn tại ${location}`,
         variant: "default",
       });
       
     } catch (error) {
-      console.error('Search failed:', error);
+      console.error('Tìm kiếm thất bại:', error);
       toast({
-        title: "Search Failed",
-        description: "Unable to search vehicles. Please try again.",
+        title: "Tìm kiếm thất bại",
+        description: "Không thể tìm kiếm xe. Vui lòng thử lại.",
         variant: "destructive",
       });
     } finally {
@@ -114,42 +114,42 @@ const Banner: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 flex items-center">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-18">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-          {/* Left Content */}
+          {/* Nội dung bên trái */}
           <div className="space-y-8">
-            {/* Badge */}
+            {/* Huy hiệu */}
             <div className="inline-flex items-center px-4 py-2 bg-green-100 text-green-800 rounded-full text-sm font-medium">
               <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
               </svg>
-              100% Electric Fleet
+              100% Xe Điện
             </div>
             
-            {/* Main Headline */}
+            {/* Tiêu đề chính */}
             <div>
               <h1 className="text-4xl md:text-6xl font-bold text-gray-900 leading-tight mb-6">
-                Rent Premium
+                Thuê Xe Điện Cao Cấp
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-green-500">
-                  {" "}Electric Vehicles
+                  {" "}Dễ Dàng
                 </span>
               </h1>
               <p className="text-xl text-gray-600 leading-relaxed">
-                Experience the future of transportation with our eco-friendly fleet. 
-                Clean, efficient, and ready for your next adventure.
+                Trải nghiệm tương lai của giao thông với đội xe thân thiện với môi trường của chúng tôi. 
+                Sạch sẽ, hiệu quả và sẵn sàng cho chuyến phiêu lưu tiếp theo của bạn.
               </p>
             </div>
 
-            {/* Search Form */}
+            {/* Form tìm kiếm */}
             <div className="bg-white rounded-2xl shadow-xl p-6 border border-gray-100">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Find Your Perfect EV</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Tìm Xe Điện Hoàn Hảo Của Bạn</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Pickup Location
+                    Địa Điểm Nhận Xe
                   </label>
                   <div className="relative">
                     <input
                       type="text"
-                      placeholder="Enter location..."
+                      placeholder="Nhập địa điểm..."
                       value={location}
                       onChange={(e) => setLocation(e.target.value)}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -163,7 +163,7 @@ const Banner: React.FC = () => {
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Pickup Date
+                    Ngày Nhận Xe
                   </label>
                   <input
                     type="date"
@@ -175,7 +175,7 @@ const Banner: React.FC = () => {
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Return Date
+                    Ngày Trả Xe
                   </label>
                   <input
                     type="date"
@@ -196,20 +196,20 @@ const Banner: React.FC = () => {
                     <svg className="w-5 h-5 mr-2 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                     </svg>
-                    Searching...
+                    Đang tìm kiếm...
                   </>
                 ) : (
                   <>
                     <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
-                    Find Available Vehicles
+                    Tìm Xe Có Sẵn
                   </>
                 )}
               </button>
             </div>
 
-            {/* Feature List */}
+            {/* Danh sách tính năng */}
             <div className="grid grid-cols-2 gap-6">
               <div className="flex items-center space-x-3">
                 <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
@@ -218,8 +218,8 @@ const Banner: React.FC = () => {
                   </svg>
                 </div>
                 <div>
-                  <div className="font-semibold text-gray-900">Zero Emissions</div>
-                  <div className="text-sm text-gray-600">100% Electric</div>
+                  <div className="font-semibold text-gray-900">Không Khí Thải</div>
+                  <div className="text-sm text-gray-600">100% Điện</div>
                 </div>
               </div>
               
@@ -230,8 +230,8 @@ const Banner: React.FC = () => {
                   </svg>
                 </div>
                 <div>
-                  <div className="font-semibold text-gray-900">Instant Booking</div>
-                  <div className="text-sm text-gray-600">Available 24/7</div>
+                  <div className="font-semibold text-gray-900">Đặt Xe Nhanh</div>
+                  <div className="text-sm text-gray-600">Có Sẵn 24/7</div>
                 </div>
               </div>
               
@@ -242,8 +242,8 @@ const Banner: React.FC = () => {
                   </svg>
                 </div>
                 <div>
-                  <div className="font-semibold text-gray-900">Premium Fleet</div>
-                  <div className="text-sm text-gray-600">Latest Models</div>
+                  <div className="font-semibold text-gray-900">Đội Xe Cao Cấp</div>
+                  <div className="text-sm text-gray-600">Mẫu Mới Nhất</div>
                 </div>
               </div>
               
@@ -254,43 +254,43 @@ const Banner: React.FC = () => {
                   </svg>
                 </div>
                 <div>
-                  <div className="font-semibold text-gray-900">Expert Support</div>
-                  <div className="text-sm text-gray-600">24/7 Assistance</div>
+                  <div className="font-semibold text-gray-900">Hỗ Trợ Chuyên Nghiệp</div>
+                  <div className="text-sm text-gray-600">Hỗ Trợ 24/7</div>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Right Content - Image */}
+          {/* Nội dung bên phải - Hình ảnh */}
           <div className="relative">
             <div className="relative z-10">
               <img 
                 src={img} 
-                alt="Electric Vehicle Charging Station" 
+                alt="Trạm Sạc Xe Điện" 
                 className="w-full h-[600px] object-cover rounded-2xl shadow-2xl"
               />
-              {/* Floating Stats Cards */}
+              {/* Thẻ số liệu nổi */}
               <div className="absolute top-6 right-6 bg-white/90 backdrop-blur-sm rounded-xl p-4 shadow-lg">
                 <div className="text-2xl font-bold text-blue-600">
                   {totalVehicles > 0 ? `${totalVehicles}+` : '...'}
                 </div>
-                <div className="text-sm text-gray-600">Electric Vehicles</div>
+                <div className="text-sm text-gray-600">Xe Điện</div>
               </div>
               
               <div className="absolute bottom-6 left-6 bg-white/90 backdrop-blur-sm rounded-xl p-4 shadow-lg">
                 <div className="text-2xl font-bold text-green-600">4.9★</div>
-                <div className="text-sm text-gray-600">Customer Rating</div>
+                <div className="text-sm text-gray-600">Đánh Giá Khách Hàng</div>
               </div>
               
               <div className="absolute top-1/2 -left-4 bg-white/90 backdrop-blur-sm rounded-xl p-4 shadow-lg">
                 <div className="text-2xl font-bold text-purple-600">
                   {totalStations > 0 ? totalStations : '...'}
                 </div>
-                <div className="text-sm text-gray-600">Charging Stations</div>
+                <div className="text-sm text-gray-600">Trạm Sạc</div>
               </div>
             </div>
             
-            {/* Background Decorations */}
+            {/* Trang trí nền */}
             <div className="absolute -top-6 -right-6 w-24 h-24 bg-gradient-to-r from-blue-500 to-green-400 rounded-full opacity-20"></div>
             <div className="absolute -bottom-6 -left-6 w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-400 rounded-full opacity-20"></div>
           </div>

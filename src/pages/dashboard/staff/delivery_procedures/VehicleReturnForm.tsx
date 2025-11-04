@@ -89,7 +89,7 @@ const VehicleReturnForm: React.FC<VehicleReturnFormProps> = ({
   // Upload single file immediately when selected
   const uploadSingleFile = async (file: RcFile): Promise<string> => {
     const formData = new FormData();
-    formData.append('photos', file);
+    formData.append('image', file);
 
     try {
       const response = await api.post('/upload/single-return-photo', formData, {
@@ -98,18 +98,50 @@ const VehicleReturnForm: React.FC<VehicleReturnFormProps> = ({
         },
       });
       
-      if (response.data.success && response.data.data.photos.length > 0) {
-        const photoUrl = response.data.data.photos[0].url;
-        console.log('✅ Return photo uploaded:', photoUrl);
-        message.success('Tải ảnh thành công!');
-        return photoUrl;
+      console.log('📤 Return upload response:', response.data);
+      
+      if (response.data.success) {
+        // Check multiple possible response structures
+        let photoUrl = null;
+        
+        // Structure 1: response.data.data.photos[0].url
+        if (response.data.data?.photos?.length > 0) {
+          photoUrl = response.data.data.photos[0].url;
+        }
+        // Structure 2: response.data.data.url (direct URL)
+        else if (response.data.data?.url) {
+          photoUrl = response.data.data.url;
+        }
+        // Structure 3: response.data.url (direct in root)
+        else if (response.data.url) {
+          photoUrl = response.data.url;
+        }
+        
+        if (photoUrl) {
+          console.log('✅ Return photo uploaded:', photoUrl);
+          message.success('Tải ảnh thành công!');
+          return photoUrl;
+        } else {
+          throw new Error('No photo URL found in response');
+        }
       } else {
         throw new Error(response.data.message || 'Upload failed');
       }
     } catch (error) {
       console.error('❌ Return photo upload error:', error);
-      message.error('Không thể tải ảnh lên');
-      throw error;
+      
+      let errorMessage = 'Upload failed';
+      if (error && typeof error === 'object' && 'response' in error) {
+        const axiosError = error as { response?: { data?: { message?: string } } };
+        if (axiosError.response?.data?.message) {
+          errorMessage = axiosError.response.data.message;
+        }
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      
+      message.error(`Lỗi upload ảnh: ${errorMessage}`);
+      throw new Error(errorMessage);
     }
   };
 

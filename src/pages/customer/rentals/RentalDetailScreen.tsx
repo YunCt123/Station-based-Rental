@@ -39,6 +39,10 @@ const RentalDetailScreen: React.FC<RentalDetailScreenProps> = ({
     });
   };
 
+  const getPhotoUrl = (photo: string | { url: string; _id?: string }): string => {
+    return typeof photo === 'string' ? photo : photo.url;
+  };
+
   const getStatusConfig = (status: string) => {
     const configs = {
       'CONFIRMED': { text: 'Chờ nhận xe', color: 'orange' },
@@ -285,8 +289,9 @@ const RentalDetailScreen: React.FC<RentalDetailScreenProps> = ({
                     <Image
                       width="100%"
                       height={120}
-                      src={photo}
+                      src={getPhotoUrl(photo)}
                       style={{ objectFit: 'cover', borderRadius: 4 }}
+                      fallback="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMIAAADDCAYAAADQvc6U"
                     />
                   </Col>
                 ))}
@@ -304,8 +309,9 @@ const RentalDetailScreen: React.FC<RentalDetailScreenProps> = ({
                     <Image
                       width="100%"
                       height={120}
-                      src={photo}
+                      src={getPhotoUrl(photo)}
                       style={{ objectFit: 'cover', borderRadius: 4 }}
+                      fallback="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMIAAADDCAYAAADQvc6U"
                     />
                   </Col>
                 ))}

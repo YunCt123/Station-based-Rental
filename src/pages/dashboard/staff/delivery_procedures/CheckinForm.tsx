@@ -92,21 +92,49 @@ const CheckinForm: React.FC<CheckinFormProps> = ({
         },
       });
       
-      if (response.data.success && response.data.data.photos.length > 0) {
-        const photoUrl = response.data.data.photos[0].url;
-        message.success(`Ảnh "${file.name}" đã được tải lên thành công!`);
-        return photoUrl;
+      console.log('📤 Upload response:', response.data);
+      
+      if (response.data.success) {
+        // Check multiple possible response structures
+        let photoUrl = null;
+        
+        // Structure 1: response.data.data.photos[0].url
+        if (response.data.data?.photos?.length > 0) {
+          photoUrl = response.data.data.photos[0].url;
+        }
+        // Structure 2: response.data.data.url (direct URL)
+        else if (response.data.data?.url) {
+          photoUrl = response.data.data.url;
+        }
+        // Structure 3: response.data.url (direct in root)
+        else if (response.data.url) {
+          photoUrl = response.data.url;
+        }
+        
+        if (photoUrl) {
+          message.success(`Ảnh "${file.name}" đã được tải lên thành công!`);
+          return photoUrl;
+        } else {
+          throw new Error('No photo URL found in response');
+        }
       } else {
         throw new Error(response.data.message || 'Upload failed');
       }
     } catch (error) {
       console.error('❌ Single photo upload error:', error);
       
-      // Fallback: Generate placeholder URL for testing
-      const fileName = file.name.replace(/\s+/g, '_');
-      const placeholderUrl = `https://via.placeholder.com/800x600/0066CC/FFFFFF?text=Checkin_Photo_${fileName}`;
-      message.warning(`Không thể tải "${file.name}" lên server, sử dụng ảnh tạm`);
-      return placeholderUrl;
+      let errorMessage = 'Upload failed';
+      if (error && typeof error === 'object' && 'response' in error) {
+        const axiosError = error as { response?: { data?: { message?: string } } };
+        if (axiosError.response?.data?.message) {
+          errorMessage = axiosError.response.data.message;
+        }
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      
+      message.error(`Lỗi upload ảnh: ${errorMessage}`);
+      throw new Error(errorMessage);
     }
   };
 

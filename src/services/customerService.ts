@@ -33,7 +33,7 @@ export interface Station {
 
 export interface RentalPickup {
   at?: string;
-  photos?: string[];
+  photos?: (string | { url: string; _id?: string })[];
   staff_id?: string;
   odo_km?: number;
   soc?: number;
@@ -42,7 +42,7 @@ export interface RentalPickup {
 
 export interface RentalReturn {
   at?: string | null;
-  photos?: string[];
+  photos?: (string | { url: string; _id?: string })[];
   odo_km?: number | null;
   soc?: number | null;
   staff_id?: string;

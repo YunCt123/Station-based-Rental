@@ -7,6 +7,9 @@
 @import "tailwindcss";
 /* @plugin "tailwindcss-animate"; */
 
+/* Customer Rental Styles */
+@import url("./styles/customer-rentals.css");
+
 /* =========================
    THEME TOKENS (Tailwind v4)
    ========================= */

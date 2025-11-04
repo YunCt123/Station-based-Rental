@@ -60,13 +60,21 @@ export interface Rental {
   _id: string;
   status: 'CONFIRMED' | 'ONGOING' | 'RETURN_PENDING' | 'COMPLETED';
   user_id: string;
+  booking_id: {
+    _id: string;
+    start_at: string;
+    end_at: string;
+    status: string;
+    pricing_snapshot?: PricingSnapshot;
+    vehicle_snapshot?: any;
+    station_snapshot?: any;
+    createdAt: string;
+  };
   vehicle_id: Vehicle;
   station_id: Station;
   pickup?: RentalPickup;
   return?: RentalReturn;
   pricing_snapshot: PricingSnapshot;
-  start_time: string;
-  end_time: string;
   createdAt: string;
   updatedAt: string;
   charges?: {

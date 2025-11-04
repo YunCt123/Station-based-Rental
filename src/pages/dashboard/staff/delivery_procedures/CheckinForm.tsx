@@ -83,10 +83,10 @@ const CheckinForm: React.FC<CheckinFormProps> = ({
   // Upload single file immediately when selected
   const uploadSingleFile = async (file: RcFile): Promise<string> => {
     const formData = new FormData();
-    formData.append('photos', file);
+    formData.append('image', file);
 
     try {
-      const response = await api.post('/upload/checkin-photos', formData, {
+      const response = await api.post('/upload/single-checkin-photo', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },

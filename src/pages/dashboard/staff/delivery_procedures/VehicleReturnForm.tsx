@@ -92,7 +92,7 @@ const VehicleReturnForm: React.FC<VehicleReturnFormProps> = ({
     formData.append('photos', file);
 
     try {
-      const response = await api.post('/upload/return-photos', formData, {
+      const response = await api.post('/upload/single-return-photo', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },

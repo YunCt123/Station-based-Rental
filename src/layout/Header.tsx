@@ -142,6 +142,12 @@ const Navbar = ({ user, onLogout }: NavbarProps) => {
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
+                    <Link to="/my-rentals" className="flex items-center">
+                      <Car className="mr-2 h-4 w-4" />
+                      Xe thuê của tôi
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
                     <Link to="/bookings" className="flex items-center">
                       <History className="mr-2 h-4 w-4" />
                       Lịch sử đặt chỗ
@@ -267,6 +273,13 @@ const Navbar = ({ user, onLogout }: NavbarProps) => {
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
                       {t("nav.dashboard")}
+                    </Link>
+                    <Link
+                      to="/my-rentals"
+                      className="block px-3 py-2 rounded-md text-base font-medium text-muted-foreground hover:text-foreground hover:bg-secondary"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      Xe thuê của tôi
                     </Link>
                     <Link
                       to="/bookings"

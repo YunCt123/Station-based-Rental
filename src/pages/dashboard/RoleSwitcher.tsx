@@ -1,11 +1,25 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { getCurrentUser } from '../../utils/auth';
 
 
 const RoleSwitcher: React.FC = () => {
   const navigate = useNavigate();
 
-  const setUserRole = (role: 'admin' | 'station_staff', userInfo?: any) => {
+  // Check if user is customer and redirect automatically
+  useEffect(() => {
+    const currentUser = getCurrentUser();
+    if (currentUser?.role === 'customer') {
+      navigate('/my-rentals');
+      return;
+    }
+  }, [navigate]);
+
+  const setUserRole = (role: 'admin' | 'station_staff', userInfo?: {
+    name: string;
+    email: string;
+    avatar: string | null;
+  }) => {
     localStorage.setItem('userRole', role);
     if (userInfo) {
       localStorage.setItem('userInfo', JSON.stringify(userInfo));

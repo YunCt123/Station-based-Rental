@@ -47,7 +47,7 @@ const RentalDetailScreen: React.FC<RentalDetailScreenProps> = ({
     const configs = {
       'CONFIRMED': { text: 'Chờ nhận xe', color: 'orange' },
       'ONGOING': { text: 'Đang sử dụng', color: 'green' },
-      'RETURN_PENDING': { text: 'Cần thanh toán', color: 'red' },
+      'RETURN_PENDING': { text: 'Chờ thanh toán cuối', color: 'red' },
       'COMPLETED': { text: 'Hoàn tất', color: 'default' }
     };
     return configs[status as keyof typeof configs] || { text: status, color: 'default' };
@@ -99,10 +99,10 @@ const RentalDetailScreen: React.FC<RentalDetailScreenProps> = ({
     if (returnInfo?.at) {
       items.push({
         dot: <CheckCircleOutlined style={{ fontSize: '16px' }} />,
-        color: status === 'COMPLETED' ? 'green' : 'orange',
+        color: 'orange',
         children: (
           <div>
-            <Text strong>Đã trả xe</Text>
+            <Text strong>Nhân viên đã kiểm tra xe trả</Text>
             <br />
             <Text type="secondary">{formatDate(returnInfo.at)}</Text>
             {returnInfo.odo_km && (
@@ -115,6 +115,12 @@ const RentalDetailScreen: React.FC<RentalDetailScreenProps> = ({
               <>
                 <br />
                 <Text type="secondary">Pin cuối: {Math.round(returnInfo.soc * 100)}%</Text>
+              </>
+            )}
+            {rental.charges && rental.charges.extra_fees > 0 && (
+              <>
+                <br />
+                <Text type="warning">Phí phát sinh: {rental.charges.extra_fees.toLocaleString()} VND</Text>
               </>
             )}
           </div>
@@ -331,8 +337,35 @@ const RentalDetailScreen: React.FC<RentalDetailScreenProps> = ({
             <Card>
               <div style={{ textAlign: 'center' }}>
                 <Paragraph>
-                  Nhân viên đã hoàn tất kiểm tra xe. Vui lòng thanh toán để hoàn tất việc thuê xe.
+                  <Text strong style={{ color: '#52c41a' }}>✅ Xe đã được nhân viên kiểm tra</Text>
                 </Paragraph>
+                <Paragraph>
+                  Vui lòng thanh toán số tiền cuối cùng để hoàn tất việc thuê xe.
+                </Paragraph>
+                
+                {/* Show charges if available */}
+                {rental.charges && (
+                  <div style={{ marginBottom: 16, padding: 16, backgroundColor: '#f6ffed', borderRadius: 8 }}>
+                    <div>
+                      <Text>Phí thuê xe: <Text strong>{rental.charges.rental_fee?.toLocaleString()} VND</Text></Text>
+                    </div>
+                    <div>
+                      <Text>Phí phát sinh: <Text strong>{rental.charges.extra_fees?.toLocaleString()} VND</Text></Text>
+                    </div>
+                    <div style={{ marginTop: 8, fontSize: '16px' }}>
+                      <Text>Tổng cộng: <Text strong style={{ color: '#1890ff' }}>{rental.charges.total?.toLocaleString()} VND</Text></Text>
+                    </div>
+                    <div style={{ marginTop: 4 }}>
+                      <Text type="secondary">Đã cọc: {rental.pricing_snapshot.deposit?.toLocaleString()} VND</Text>
+                    </div>
+                    <div style={{ marginTop: 4, fontSize: '16px' }}>
+                      <Text>Còn phải trả: <Text strong style={{ color: '#f5222d' }}>
+                        {((rental.charges.total || 0) - (rental.pricing_snapshot.deposit || 0)).toLocaleString()} VND
+                      </Text></Text>
+                    </div>
+                  </div>
+                )}
+                
                 <Button
                   type="primary"
                   size="large"

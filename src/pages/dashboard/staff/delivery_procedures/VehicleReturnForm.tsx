@@ -145,44 +145,56 @@ const VehicleReturnForm: React.FC<VehicleReturnFormProps> = ({
     }
   };
 
-  // Perform vehicle return
-  const performReturn = async (imageUrls: string[], formData: ReturnData) => {
+  // Perform vehicle return inspection (new API)
+  const performReturnInspection = async (imageUrls: string[], formData: ReturnData) => {
     try {
-      console.log('🔙 Processing vehicle return...');
+      console.log('🔙 Processing vehicle return inspection...');
       
-      const returnPayload = {
+      const inspectionPayload = {
         photos: imageUrls,
         odo_km: formData.odo_km,
         soc: formData.soc / 100, // Convert percentage to decimal
         extraFees: formData.extraFees || []
       };
 
-      console.log('Return payload:', returnPayload);
+      console.log('Return inspection payload:', inspectionPayload);
 
-      const response = await api.post(`/rentals/${rental._id}/return`, returnPayload);
+      const response = await api.post(`/rentals/${rental._id}/return-inspection`, inspectionPayload);
       
       if (response.data.success) {
-        console.log('✅ Return successful:', response.data);
-        message.success('Xe đã được nhận trả thành công!');
+        console.log('✅ Return inspection successful:', response.data);
+        message.success('Kiểm tra trả xe thành công! Chờ khách hàng thanh toán cuối.');
         
-        // Check if final payment is needed
-        const { finalPayment } = response.data.data;
-        if (finalPayment && finalPayment.amount > 0) {
-          message.info(`Khách hàng cần thanh toán thêm: ${finalPayment.amount.toLocaleString()} VND`);
-        } else if (finalPayment && finalPayment.amount < 0) {
-          message.info(`Hoàn tiền cho khách hàng: ${Math.abs(finalPayment.amount).toLocaleString()} VND`);
-        } else {
-          message.success('Không cần thanh toán thêm!');
+        // Show charges information
+        const { charges } = response.data.data;
+        if (charges) {
+          const rentalFee = charges.rental_fee?.toLocaleString() || '0';
+          const extraFees = charges.extra_fees?.toLocaleString() || '0';
+          const total = charges.total?.toLocaleString() || '0';
+          
+          message.info({
+            content: (
+              <div>
+                <div><strong>Phí thuê xe:</strong> {rentalFee} VND</div>
+                <div><strong>Phí phát sinh:</strong> {extraFees} VND</div>
+                <div><strong>Tổng cộng:</strong> {total} VND</div>
+                <div style={{ marginTop: 8, fontWeight: 'bold' }}>
+                  Trạng thái: Chờ khách hàng thanh toán cuối
+                </div>
+              </div>
+            ),
+            duration: 10
+          });
         }
         
         return response.data;
       } else {
-        throw new Error(response.data.message || 'Return failed');
+        throw new Error(response.data.message || 'Return inspection failed');
       }
     } catch (error: unknown) {
-      console.error('❌ Return failed:', error);
+      console.error('❌ Return inspection failed:', error);
       
-      let errorMessage = 'Không thể nhận xe trả';
+      let errorMessage = 'Không thể kiểm tra xe trả';
       if (error && typeof error === 'object' && 'response' in error) {
         const axiosError = error as { response?: { data?: { message?: string } } };
         if (axiosError.response?.data?.message) {
@@ -204,7 +216,7 @@ const VehicleReturnForm: React.FC<VehicleReturnFormProps> = ({
     try {
       // Validate images
       if (uploadedPhotos.length < 4) {
-        message.error('Vui lòng chụp ít nhất 4 ảnh để nhận xe trả');
+        message.error('Vui lòng chụp ít nhất 4 ảnh để kiểm tra xe trả');
         return;
       }
 
@@ -218,7 +230,7 @@ const VehicleReturnForm: React.FC<VehicleReturnFormProps> = ({
         extraFees: extraFees.length > 0 ? extraFees : undefined
       };
 
-      await performReturn(uploadedPhotos, returnData);
+      await performReturnInspection(uploadedPhotos, returnData);
 
       // Success - close modal and refresh
       form.resetFields();
@@ -229,7 +241,7 @@ const VehicleReturnForm: React.FC<VehicleReturnFormProps> = ({
 
     } catch (error) {
       console.error('Submit error:', error);
-      message.error(`Lỗi nhận xe trả: ${(error as Error).message}`);
+      message.error(`Lỗi kiểm tra xe trả: ${(error as Error).message}`);
     } finally {
       setSubmitting(false);
     }
@@ -310,7 +322,7 @@ const VehicleReturnForm: React.FC<VehicleReturnFormProps> = ({
       title={
         <Space>
           <CheckCircleOutlined />
-          <span>Nhận xe trả từ khách hàng</span>
+          <span>Kiểm tra xe trả từ khách hàng</span>
         </Space>
       }
       open={visible}
@@ -376,7 +388,7 @@ const VehicleReturnForm: React.FC<VehicleReturnFormProps> = ({
             </Space>
           }
           required
-          help="Cần chụp: 1) Toàn cảnh phía trước, 2) Nội thất xe, 3) Bảng điều khiển/đồng hồ, 4) Toàn cảnh phía sau"
+          help="Cần chụp: 1) Toàn cảnh phía trước, 2) Nội thất xe, 3) Bảng điều khiển/đồng hồ, 4) Toàn cảnh phía sau (Staff sẽ kiểm tra và tính phí, khách hàng thanh toán cuối sau)"
         >
           <Upload {...uploadProps}>
             <Button icon={<PlusOutlined />}>Tải ảnh lên</Button>
@@ -514,7 +526,7 @@ const VehicleReturnForm: React.FC<VehicleReturnFormProps> = ({
             disabled={uploadedPhotos.length < 4}
             icon={<CheckCircleOutlined />}
           >
-            {submitting ? 'Đang xử lý...' : 'Xác nhận nhận xe trả'}
+            {submitting ? 'Đang kiểm tra...' : 'Xác nhận kiểm tra xe trả'}
           </Button>
         </div>
       </Form>

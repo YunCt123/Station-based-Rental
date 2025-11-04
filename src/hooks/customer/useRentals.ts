@@ -81,7 +81,7 @@ export const useFinalPayment = () => {
     setError(null);
     
     try {
-      // Step 1: Complete return to get final payment info
+      // Step 1: Complete return (customer final payment after staff inspection)
       const returnResult = await customerService.completeReturn(rentalId);
       const { finalPayment } = returnResult;
       

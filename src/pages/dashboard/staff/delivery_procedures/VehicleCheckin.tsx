@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Form, InputNumber, Input, Upload, Button, message, Steps, Spin, Alert, Space, Typography, Divider } from 'antd';
-import { CheckCircleOutlined, CameraOutlined, CarOutlined, BatteryChargingOutlined, EyeOutlined } from '@ant-design/icons';
+import { CheckCircleOutlined, CameraOutlined, CarOutlined, EyeOutlined } from '@ant-design/icons';
 import type { UploadFile, UploadProps } from 'antd/es/upload/interface';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useToast } from '../../../../hooks/use-toast';

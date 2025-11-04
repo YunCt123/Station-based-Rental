@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Card, Table, Button, Tag, Input, DatePicker, Select, Alert, Typography, Tabs } from 'antd';
 import { SearchOutlined, CarOutlined, CheckCircleOutlined, ClockCircleOutlined } from '@ant-design/icons';
-import { useNavigate } from 'react-router-dom';
 import type { ColumnsType } from 'antd/es/table';
 import { useToast } from '../../../../hooks/use-toast';
 import api from '../../../../services/api';
+import CheckinForm from './CheckinForm';
+import VehicleReturnForm from './VehicleReturnForm';
 
 const { Title } = Typography;
 const { RangePicker } = DatePicker;
@@ -74,12 +75,19 @@ interface BackendRental {
 }
 
 const DeliveryProcedures: React.FC = () => {
-  const navigate = useNavigate();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [rentalsForCheckin, setRentalsForCheckin] = useState<BackendRental[]>([]);
   const [rentalsForReturn, setRentalsForReturn] = useState<BackendRental[]>([]);
   const [searchText, setSearchText] = useState('');
+  
+  // Checkin modal state
+  const [checkinModalVisible, setCheckinModalVisible] = useState(false);
+  const [selectedRentalForCheckin, setSelectedRentalForCheckin] = useState<BackendRental | null>(null);
+  
+  // Return modal state
+  const [returnModalVisible, setReturnModalVisible] = useState(false);
+  const [selectedRentalForReturn, setSelectedRentalForReturn] = useState<BackendRental | null>(null);
 
   // Fetch rentals for checkin (CONFIRMED status) - those awaiting staff checkin
   const fetchRentalsForCheckin = useCallback(async () => {
@@ -158,6 +166,58 @@ const DeliveryProcedures: React.FC = () => {
     fetchRentalsForReturn();
   }, [fetchRentalsForCheckin, fetchRentalsForReturn]);
 
+  // Handler for opening checkin modal
+  const handleCheckinClick = (rental: BackendRental) => {
+    setSelectedRentalForCheckin(rental);
+    setCheckinModalVisible(true);
+  };
+
+  // Handler for closing checkin modal
+  const handleCheckinCancel = () => {
+    setCheckinModalVisible(false);
+    setSelectedRentalForCheckin(null);
+  };
+
+  // Handler for successful checkin
+  const handleCheckinSuccess = () => {
+    setCheckinModalVisible(false);
+    setSelectedRentalForCheckin(null);
+    // Refresh both lists since a rental moves from checkin to return list
+    fetchRentalsForCheckin();
+    fetchRentalsForReturn();
+    toast({
+      title: "Thành công",
+      description: "Xe đã được giao thành công!",
+      variant: "default",
+    });
+  };
+
+  // Handler for opening return modal
+  const handleReturnClick = (rental: BackendRental) => {
+    setSelectedRentalForReturn(rental);
+    setReturnModalVisible(true);
+  };
+
+  // Handler for closing return modal
+  const handleReturnCancel = () => {
+    setReturnModalVisible(false);
+    setSelectedRentalForReturn(null);
+  };
+
+  // Handler for successful return
+  const handleReturnSuccess = () => {
+    setReturnModalVisible(false);
+    setSelectedRentalForReturn(null);
+    // Refresh both lists since a rental moves from return to completed
+    fetchRentalsForCheckin();
+    fetchRentalsForReturn();
+    toast({
+      title: "Thành công",
+      description: "Xe đã được nhận trả thành công!",
+      variant: "default",
+    });
+  };
+
   // Columns for checkin table
   const checkinColumns: ColumnsType<BackendRental> = [
     {
@@ -206,7 +266,7 @@ const DeliveryProcedures: React.FC = () => {
         <Button
           type="primary"
           icon={<CarOutlined />}
-          onClick={() => navigate(`/dashboard/staff/checkin/${record._id}`)}
+          onClick={() => handleCheckinClick(record)}
         >
           Giao xe
         </Button>
@@ -279,7 +339,7 @@ const DeliveryProcedures: React.FC = () => {
         <Button
           type="primary"
           icon={<CheckCircleOutlined />}
-          onClick={() => navigate(`/dashboard/staff/return/${record._id}`)}
+          onClick={() => handleReturnClick(record)}
         >
           Nhận xe trả
         </Button>
@@ -424,6 +484,26 @@ const DeliveryProcedures: React.FC = () => {
           )}
         </TabPane>
       </Tabs>
+
+      {/* Checkin Modal */}
+      {selectedRentalForCheckin && (
+        <CheckinForm
+          visible={checkinModalVisible}
+          onCancel={handleCheckinCancel}
+          onSuccess={handleCheckinSuccess}
+          rental={selectedRentalForCheckin}
+        />
+      )}
+
+      {/* Return Modal */}
+      {selectedRentalForReturn && (
+        <VehicleReturnForm
+          visible={returnModalVisible}
+          onCancel={handleReturnCancel}
+          onSuccess={handleReturnSuccess}
+          rental={selectedRentalForReturn}
+        />
+      )}
     </div>
   );
 };

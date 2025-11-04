@@ -38,11 +38,12 @@ const FinalPaymentScreen: React.FC<FinalPaymentScreenProps> = ({
   const [pageLoading, setPageLoading] = useState(true);
 
   useEffect(() => {
-    // Load rental charges (calculated by staff inspection)
+    // Load rental charges (calculated by staff return inspection)
     const loadPaymentInfo = () => {
       const { charges, pricing_snapshot } = rental;
       
       if (charges) {
+        // Use charges calculated by backend (after staff inspection)
         const finalAmount = charges.total - (pricing_snapshot.deposit || 0);
         
         setPaymentInfo({
@@ -50,13 +51,25 @@ const FinalPaymentScreen: React.FC<FinalPaymentScreenProps> = ({
           totalCharges: charges.total,
           finalAmount,
           breakdown: {
-            rentalFee: charges.rental_fee,
-            extraFees: charges.extra_fees
+            rentalFee: charges.rental_fee || 0,
+            extraFees: charges.extra_fees || 0
           }
         });
       } else {
-        // Fallback calculation if charges not available
-        const estimatedTotal = pricing_snapshot.daily_rate || 0;
+        // Fallback: estimate based on rental type (should not happen after staff inspection)
+        console.warn('⚠️ No charges found - using estimated calculation');
+        
+        const rentalType = pricing_snapshot.details?.rentalType || 'hourly';
+        let estimatedTotal = 0;
+        
+        if (rentalType === 'daily') {
+          const days = pricing_snapshot.details?.days || 1;
+          estimatedTotal = days * (pricing_snapshot.daily_rate || 0);
+        } else {
+          const hours = pricing_snapshot.details?.hours || 1;
+          estimatedTotal = hours * (pricing_snapshot.hourly_rate || 0);
+        }
+        
         const finalAmount = estimatedTotal - (pricing_snapshot.deposit || 0);
         
         setPaymentInfo({
@@ -160,6 +173,37 @@ const FinalPaymentScreen: React.FC<FinalPaymentScreenProps> = ({
       {/* Payment Breakdown */}
       <Card title={<><DollarOutlined /> Chi tiết thanh toán</>}>
         <Space direction="vertical" size={16} style={{ width: '100%' }}>
+          {/* Rental Type Information */}
+          {rental.pricing_snapshot.details?.rentalType && (
+            <div style={{ 
+              padding: '12px', 
+              backgroundColor: '#f0f9ff', 
+              borderRadius: '8px',
+              border: '1px solid #bae7ff'
+            }}>
+              <Text strong>📋 Thông tin booking:</Text>
+              <div style={{ marginTop: 8 }}>
+                <Text>Loại thuê: <Text strong>
+                  {rental.pricing_snapshot.details.rentalType === 'daily' ? 'Theo ngày' : 'Theo giờ'}
+                </Text></Text>
+                {rental.pricing_snapshot.details.days && (
+                  <Text> ({rental.pricing_snapshot.details.days} ngày)</Text>
+                )}
+                {rental.pricing_snapshot.details.hours && (
+                  <Text> ({rental.pricing_snapshot.details.hours} giờ)</Text>
+                )}
+              </div>
+              <div>
+                <Text>Giá thuê: <Text strong>
+                  {rental.pricing_snapshot.details.rentalType === 'daily' 
+                    ? `${rental.pricing_snapshot.daily_rate?.toLocaleString()} VND/ngày`
+                    : `${rental.pricing_snapshot.hourly_rate?.toLocaleString()} VND/giờ`
+                  }
+                </Text></Text>
+              </div>
+            </div>
+          )}
+
           <div style={{ fontSize: '16px' }}>
             <div style={{ 
               display: 'flex', 
@@ -167,7 +211,7 @@ const FinalPaymentScreen: React.FC<FinalPaymentScreenProps> = ({
               padding: '8px 0',
               borderBottom: '1px solid #f0f0f0'
             }}>
-              <Text>Phí thuê xe:</Text>
+              <Text>Phí thuê xe (đã tính toán):</Text>
               <Text strong>{paymentInfo.breakdown.rentalFee.toLocaleString()} VND</Text>
             </div>
             
@@ -313,7 +357,7 @@ const FinalPaymentScreen: React.FC<FinalPaymentScreenProps> = ({
                 <Image
                   width="100%"
                   height={120}
-                  src={photo}
+                  src={typeof photo === 'string' ? photo : photo.url}
                   style={{ objectFit: 'cover', borderRadius: 4 }}
                 />
               </Col>

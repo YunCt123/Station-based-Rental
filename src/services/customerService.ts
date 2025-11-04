@@ -54,6 +54,11 @@ export interface PricingSnapshot {
   daily_rate?: number;
   currency: string;
   deposit?: number;
+  details?: {
+    rentalType?: string; // 'hourly' or 'daily'
+    hours?: number;
+    days?: number;
+  };
 }
 
 export interface Rental {

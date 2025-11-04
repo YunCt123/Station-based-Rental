@@ -255,6 +255,22 @@ const RentalDetailScreen: React.FC<RentalDetailScreenProps> = ({
         <Col xs={24} lg={12}>
           <Card title={<><CreditCardOutlined /> Thông tin giá</>}>
             <Space direction="vertical" size={8} style={{ width: '100%' }}>
+              {/* Show rental type */}
+              {rental.pricing_snapshot.details?.rentalType && (
+                <Text>
+                  <Text strong>Loại thuê:</Text>{' '}
+                  <Text style={{ color: '#1890ff' }}>
+                    {rental.pricing_snapshot.details.rentalType === 'daily' ? 'Theo ngày' : 'Theo giờ'}
+                  </Text>
+                  {rental.pricing_snapshot.details.days && (
+                    <Text type="secondary"> ({rental.pricing_snapshot.details.days} ngày)</Text>
+                  )}
+                  {rental.pricing_snapshot.details.hours && (
+                    <Text type="secondary"> ({rental.pricing_snapshot.details.hours} giờ)</Text>
+                  )}
+                </Text>
+              )}
+
               {rental.pricing_snapshot.hourly_rate && (
                 <Text>
                   <Text strong>Giá theo giờ:</Text>{' '}
@@ -280,6 +296,22 @@ const RentalDetailScreen: React.FC<RentalDetailScreenProps> = ({
                     {rental.pricing_snapshot.deposit.toLocaleString()} {rental.pricing_snapshot.currency}
                   </Text>
                 </Text>
+              )}
+
+              {/* Show calculated fees after staff inspection */}
+              {rental.charges && (
+                <div style={{ marginTop: 12, padding: 12, backgroundColor: '#f6ffed', borderRadius: 6 }}>
+                  <Text strong style={{ color: '#52c41a' }}>📊 Phí đã tính (sau kiểm tra):</Text>
+                  <div style={{ marginTop: 8 }}>
+                    <Text>Phí thuê: <Text strong>{rental.charges.rental_fee?.toLocaleString()} VND</Text></Text>
+                  </div>
+                  <div>
+                    <Text>Phí phát sinh: <Text strong>{rental.charges.extra_fees?.toLocaleString()} VND</Text></Text>
+                  </div>
+                  <div style={{ marginTop: 4, borderTop: '1px solid #d9f7be', paddingTop: 4 }}>
+                    <Text>Tổng: <Text strong style={{ color: '#1890ff' }}>{rental.charges.total?.toLocaleString()} VND</Text></Text>
+                  </div>
+                </div>
               )}
             </Space>
           </Card>

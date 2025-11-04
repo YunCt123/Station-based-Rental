@@ -201,7 +201,7 @@ const VehicleAvailable: React.FC = () => {
                         placeholder="Tìm thành phố..."
                         allowClear
                         style={{ width: 200 }}
-                        value={selectedCity}
+                        // value={selectedCity}
                         onChange={e => setSelectedCity(e.target.value)}
                         list="city-list"
                     />

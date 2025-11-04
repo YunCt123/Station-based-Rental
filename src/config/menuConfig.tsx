@@ -75,6 +75,13 @@ export const getMenuSections = (): SidebarSection[] => [
         icon: <UserIcon className="w-5 h-5" />,
         path: '/staff/customer-verification',
         roles: [UserRole.STATION_STAFF],
+      },
+      {
+        id: 'delivery-procedures',
+        title: 'Quy trình giao nhận xe',
+        icon: <TruckIcon className="w-5 h-5" />,
+        path: '/staff/delivery-procedures',
+        roles: [UserRole.STATION_STAFF],
       }
     ]
   },

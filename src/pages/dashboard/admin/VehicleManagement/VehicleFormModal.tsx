@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   Modal,
   Form,
@@ -15,6 +15,8 @@ import {  PlusOutlined } from '@ant-design/icons';
 import type { UploadFile } from 'antd/es/upload/interface';
 import { adminStationService, type AdminStation } from '../../../../services/adminStationService';
 import api from '../../../../services/api';
+import { useToast } from '../../../../hooks/use-toast';
+import { Toaster } from '../../../../components/ui/toaster';
 
 const { Option } = Select;
 const { TextArea } = Input;
@@ -87,6 +89,7 @@ const VehicleFormModal: React.FC<VehicleFormModalProps> = ({
   onSubmit
 }) => {
   const [form] = Form.useForm();
+  const { toast } = useToast();
   const [stations, setStations] = useState<AdminStation[]>([]);
   const [loadingStations, setLoadingStations] = useState(false);
   const [imageFileList, setImageFileList] = useState<UploadFile[]>([]);
@@ -112,12 +115,27 @@ const VehicleFormModal: React.FC<VehicleFormModalProps> = ({
       if (response.data.success && response.data.data?.url) {
         const cloudinaryUrl = response.data.data.url;
         console.log('Cloudinary URL:', cloudinaryUrl);
+        
+        // Show success toast for image upload
+        toast({
+          title: "Tải ảnh thành công",
+          description: "Hình ảnh đã được tải lên thành công!",
+        });
+        
         return cloudinaryUrl;
       } else {
         throw new Error('No URL returned from upload service');
       }
     } catch (error) {
       console.error('Image upload error:', error);
+      
+      // Show error toast for image upload
+      toast({
+        title: "Lỗi tải ảnh",
+        description: "Không thể tải ảnh lên. Vui lòng thử lại.",
+        variant: "destructive",
+      });
+      
       throw error;
     }
   };
@@ -197,14 +215,7 @@ const VehicleFormModal: React.FC<VehicleFormModalProps> = ({
     return true;
   };
 
-  // Load stations when modal opens
-  useEffect(() => {
-    if (visible) {
-      loadStations();
-    }
-  }, [visible]);
-
-  const loadStations = async () => {
+  const loadStations = useCallback(async () => {
     setLoadingStations(true);
     try {
       const response = await adminStationService.getAllStations({
@@ -217,10 +228,24 @@ const VehicleFormModal: React.FC<VehicleFormModalProps> = ({
       }
     } catch (error) {
       console.error('Error loading stations:', error);
+      
+      // Show error toast for loading stations
+      toast({
+        title: "Lỗi tải dữ liệu",
+        description: "Không thể tải danh sách trạm. Vui lòng thử lại.",
+        variant: "destructive",
+      });
     } finally {
       setLoadingStations(false);
     }
-  };
+  }, [toast]);
+
+  // Load stations when modal opens
+  useEffect(() => {
+    if (visible) {
+      loadStations();
+    }
+  }, [visible, loadStations]);
 
   useEffect(() => {
     if (visible) {
@@ -285,8 +310,22 @@ const VehicleFormModal: React.FC<VehicleFormModalProps> = ({
       
       console.log('Submitting JSON data:', submitData);
       await onSubmit(submitData);
+      
+      // Show success toast
+      toast({
+        title: isEditing ? "Cập nhật thành công" : "Thêm mới thành công",
+        description: `Phương tiện ${values.name} đã được ${isEditing ? 'cập nhật' : 'thêm'} thành công!`,
+      });
+      
     } catch (error) {
       console.error('Validation failed:', error);
+      
+      // Show error toast
+      toast({
+        title: "Có lỗi xảy ra",
+        description: error instanceof Error ? error.message : "Vui lòng kiểm tra lại thông tin và thử lại.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -356,6 +395,7 @@ const VehicleFormModal: React.FC<VehicleFormModalProps> = ({
   ];
 
   return (
+    <>
     <Modal
       title={isEditing ? 'Chỉnh sửa xe' : 'Thêm xe mới'}
       open={visible}
@@ -766,6 +806,8 @@ const VehicleFormModal: React.FC<VehicleFormModalProps> = ({
         </Row>
       </Form>
     </Modal>
+    <Toaster />
+    </>
   );
 };
 

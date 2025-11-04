@@ -641,14 +641,41 @@ export class BookingService {
 }> {
   try {
     console.log('[BookingService] handleVnpayCallback - Payload:', params);
+    console.log('[BookingService] vnp_ResponseCode trong params:', params.vnp_ResponseCode);
+    console.log('[BookingService] status trong params:', params.status);
 
     const response = await api.post<ApiResponse<{
       status: "SUCCESS" | "FAILED";
       bookingId?: string;
     }>>('/payments/vnpay/callback', params);
 
+    console.log('[BookingService] Backend response:', response.data);
+    console.log('[BookingService] Backend response.data.data:', response.data.data);
+
     if (response.data.success && response.data.data) {
-      return response.data.data;
+      const responseData = response.data.data;
+      
+      // Handle different backend response formats
+      let result: { status: "SUCCESS" | "FAILED"; bookingId?: string };
+      
+      if (responseData.status) {
+        // New format: {status: "SUCCESS", bookingId: "..."}
+        result = responseData;
+      } else if (responseData.message === 'ok') {
+        // Old format: {message: 'ok'} - consider as success
+        result = {
+          status: "SUCCESS",
+          bookingId: responseData.bookingId || undefined
+        };
+      } else {
+        // Unknown format - consider as failed
+        result = {
+          status: "FAILED"
+        };
+      }
+      
+      console.log('[BookingService] Normalized result:', result);
+      return result;
     }
 
     throw new Error('Xử lý VNPay callback thất bại');

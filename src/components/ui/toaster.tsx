@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useToast } from "@/hooks/use-toast";
@@ -19,6 +20,7 @@ export function Toaster() {
     <ToastProvider swipeDirection="right">
       {toasts.map(({ id, title, description, action, ...props }) => {
         // variant mặc định của shadcn là "default" hoặc "destructive"
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const variant = (props as any).variant as
           | "default"
           | "destructive"
@@ -38,7 +40,7 @@ export function Toaster() {
             <Info className="h-5 w-5" />
           );
 
-        const duration = (props as any).duration ?? 4000; // ms, có thể truyền khi toast()
+        const duration = (props as any).duration ?? 3000; // ms, có thể truyền khi toast()
 
         return (
           <Toast
@@ -67,7 +69,6 @@ export function Toaster() {
             style={
               {
                 // tiến trình progress bar
-                // @ts-ignore
                 "--toast-duration": `${duration}ms`,
               } as React.CSSProperties
             }

@@ -54,6 +54,14 @@ export const LazyIdentityVerification = lazy(
       "../../pages/dashboard/staff/delivery_procedures/IdentityVerification"
     )
 );
+export const LazyVehicleCheckin = lazy(
+  () =>
+    import("../../pages/dashboard/staff/delivery_procedures/VehicleCheckin")
+);
+export const LazyVehicleReturn = lazy(
+  () =>
+    import("../../pages/dashboard/staff/delivery_procedures/VehicleReturn")
+);
 
 // Staff pages - vehicle management
 export const LazyVehicleReserved = lazy(

@@ -44,24 +44,15 @@ export const LazyDeliveryProcedures = lazy(
   () =>
     import("../../pages/dashboard/staff/delivery_procedures/DeliveryProcedures")
 );
-export const LazyVehicleInspection = lazy(
-  () =>
-    import("../../pages/dashboard/staff/delivery_procedures/VehicleInspection")
-);
+
 export const LazyIdentityVerification = lazy(
   () =>
     import(
       "../../pages/dashboard/staff/delivery_procedures/IdentityVerification"
     )
 );
-export const LazyVehicleCheckin = lazy(
-  () =>
-    import("../../pages/dashboard/staff/delivery_procedures/VehicleCheckin")
-);
-export const LazyVehicleReturn = lazy(
-  () =>
-    import("../../pages/dashboard/staff/delivery_procedures/VehicleReturn")
-);
+
+
 
 // Staff pages - vehicle management
 export const LazyVehicleReserved = lazy(

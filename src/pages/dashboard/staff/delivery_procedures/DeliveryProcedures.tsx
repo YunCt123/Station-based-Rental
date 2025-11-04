@@ -417,7 +417,6 @@ const DeliveryProcedures: React.FC = () => {
         <TabPane 
           tab={
             <span>
-              <CarOutlined />
               Cần giao xe ({filteredCheckinRentals.length})
             </span>
           } 
@@ -452,7 +451,6 @@ const DeliveryProcedures: React.FC = () => {
         <TabPane 
           tab={
             <span>
-              <CheckCircleOutlined />
               Cần nhận xe ({filteredReturnRentals.length})
             </span>
           } 

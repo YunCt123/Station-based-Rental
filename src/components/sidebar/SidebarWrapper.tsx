@@ -83,6 +83,8 @@ export const SidebarWrapper: React.FC<SidebarWrapperProps> = ({
     switch (role) {
       case 'admin':
         return 'Quản trị viên';
+      case 'station_staff':
+        return 'Nhân viên trạm';
       case 'staff':
         return 'Nhân viên trạm';
       case 'customer':

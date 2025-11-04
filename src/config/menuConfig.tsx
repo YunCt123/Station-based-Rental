@@ -63,13 +63,6 @@ export const getMenuSections = (): SidebarSection[] => [
         ]
       },
       {
-        id: 'delivery-procedures',
-        title: 'Thủ tục bàn giao',
-        icon: <DocumentTextIcon className="w-5 h-5" />,
-        path: '/staff/delivery-procedures',
-        roles: [UserRole.STATION_STAFF]
-      },
-      {
         id: 'customer-verification',
         title: 'Xác thực khách hàng',
         icon: <UserIcon className="w-5 h-5" />,

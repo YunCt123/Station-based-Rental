@@ -4,7 +4,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MapPin, Clock, Zap, AlertCircle } from "lucide-react";
 import { Link } from "react-router-dom";
-import { useTranslation } from "@/contexts/TranslationContext";
 import { stationService, type Station } from "@/services/stationService";
 import {
   PageTransition,
@@ -15,8 +14,6 @@ import {
 import { VehicleCardSkeleton } from "@/components/ui/skeleton";
 
 const Stations = () => {
-  const { t } = useTranslation();
-  
   // State for stations data
   const [stations, setStations] = useState<Station[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -29,11 +26,11 @@ const Stations = () => {
         setError(null);
         setIsLoading(true);
         
-        console.log('🏢 Fetching stations from API...');
+        console.log('🏢 Đang lấy danh sách trạm từ API...');
         
         // Test connection first
         await stationService.testConnection();
-        console.log('🔗 Station API connection OK');
+        console.log('🔗 Kết nối API trạm thành công');
         
         // Get active stations
         const response = await stationService.getActiveStations({}, {
@@ -41,7 +38,7 @@ const Stations = () => {
           sort: 'name'
         });
         
-        console.log('✅ Fetched stations:', response.stations);
+        console.log('✅ Lấy danh sách trạm thành công:', response.stations);
         
         // Fetch real vehicle counts for each station
         const stationsWithRealCounts = await Promise.all(
@@ -55,7 +52,7 @@ const Stations = () => {
               const availableVehiclesData = await stationService.getStationVehicles(station.id, 'AVAILABLE');
               const availableVehicles = availableVehiclesData.count;
               
-              console.log(`📊 Station ${station.name}: ${availableVehicles}/${totalVehicles} vehicles`);
+              console.log(`📊 Trạm ${station.name}: ${availableVehicles}/${totalVehicles} phương tiện`);
               
               return {
                 ...station,
@@ -63,7 +60,7 @@ const Stations = () => {
                 availableVehicles
               };
             } catch (vehicleError) {
-              console.warn(`⚠️ Could not fetch vehicles for station ${station.name}:`, vehicleError);
+              console.warn(`⚠️ Không thể lấy thông tin phương tiện cho trạm ${station.name}:`, vehicleError);
               // Fallback to backend metrics or default values
               return {
                 ...station,
@@ -76,10 +73,9 @@ const Stations = () => {
         
         setStations(stationsWithRealCounts);
         
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (error: any) {
-        console.error('❌ Error fetching stations:', error);
-        setError(`Failed to load stations: ${error.message || 'Unknown error'}`);
+        console.error('❌ Lỗi khi lấy danh sách trạm:', error);
+        setError(`Không thể tải danh sách trạm: ${error.message || 'Lỗi không xác định'}`);
         setStations([]);
       } finally {
         setIsLoading(false);
@@ -92,39 +88,21 @@ const Stations = () => {
   const getStatusBadge = (status: Station['status']) => {
     switch (status) {
       case 'active':
-        return <Badge className="badge-available">{t("common.active")}</Badge>;
+        return <Badge className="badge-available">Hoạt động</Badge>;
       case 'maintenance':
-        return <Badge variant="destructive">Maintenance</Badge>;
+        return <Badge variant="destructive">Bảo trì</Badge>;
       case 'inactive':
-        return <Badge variant="secondary">Inactive</Badge>;
+        return <Badge variant="secondary">Không hoạt động</Badge>;
       default:
-        return <Badge variant="outline">Unknown</Badge>;
+        return <Badge variant="outline">Không xác định</Badge>;
     }
   };
+
   return (
     <PageTransition>
       <div className="min-h-screen bg-background">
-        {/* Header */}
-        {/* <FadeIn> */}
-          {/* <div className="bg-gradient-hero py-16">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-              <SlideIn direction="top" delay={100}>
-                <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
-                  Our Station Locations
-                </h1>
-              </SlideIn>
-              <SlideIn direction="top" delay={200}>
-                <p className="text-xl text-white/90 mb-8 max-w-2xl mx-auto">
-                  Find convenient pickup and drop-off locations throughout the
-                  city
-                </p>
-              </SlideIn>
-            </div>
-          </div> */}
-        {/* </FadeIn> */}
-
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          {/* Error Display */}
+          {/* Hiển thị lỗi */}
           {error && (
             <FadeIn>
               <div className="bg-destructive/15 border border-destructive/50 rounded-lg p-4 mb-6">
@@ -138,7 +116,7 @@ const Stations = () => {
                   size="sm" 
                   className="mt-2"
                 >
-                  Retry
+                  Thử lại
                 </Button>
               </div>
             </FadeIn>
@@ -195,13 +173,12 @@ const Stations = () => {
                             {station.fastCharging && (
                               <div className="flex items-center space-x-2">
                                 <Zap className="h-5 w-5 text-yellow-500" />
-                                <p className="text-sm">Fast Charging Available</p>
+                                <p className="text-sm">Có sạc nhanh</p>
                               </div>
                             )}
 
-                            {/* Amenities - Always show section with minimum height */}
                             <div className="mb-4 min-h-[60px]">
-                              <p className="text-sm font-medium mb-2">Amenities:</p>
+                              <p className="text-sm font-medium mb-2">Tiện ích:</p>
                               {station.amenities.length > 0 ? (
                                 <div className="flex flex-wrap gap-1">
                                   {station.amenities.slice(0, 3).map((amenity, i) => (
@@ -211,13 +188,13 @@ const Stations = () => {
                                   ))}
                                   {station.amenities.length > 3 && (
                                     <Badge variant="outline" className="text-xs">
-                                      +{station.amenities.length - 3} more
+                                      +{station.amenities.length - 3} nữa
                                     </Badge>
                                   )}
                                 </div>
                               ) : (
                                 <p className="text-xs text-muted-foreground">
-                                  Basic facilities available
+                                  Chỉ có các tiện ích cơ bản
                                 </p>
                               )}
                             </div>
@@ -230,7 +207,7 @@ const Stations = () => {
                                   {station.availableVehicles}
                                 </div>
                                 <div className="text-sm text-muted-foreground">
-                                  Available
+                                  Có sẵn
                                 </div>
                               </div>
                               <div className="text-center">
@@ -238,31 +215,30 @@ const Stations = () => {
                                   {station.totalVehicles}
                                 </div>
                                 <div className="text-sm text-muted-foreground">
-                                  Total
+                                  Tổng số
                                 </div>
                               </div>
                             </div>
 
-                            {/* Rating - Always show section with minimum height */}
                             <div className="pt-4 border-t min-h-[50px] flex items-center">
                               {station.rating > 0 ? (
                                 <div className="flex items-center justify-between w-full">
-                                  <span className="text-sm">Rating:</span>
+                                  <span className="text-sm">Đánh giá:</span>
                                   <div className="flex items-center space-x-1">
                                     <span className="text-sm font-medium">
                                       {station.rating.toFixed(1)}
                                     </span>
                                     <span className="text-yellow-500">★</span>
                                     <span className="text-xs text-muted-foreground">
-                                      ({station.reviewCount} reviews)
+                                      ({station.reviewCount} đánh giá)
                                     </span>
                                   </div>
                                 </div>
                               ) : (
                                 <div className="flex items-center justify-between w-full">
-                                  <span className="text-sm">Rating:</span>
+                                  <span className="text-sm">Đánh giá:</span>
                                   <span className="text-xs text-muted-foreground">
-                                    No reviews yet
+                                    Chưa có đánh giá
                                   </span>
                                 </div>
                               )}
@@ -271,7 +247,7 @@ const Stations = () => {
                             <div className="pt-4">
                               <Button asChild className="w-full">
                                 <Link to={`/stations/${station.id}`}>
-                                  {t("common.viewDetails")}
+                                  Xem chi tiết
                                 </Link>
                               </Button>
                             </div>
@@ -287,33 +263,15 @@ const Stations = () => {
                 <div className="text-center py-12">
                   <div className="text-6xl mb-4">🏢</div>
                   <h3 className="text-xl font-semibold mb-2">
-                    No stations found
+                    Không tìm thấy trạm nào
                   </h3>
                   <p className="text-muted-foreground mb-4">
-                    No stations are currently available. Please check back later.
+                    Hiện tại không có trạm nào khả dụng. Vui lòng kiểm tra lại sau.
                   </p>
                 </div>
               </FadeIn>
             ) : null}
           </LoadingWrapper>
-
-          {/* {stations.length > 0 && (
-            <FadeIn delay={500}>
-              <div className="mt-12 text-center">
-                <Card className="inline-block">
-                  <CardContent className="p-6">
-                    <Zap className="h-12 w-12 text-primary mx-auto mb-4" />
-                    <h3 className="text-xl font-semibold mb-2">
-                      {t("common.moreVehicles")}
-                    </h3>
-                    <p className="text-muted-foreground">
-                      {t("common.moreVehicles")}
-                    </p>
-                  </CardContent>
-                </Card>
-              </div>
-            </FadeIn>
-          )} */}
         </div>
       </div>
     </PageTransition>

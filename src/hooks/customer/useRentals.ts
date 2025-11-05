@@ -38,26 +38,48 @@ export const useRentalDetail = (rentalId: string | null) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchRentalDetail = useCallback(async () => {
-    if (!rentalId) return;
+ const fetchRentalDetail = useCallback(async () => {
+  if (!rentalId) return;
+  
+  setLoading(true);
+  setError(null);
+  
+  try {
+    const rentalData = await customerService.getRentalDetail(rentalId);
     
-    setLoading(true);
-    setError(null);
+    const bookingId = rentalData?.booking_id?._id;
     
-    try {
-      const [rentalData, paymentsData] = await Promise.all([
-        customerService.getRentalDetail(rentalId),
-        customerService.getRentalPayments(rentalId)
-      ]);
-      
-      setRental(rentalData);
-      setPayments(paymentsData);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch rental detail');
-    } finally {
-      setLoading(false);
+    const paymentsPromises = [
+      customerService.getRentalPayments(rentalId)
+    ];
+    
+    if (bookingId) {
+      paymentsPromises.push(customerService.getBookingPayments(bookingId));
     }
-  }, [rentalId]);
+    
+    const paymentsResults = await Promise.all(paymentsPromises);
+    
+    let allPayments = [...paymentsResults[0]]; 
+    if (paymentsResults.length > 1) {
+      const bookingPayments = paymentsResults[1];
+      const existingIds = new Set(allPayments.map(p => p._id?.toString()));
+      
+      allPayments = [
+        ...allPayments,
+        ...bookingPayments.filter(p => !existingIds.has(p._id?.toString()))
+      ];
+    }
+    
+    
+    setRental(rentalData);
+    setPayments(allPayments);
+  
+  } catch (err) {
+    setError(err instanceof Error ? err.message : 'Failed to fetch rental detail');
+  } finally {
+    setLoading(false);
+  }
+}, [rentalId]);
 
   useEffect(() => {
     fetchRentalDetail();
@@ -77,47 +99,59 @@ export const useFinalPayment = () => {
   const [error, setError] = useState<string | null>(null);
 
   const handleFinalPayment = async (rentalId: string): Promise<boolean> => {
-    setLoading(true);
-    setError(null);
+  setLoading(true);
+  setError(null);
+  
+  try {
+    const returnResult = await customerService.completeReturn(rentalId);
+    const { finalPayment } = returnResult;
     
-    try {
-      // Step 1: Complete return (customer final payment after staff inspection)
-      const returnResult = await customerService.completeReturn(rentalId);
-      const { finalPayment } = returnResult;
+    if (finalPayment.amount > 0) {
+      console.log('💰 Additional payment required:', finalPayment.amount);
       
-      if (finalPayment.amount > 0) {
-        // Customer needs to pay additional amount
-        console.log('💰 Additional payment required:', finalPayment.amount);
-        
+      try {
         const paymentResponse = await customerService.createFinalPayment(
           rentalId, 
           window.location.origin + '/payment-result'
         );
-        
-        // Redirect to VNPAY for payment
-        window.location.href = paymentResponse.payment.vnpay_checkout_url;
+        window.location.href = paymentResponse?.checkoutUrl;
         return true;
         
-      } else if (finalPayment.amount < 0) {
-        // Refund will be processed
-        alert(`Hoàn tiền ${Math.abs(finalPayment.amount).toLocaleString()} VND sẽ được xử lý`);
-        return true;
+      } catch (paymentError: any) {
+        console.error('💳 Payment URL creation failed:', paymentError);
         
-      } else {
-        // No additional payment needed
-        alert('Thuê xe hoàn tất thành công! Không cần thanh toán thêm.');
-        return true;
+        try {
+          const revertResult = await customerService.revertCustomerReturnPayment(rentalId);
+          console.log('🔄 Payment reverted successfully:', revertResult.message);
+          alert(`Tạo link thanh toán thất bại. Đã khôi phục trạng thái, bạn có thể thử lại. ${revertResult.message}`);
+          return false; 
+        } catch (revertError: any) {
+          console.error('❌ Revert failed:', revertError);
+          const revertErrorMsg = revertError instanceof Error ? revertError.message : 'Revert failed';
+          setError(revertErrorMsg);
+          alert(`Lỗi khôi phục: ${revertErrorMsg}. Vui lòng liên hệ hỗ trợ.`);
+          return false;
+        }
       }
-
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Payment failed';
-      setError(errorMessage);
-      alert('Thanh toán thất bại: ' + errorMessage);
-      return false;
-    } finally {
-      setLoading(false);
+      
+    } else if (finalPayment.amount < 0) {
+      alert(`Hoàn tiền ${Math.abs(finalPayment.amount).toLocaleString()} VND sẽ được xử lý`);
+      return true;
+      
+    } else {
+      alert('Thuê xe hoàn tất thành công! Không cần thanh toán thêm.');
+      return true;
     }
-  };
+
+  } catch (err: any) {
+    const errorMessage = err instanceof Error ? err.message : 'Complete return failed';
+    setError(errorMessage);
+    alert('Hoàn thành trả xe thất bại: ' + errorMessage);
+    return false;
+  } finally {
+    setLoading(false);
+  }
+};
 
   return { 
     handleFinalPayment, 

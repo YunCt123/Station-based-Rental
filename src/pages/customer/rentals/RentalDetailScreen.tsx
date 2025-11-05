@@ -1,13 +1,24 @@
 import React from 'react';
-import { Card, Typography, Space, Tag, Image, Row, Col, Button, Timeline, Divider } from 'antd';
-import { 
-  CarOutlined, 
-  EnvironmentOutlined, 
+import {
+  Card,
+  Typography,
+  Space,
+  Tag,
+  Image,
+  Row,
+  Col,
+  Button,
+  Timeline,
+  Divider,
+} from 'antd';
+import {
+  CarOutlined,
+  EnvironmentOutlined,
   CalendarOutlined,
   CreditCardOutlined,
   ClockCircleOutlined,
   CheckCircleOutlined,
-  ArrowLeftOutlined
+  ArrowLeftOutlined,
 } from '@ant-design/icons';
 import type { Rental, Payment } from '../../../services/customerService';
 import PaymentHistory from '../../../components/customer/PaymentHistory';
@@ -21,40 +32,74 @@ interface RentalDetailScreenProps {
   onPayment?: (rental: Rental) => void;
 }
 
+/* -------------------------------------------------------------------------- */
+/*  Helper: Định dạng tiền tệ (hỗ trợ VND, USD, …)                           */
+/* -------------------------------------------------------------------------- */
+const formatCurrency = (amount: number, currency: string) => {
+  const opts: Intl.NumberFormatOptions = {
+    style: 'currency',
+    currency,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  };
+  // Ant Design dùng locale 'en-US' → VND sẽ hiển thị ₫ ở cuối
+  return new Intl.NumberFormat('vi-VN', opts).format(amount);
+};
+
 const RentalDetailScreen: React.FC<RentalDetailScreenProps> = ({
   rental,
   payments,
   onBack,
-  onPayment
+  onPayment,
 }) => {
-  const { vehicle_id, station_id, status, booking_id, pickup, return: returnInfo } = rental;
+  const {
+    vehicle_id,
+    station_id,
+    status,
+    booking_id,
+    pickup,
+    return: returnInfo,
+    pricing_snapshot,
+    charges,
+  } = rental;
 
+  /* ---------------------------------------------------------------------- */
+  /*  Định dạng ngày giờ                                                    */
+  /* ---------------------------------------------------------------------- */
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('vi-VN', {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
     });
   };
 
+  /* ---------------------------------------------------------------------- */
+  /*  Lấy URL ảnh (photo có thể là string hoặc object)                     */
+  /* ---------------------------------------------------------------------- */
   const getPhotoUrl = (photo: string | { url: string; _id?: string }): string => {
     return typeof photo === 'string' ? photo : photo.url;
   };
 
-  const getStatusConfig = (status: string) => {
-    const configs = {
-      'CONFIRMED': { text: 'Chờ nhận xe', color: 'orange' },
-      'ONGOING': { text: 'Đang sử dụng', color: 'green' },
-      'RETURN_PENDING': { text: 'Chờ thanh toán cuối', color: 'red' },
-      'COMPLETED': { text: 'Hoàn tất', color: 'default' }
+  /* ---------------------------------------------------------------------- */
+  /*  Cấu hình trạng thái                                                   */
+  /* ---------------------------------------------------------------------- */
+  const getStatusConfig = (st: string) => {
+    const cfg = {
+      CONFIRMED: { text: 'Chờ nhận xe', color: 'orange' },
+      ONGOING: { text: 'Đang sử dụng', color: 'green' },
+      RETURN_PENDING: { text: 'Chờ thanh toán cuối', color: 'red' },
+      COMPLETED: { text: 'Hoàn tất', color: 'default' },
     };
-    return configs[status as keyof typeof configs] || { text: status, color: 'default' };
+    return cfg[st as keyof typeof cfg] ?? { text: st, color: 'default' };
   };
-
   const statusConfig = getStatusConfig(status);
 
+  /* ---------------------------------------------------------------------- */
+  /*  Timeline                                                              */
+  /* ---------------------------------------------------------------------- */
   const getTimelineItems = () => {
     const items = [
       {
@@ -66,8 +111,8 @@ const RentalDetailScreen: React.FC<RentalDetailScreenProps> = ({
             <br />
             <Text type="secondary">{formatDate(rental.createdAt)}</Text>
           </div>
-        )
-      }
+        ),
+      },
     ];
 
     if (pickup?.at) {
@@ -82,49 +127,51 @@ const RentalDetailScreen: React.FC<RentalDetailScreenProps> = ({
             {pickup.odo_km && (
               <>
                 <br />
-                <Text type="secondary">Số km: {pickup.odo_km.toLocaleString()}</Text>
+                <Text type="secondary">
+                  Số km: {pickup.odo_km.toLocaleString()}
+                </Text>
               </>
             )}
-            {pickup.soc && (
+            {pickup.soc != null && (
               <>
                 <br />
-                <Text type="secondary">Pin: {Math.round(pickup.soc * 100)}%</Text>
+                <Text type="secondary">
+                  Pin: {Math.round(pickup.soc * 100)}%
+                </Text>
               </>
             )}
           </div>
-        )
+        ),
       });
     }
 
     if (returnInfo?.at) {
       items.push({
         dot: <CheckCircleOutlined style={{ fontSize: '16px' }} />,
-        color: 'orange',
+        color: status === 'COMPLETED' ? 'green' : 'orange',
         children: (
           <div>
-            <Text strong>Nhân viên đã kiểm tra xe trả</Text>
+            <Text strong>Đã trả xe</Text>
             <br />
             <Text type="secondary">{formatDate(returnInfo.at)}</Text>
             {returnInfo.odo_km && (
               <>
                 <br />
-                <Text type="secondary">Số km cuối: {returnInfo.odo_km.toLocaleString()}</Text>
+                <Text type="secondary">
+                  Số km cuối: {returnInfo.odo_km.toLocaleString()}
+                </Text>
               </>
             )}
-            {returnInfo.soc && (
+            {returnInfo.soc != null && (
               <>
                 <br />
-                <Text type="secondary">Pin cuối: {Math.round(returnInfo.soc * 100)}%</Text>
-              </>
-            )}
-            {rental.charges && rental.charges.extra_fees > 0 && (
-              <>
-                <br />
-                <Text type="warning">Phí phát sinh: {rental.charges.extra_fees.toLocaleString()} VND</Text>
+                <Text type="secondary">
+                  Pin cuối: {Math.round(returnInfo.soc * 100)}%
+                </Text>
               </>
             )}
           </div>
-        )
+        ),
       });
     }
 
@@ -138,25 +185,31 @@ const RentalDetailScreen: React.FC<RentalDetailScreenProps> = ({
             <br />
             <Text type="secondary">Thuê xe đã hoàn tất</Text>
           </div>
-        )
+        ),
       });
     }
 
     return items;
   };
 
+  /* ---------------------------------------------------------------------- */
+  /*  Tính tiền còn lại (total - deposit)                                   */
+  /* ---------------------------------------------------------------------- */
+  const remainingAmount =
+    charges.total - (pricing_snapshot.deposit ?? 0);
+
   return (
     <div style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto' }}>
       {/* Header */}
       <div style={{ marginBottom: 24 }}>
-        <Button 
-          icon={<ArrowLeftOutlined />} 
+        <Button
+          icon={<ArrowLeftOutlined />}
           onClick={onBack}
           style={{ marginBottom: 16 }}
         >
           Quay lại
         </Button>
-        
+
         <Space align="start" size={16}>
           <Title level={2} style={{ margin: 0 }}>
             Chi tiết thuê xe
@@ -168,7 +221,7 @@ const RentalDetailScreen: React.FC<RentalDetailScreenProps> = ({
       </div>
 
       <Row gutter={[24, 24]}>
-        {/* Vehicle Info */}
+        {/* ---------- Thông tin xe ---------- */}
         <Col xs={24} lg={12}>
           <Card title={<><CarOutlined /> Thông tin xe</>}>
             <div style={{ marginBottom: 16 }}>
@@ -180,61 +233,43 @@ const RentalDetailScreen: React.FC<RentalDetailScreenProps> = ({
                 fallback="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMIAAADDCAYAAADQvc6U"
               />
             </div>
-            
+
             <Space direction="vertical" size={8} style={{ width: '100%' }}>
               <Title level={4} style={{ margin: 0, color: '#1890ff' }}>
                 {vehicle_id.name}
               </Title>
-              
-              <Text>
-                <Text strong>Thương hiệu:</Text> {vehicle_id.brand}
-              </Text>
-              
-              <Text>
-                <Text strong>Model:</Text> {vehicle_id.model} ({vehicle_id.year})
-              </Text>
-              
-              <Text>
-                <Text strong>Loại xe:</Text> {vehicle_id.type}
-              </Text>
-              
-              <Text>
-                <Text strong>Số chỗ:</Text> {vehicle_id.seats} chỗ
-              </Text>
-              
-              <Text>
-                <Text strong>Dung lượng pin:</Text> {vehicle_id.battery_kWh} kWh
-              </Text>
-              
+
+              <Text><Text strong>Thương hiệu:</Text> {vehicle_id.brand}</Text>
+              <Text><Text strong>Model:</Text> {vehicle_id.model} ({vehicle_id.year})</Text>
+              <Text><Text strong>Loại xe:</Text> {vehicle_id.type}</Text>
+              <Text><Text strong>Số chỗ:</Text> {vehicle_id.seats} chỗ</Text>
+              <Text><Text strong>Dung lượng pin:</Text> {vehicle_id.battery_kWh} kWh</Text>
+
               {vehicle_id.licensePlate && (
                 <Text>
-                  <Text strong>Biển số:</Text> <Text code>{vehicle_id.licensePlate}</Text>
+                  <Text strong>Biển số:</Text>{' '}
+                  <Text code>{vehicle_id.licensePlate}</Text>
                 </Text>
               )}
             </Space>
           </Card>
         </Col>
 
-        {/* Station Info */}
+        {/* ---------- Trạm thuê ---------- */}
         <Col xs={24} lg={12}>
           <Card title={<><EnvironmentOutlined /> Trạm thuê</>}>
             <Space direction="vertical" size={8} style={{ width: '100%' }}>
               <Title level={4} style={{ margin: 0, color: '#52c41a' }}>
                 {station_id.name}
               </Title>
-              
-              <Text>
-                <Text strong>Địa chỉ:</Text> {station_id.address}
-              </Text>
-              
-              <Text>
-                <Text strong>Thành phố:</Text> {station_id.city}
-              </Text>
+
+              <Text><Text strong>Địa chỉ:</Text> {station_id.address}</Text>
+              <Text><Text strong>Thành phố:</Text> {station_id.city}</Text>
             </Space>
           </Card>
         </Col>
 
-        {/* Rental Timeline */}
+        {/* ---------- Lịch trình thuê xe ---------- */}
         <Col xs={24} lg={12}>
           <Card title={<><ClockCircleOutlined /> Lịch trình thuê xe</>}>
             <Space direction="vertical" size={12} style={{ width: '100%' }}>
@@ -243,87 +278,188 @@ const RentalDetailScreen: React.FC<RentalDetailScreenProps> = ({
                 <br />
                 <Text>{formatDate(booking_id.start_at)} - {formatDate(booking_id.end_at)}</Text>
               </div>
-              
+
               <Divider />
-              
               <Timeline items={getTimelineItems()} />
             </Space>
           </Card>
         </Col>
 
-        {/* Pricing Info */}
+        {/* ---------- Thông tin giá ---------- */}
         <Col xs={24} lg={12}>
           <Card title={<><CreditCardOutlined /> Thông tin giá</>}>
             <Space direction="vertical" size={8} style={{ width: '100%' }}>
-              {/* Show rental type */}
-              {rental.pricing_snapshot.details?.rentalType && (
-                <Text>
-                  <Text strong>Loại thuê:</Text>{' '}
-                  <Text style={{ color: '#1890ff' }}>
-                    {rental.pricing_snapshot.details.rentalType === 'daily' ? 'Theo ngày' : 'Theo giờ'}
-                  </Text>
-                  {rental.pricing_snapshot.details.days && (
-                    <Text type="secondary"> ({rental.pricing_snapshot.details.days} ngày)</Text>
-                  )}
-                  {rental.pricing_snapshot.details.hours && (
-                    <Text type="secondary"> ({rental.pricing_snapshot.details.hours} giờ)</Text>
-                  )}
-                </Text>
-              )}
-
-              {rental.pricing_snapshot.hourly_rate && (
+              {pricing_snapshot.hourly_rate != null && (
                 <Text>
                   <Text strong>Giá theo giờ:</Text>{' '}
                   <Text type="success">
-                    {rental.pricing_snapshot.hourly_rate.toLocaleString()} {rental.pricing_snapshot.currency}
+                    {formatCurrency(pricing_snapshot.hourly_rate, pricing_snapshot.currency)}
                   </Text>
                 </Text>
               )}
-              
-              {rental.pricing_snapshot.daily_rate && (
+
+              {pricing_snapshot.daily_rate != null && (
                 <Text>
                   <Text strong>Giá theo ngày:</Text>{' '}
                   <Text type="success">
-                    {rental.pricing_snapshot.daily_rate.toLocaleString()} {rental.pricing_snapshot.currency}
+                    {formatCurrency(pricing_snapshot.daily_rate, pricing_snapshot.currency)}
                   </Text>
                 </Text>
               )}
-              
-              {rental.pricing_snapshot.deposit && (
+
+              {pricing_snapshot.deposit != null && (
                 <Text>
                   <Text strong>Tiền đặt cọc:</Text>{' '}
                   <Text type="warning">
-                    {rental.pricing_snapshot.deposit.toLocaleString()} {rental.pricing_snapshot.currency}
+                    {formatCurrency(pricing_snapshot.deposit, pricing_snapshot.currency)}
                   </Text>
                 </Text>
               )}
-
-              {/* Show calculated fees after staff inspection */}
-              {rental.charges && (
-                <div style={{ marginTop: 12, padding: 12, backgroundColor: '#f6ffed', borderRadius: 6 }}>
-                  <Text strong style={{ color: '#52c41a' }}>📊 Phí đã tính (sau kiểm tra):</Text>
-                  <div style={{ marginTop: 8 }}>
-                    <Text>Phí thuê: <Text strong>{rental.charges.rental_fee?.toLocaleString()} VND</Text></Text>
-                  </div>
-                  <div>
-                    <Text>Phí phát sinh: <Text strong>{rental.charges.extra_fees?.toLocaleString()} VND</Text></Text>
-                  </div>
-                  <div style={{ marginTop: 4, borderTop: '1px solid #d9f7be', paddingTop: 4 }}>
-                    <Text>Tổng: <Text strong style={{ color: '#1890ff' }}>{rental.charges.total?.toLocaleString()} VND</Text></Text>
-                  </div>
-                </div>
-              )}
             </Space>
           </Card>
+
+          {/* ---------- Chi tiết hóa đơn (đầy đủ phí) ---------- */}
+                {((status === 'RETURN_PENDING' && onPayment) || status === "COMPLETED") && (
+                <Card title={<><CreditCardOutlined /> Chi tiết hóa đơn</>} style={{ marginTop: 16 }}>
+                  <Space direction="vertical" size={8} style={{ width: '100%' }}>
+                    {/* Loại thuê xe */}
+                    <Text>
+                      <Text strong>Loại thuê xe:</Text>{' '}
+                      {pricing_snapshot.hourly_rate && pricing_snapshot.daily_rate
+                        ? 'Kết hợp giờ và ngày'
+                        : pricing_snapshot.hourly_rate
+                          ? 'Theo giờ'
+                          : pricing_snapshot.daily_rate
+                            ? 'Theo ngày'
+                            : 'Không xác định'}
+                    </Text>
+
+                    {/* Phí thuê xe (chính) */}
+                    <Text>
+                      <div>
+                        <Text strong>Giá thuê ban đầu:</Text>
+                        <div style={{ borderLeft: '2px solid #d9d9d9', marginLeft: 10, paddingLeft: 12, marginTop: 4 }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <Text type="secondary">Giá cơ bản</Text>
+                            <Text>{formatCurrency(pricing_snapshot.base_price, pricing_snapshot.currency)}</Text>
+                          </div>
+                          {pricing_snapshot.insurance_price > 0 && (
+                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                              <Text type="secondary">Bảo hiểm</Text>
+                              <Text>{formatCurrency(pricing_snapshot.insurance_price, pricing_snapshot.currency)}</Text>
+                            </div>
+                          )}
+                          {pricing_snapshot.taxes > 0 && (
+                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                              <Text type="secondary">Thuế & phí dịch vụ</Text>
+                              <Text>{formatCurrency(pricing_snapshot.taxes, pricing_snapshot.currency)}</Text>
+                            </div>
+                          )}
+                          <div style={{ 
+                            display: 'flex', 
+                            justifyContent: 'space-between', 
+                            paddingTop: 4, 
+                            borderTop: '1px dashed #e8e8e8',
+                            marginTop: 4
+                          }}>
+                            <Text strong>Tổng giá thuê</Text>
+                            <Text strong type="success">
+                              {formatCurrency(pricing_snapshot.total_price, pricing_snapshot.currency)}
+                            </Text>
+                          </div>
+                        </div>
+                      </div>
+                    </Text>
+
+                    {/* Các phí phát sinh riêng lẻ – chỉ hiện khi > 0 */}
+                    {charges.cleaning_fee > 0 && (
+                      <Text>
+                        <Text strong>Phí vệ sinh:</Text>{' '}
+                        <Text type="warning">
+                          {formatCurrency(charges.cleaning_fee, pricing_snapshot.currency)}
+                        </Text>
+                      </Text>
+                    )}
+
+                    {charges.damage_fee > 0 && (
+                      <Text>
+                        <Text strong>Phí hư hỏng:</Text>{' '}
+                        <Text type="warning">
+                          {formatCurrency(charges.damage_fee, pricing_snapshot.currency)}
+                        </Text>
+                      </Text>
+                    )}
+
+                    {charges.late_fee > 0 && (
+                      <Text>
+                        <Text strong>Phí trễ hạn:</Text>{' '}
+                        <Text type="warning">
+                          {formatCurrency(charges.late_fee, pricing_snapshot.currency)}
+                        </Text>
+                      </Text>
+                    )}
+
+                    {charges.other_fees > 0 && (
+                      <Text>
+                        <Text strong>Phí khác:</Text>{' '}
+                        <Text type="warning">
+                          {formatCurrency(charges.other_fees, pricing_snapshot.currency)}
+                        </Text>
+                      </Text>
+                    )}
+
+                    {/* === KHÔNG HIỂN THỊ extra_fees === */}
+                    {/* Vì extra_fees = cleaning + damage + late + other */}
+
+                    <Divider />
+
+                    {/* Tổng tiền (đã bao gồm tất cả phí) */}
+                    <Text>
+                      <Text strong>Tổng tiền:</Text>{' '}
+                      <Text type="danger" strong>
+                      {formatCurrency(
+                          pricing_snapshot.total_price + charges.extra_fees,
+                          pricing_snapshot.currency
+                        )}
+                      </Text>
+                    </Text>
+
+                    {/* Tiền cọc đã thu */}
+                    {pricing_snapshot.deposit != null && (
+                      <Text>
+                        <Text strong>Tiền đặt cọc đã thu:</Text>{' '}
+                        <Text type="secondary">
+                          {formatCurrency(pricing_snapshot.deposit, pricing_snapshot.currency)}
+                        </Text>
+                      </Text>
+                    )}
+
+                    {/* Tiền còn lại cần thanh toán */}
+                    {status === 'RETURN_PENDING' && (
+                      <Text>
+                        <Text strong style={{ color: '#d9363e' }}>
+                          Tổng tiền còn lại cần thanh toán:
+                        </Text>{' '}
+                        <Text type="danger" strong>
+                          {formatCurrency(
+                            (pricing_snapshot.total_price + charges.extra_fees) - (pricing_snapshot.deposit ?? 0),
+                            pricing_snapshot.currency
+                          )}
+                        </Text>
+                      </Text>
+                    )}
+                  </Space>
+                </Card>
+                )}
         </Col>
 
-        {/* Photos */}
+        {/* ---------- Ảnh nhận xe ---------- */}
         {pickup?.photos && pickup.photos.length > 0 && (
           <Col xs={24}>
-            <Card title="📸 Ảnh nhận xe">
+            <Card title="Ảnh nhận xe">
               <Row gutter={[8, 8]}>
-                {pickup.photos.map((photo, index) => (
-                  <Col key={index} xs={12} sm={8} md={6} lg={4}>
+                {pickup.photos.map((photo, idx) => (
+                  <Col key={idx} xs={12} sm={8} md={6} lg={4}>
                     <Image
                       width="100%"
                       height={120}
@@ -338,12 +474,13 @@ const RentalDetailScreen: React.FC<RentalDetailScreenProps> = ({
           </Col>
         )}
 
+        {/* ---------- Ảnh trả xe ---------- */}
         {returnInfo?.photos && returnInfo.photos.length > 0 && (
           <Col xs={24}>
-            <Card title="📸 Ảnh trả xe">
+            <Card title="Ảnh trả xe">
               <Row gutter={[8, 8]}>
-                {returnInfo.photos.map((photo, index) => (
-                  <Col key={index} xs={12} sm={8} md={6} lg={4}>
+                {returnInfo.photos.map((photo, idx) => (
+                  <Col key={idx} xs={12} sm={8} md={6} lg={4}>
                     <Image
                       width="100%"
                       height={120}
@@ -358,46 +495,19 @@ const RentalDetailScreen: React.FC<RentalDetailScreenProps> = ({
           </Col>
         )}
 
-        {/* Payment History */}
+        {/* ---------- Lịch sử thanh toán ---------- */}
         <Col xs={24}>
-          <PaymentHistory payments={payments} />
+          <PaymentHistory payments={payments} pricingSnapshot={pricing_snapshot}/>
         </Col>
 
-        {/* Actions */}
+        {/* ---------- Nút thanh toán (RETURN_PENDING) ---------- */}
         {status === 'RETURN_PENDING' && onPayment && (
           <Col xs={24}>
             <Card>
               <div style={{ textAlign: 'center' }}>
                 <Paragraph>
-                  <Text strong style={{ color: '#52c41a' }}>✅ Xe đã được nhân viên kiểm tra</Text>
+                  Nhân viên đã hoàn tất kiểm tra xe. Vui lòng thanh toán để hoàn tất việc thuê xe.
                 </Paragraph>
-                <Paragraph>
-                  Vui lòng thanh toán số tiền cuối cùng để hoàn tất việc thuê xe.
-                </Paragraph>
-                
-                {/* Show charges if available */}
-                {rental.charges && (
-                  <div style={{ marginBottom: 16, padding: 16, backgroundColor: '#f6ffed', borderRadius: 8 }}>
-                    <div>
-                      <Text>Phí thuê xe: <Text strong>{rental.charges.rental_fee?.toLocaleString()} VND</Text></Text>
-                    </div>
-                    <div>
-                      <Text>Phí phát sinh: <Text strong>{rental.charges.extra_fees?.toLocaleString()} VND</Text></Text>
-                    </div>
-                    <div style={{ marginTop: 8, fontSize: '16px' }}>
-                      <Text>Tổng cộng: <Text strong style={{ color: '#1890ff' }}>{rental.charges.total?.toLocaleString()} VND</Text></Text>
-                    </div>
-                    <div style={{ marginTop: 4 }}>
-                      <Text type="secondary">Đã cọc: {rental.pricing_snapshot.deposit?.toLocaleString()} VND</Text>
-                    </div>
-                    <div style={{ marginTop: 4, fontSize: '16px' }}>
-                      <Text>Còn phải trả: <Text strong style={{ color: '#f5222d' }}>
-                        {((rental.charges.total || 0) - (rental.pricing_snapshot.deposit || 0)).toLocaleString()} VND
-                      </Text></Text>
-                    </div>
-                  </div>
-                )}
-                
                 <Button
                   type="primary"
                   size="large"

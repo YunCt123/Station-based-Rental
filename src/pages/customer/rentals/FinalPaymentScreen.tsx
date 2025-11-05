@@ -38,17 +38,15 @@ const FinalPaymentScreen: React.FC<FinalPaymentScreenProps> = ({
   const [pageLoading, setPageLoading] = useState(true);
 
   useEffect(() => {
-    // Load rental charges (calculated by staff return inspection)
     const loadPaymentInfo = () => {
       const { charges, pricing_snapshot } = rental;
       
       if (charges) {
-        // Use charges calculated by backend (after staff inspection)
-        const finalAmount = charges.total - (pricing_snapshot.deposit || 0);
+        const finalAmount = (pricing_snapshot.total_price + charges.extra_fees) - (pricing_snapshot.deposit || 0);
         
         setPaymentInfo({
           depositPaid: pricing_snapshot.deposit || 0,
-          totalCharges: charges.total,
+          totalCharges: (pricing_snapshot.total_price + charges.extra_fees),
           finalAmount,
           breakdown: {
             rentalFee: charges.rental_fee || 0,
@@ -56,7 +54,6 @@ const FinalPaymentScreen: React.FC<FinalPaymentScreenProps> = ({
           }
         });
       } else {
-        // Fallback: estimate based on rental type (should not happen after staff inspection)
         console.warn('⚠️ No charges found - using estimated calculation');
         
         const rentalType = pricing_snapshot.details?.rentalType || 'hourly';

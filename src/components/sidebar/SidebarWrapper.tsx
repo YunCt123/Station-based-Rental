@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Sidebar } from './Sidebar';
 import { useUserRole, useUserSession } from '../../hooks/useSidebar';
 import { getMenuSections } from '../../config/menuConfig';

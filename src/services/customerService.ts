@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import api from './api';
 import type { ApiResponse } from './bookingService';
 
@@ -51,6 +52,10 @@ export interface RentalReturn {
 }
 
 export interface PricingSnapshot {
+  base_price(base_price: any, currency: string): import("react").ReactNode;
+  insurance_price: number;
+  taxes: number;
+  total_price(total_price: any, currency: string): import("react").ReactNode;
   hourly_rate?: number;
   daily_rate?: number;
   currency: string;
@@ -241,6 +246,7 @@ export const customerService = {
     console.log('[BookingService] status trong params:', params.status);
 
     const response = await api.post<ApiResponse<{
+      message: string;
       status: "SUCCESS" | "FAILED";
       bookingId?: string;
     }>>('/payments/vnpay/callback', params);

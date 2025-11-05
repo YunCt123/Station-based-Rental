@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, Navigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,6 +15,7 @@ import { Separator } from "@/components/ui/separator";
 import { Eye, EyeOff, Mail, Lock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { login as loginApi } from "@/services/authService";
+import { isAuthenticated, getCurrentUser, getDefaultRouteForRole } from "@/utils/auth";
 
 interface User {
   id: string;
@@ -37,6 +38,13 @@ const LoginPage = ({ onLogin }: LoginProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Nếu đã đăng nhập thì chuyển hướng ra route mặc định theo role
+  if (isAuthenticated()) {
+    const authUser = getCurrentUser();
+    const redirectPath = authUser ? getDefaultRouteForRole(authUser.role) : "/";
+    return <Navigate to={redirectPath} replace />;
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

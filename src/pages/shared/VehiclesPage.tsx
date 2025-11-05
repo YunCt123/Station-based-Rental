@@ -668,7 +668,6 @@ const Vehicles = () => {
             ) : !isInitialLoading && !isError ? (
               <FadeIn delay={400}>
                 <div className="text-center py-12">
-                  <div className="text-6xl mb-4">🚗</div>
                   <h3 className="text-xl font-semibold mb-2">
                     Không tìm thấy phương tiện nào
                   </h3>

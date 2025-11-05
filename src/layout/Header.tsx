@@ -144,13 +144,13 @@ const Navbar = ({ user, onLogout }: NavbarProps) => {
                   <DropdownMenuItem asChild>
                     <Link to="/my-rentals" className="flex items-center">
                       <Car className="mr-2 h-4 w-4" />
-                      Xe thuê của tôi
+                      Lịch sử thuê xe
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
                     <Link to="/bookings" className="flex items-center">
                       <History className="mr-2 h-4 w-4" />
-                      Lịch sử đặt chỗ
+                      Lịch sử đặt xe
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
@@ -305,14 +305,14 @@ const Navbar = ({ user, onLogout }: NavbarProps) => {
                       className="block px-3 py-2 rounded-md text-base font-medium text-muted-foreground hover:text-foreground hover:bg-secondary"
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
-                      {t("nav.login")}
+                      Đăng nhập
                     </Link>
                     <Link
                       to="/register"
                       className="block px-3 py-2 rounded-md text-base font-medium bg-primary text-primary-foreground hover:bg-primary-dark"
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
-                      {t("nav.register")}
+                      Đăng ký
                     </Link>
                   </>
                 )}

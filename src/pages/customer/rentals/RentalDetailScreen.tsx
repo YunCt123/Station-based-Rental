@@ -202,23 +202,40 @@ const RentalDetailScreen: React.FC<RentalDetailScreenProps> = ({
     <div style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto' }}>
       {/* Header */}
       <div style={{ marginBottom: 24 }}>
-        <Button
-          icon={<ArrowLeftOutlined />}
-          onClick={onBack}
-          style={{ marginBottom: 16 }}
-        >
-          Quay lại
-        </Button>
+  <Button
+    icon={<ArrowLeftOutlined />}
+    onClick={onBack}
+    style={{ marginBottom: 16 }}
+  >
+    Quay lại
+  </Button>
 
-        <Space align="start" size={16}>
-          <Title level={2} style={{ margin: 0 }}>
-            Chi tiết thuê xe
-          </Title>
-          <Tag color={statusConfig.color} style={{ fontSize: '14px', padding: '4px 12px' }}>
-            {statusConfig.text}
-          </Tag>
-        </Space>
-      </div>
+  <div
+    style={{
+      display: "flex",
+      alignItems: "center",
+      gap: 12,
+      flexWrap: "wrap",
+    }}
+  >
+    <Title level={2} style={{ margin: 0, lineHeight: 1 }}>
+      Chi tiết thuê xe
+    </Title>
+
+    <Tag
+      color={statusConfig.color}
+      style={{
+        fontSize: 14,
+        padding: "0 12px",
+        height: 28,
+        display: "inline-flex",
+        alignItems: "center",
+      }}
+    >
+      {statusConfig.text}
+    </Tag>
+  </div>
+</div>
 
       <Row gutter={[24, 24]}>
         {/* ---------- Thông tin xe ---------- */}

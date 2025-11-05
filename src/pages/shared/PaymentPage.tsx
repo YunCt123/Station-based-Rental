@@ -414,10 +414,10 @@ const PaymentPage: React.FC = () => {
           <div className="flex items-center gap-3">
             <CheckCircleOutlined className="text-green-600 text-xl" />
             <div>
-              <Text className="text-green-800 font-semibold">Payment Successful</Text>
+              <Text className="text-green-800 font-semibold">Thanh toán thành công</Text>
               <br />
               <Text className="text-green-600 text-sm">
-                Transaction ID: {successfulPayment.transaction_ref}
+                Mã giao dịch: {successfulPayment.transaction_ref}
               </Text>
             </div>
           </div>
@@ -431,10 +431,10 @@ const PaymentPage: React.FC = () => {
           <div className="flex items-center gap-3">
             <ClockCircleOutlined className="text-yellow-600 text-xl" />
             <div>
-              <Text className="text-yellow-800 font-semibold">Payment Pending</Text>
+              <Text className="text-yellow-800 font-semibold">Đang xử lý giao dịch ...</Text>
               <br />
               <Text className="text-yellow-600 text-sm">
-                Waiting for payment confirmation...
+                Đang chờ xác nhận thanh toán...
               </Text>
             </div>
           </div>
@@ -448,10 +448,10 @@ const PaymentPage: React.FC = () => {
           <div className="flex items-center gap-3">
             <ExclamationCircleOutlined className="text-red-600 text-xl" />
             <div>
-              <Text className="text-red-800 font-semibold">Payment Failed</Text>
+              <Text className="text-red-800 font-semibold">Thanh toán thất bại</Text>
               <br />
               <Text className="text-red-600 text-sm">
-                Please try again with a different payment method
+                Vui lòng thử lại với phương thức thanh toán khác
               </Text>
             </div>
           </div>
@@ -467,7 +467,7 @@ const PaymentPage: React.FC = () => {
       <div className="max-w-4xl mx-auto p-4">
         <div className="flex justify-center items-center h-64">
           <Spin size="large" />
-          <span className="ml-3">Loading payment information...</span>
+          <span className="ml-3">Đang tải thông tin thanh toán...</span>
         </div>
       </div>
     );
@@ -478,10 +478,10 @@ const PaymentPage: React.FC = () => {
       <div className="max-w-4xl mx-auto p-4">
         <Card>
           <div className="text-center p-8">
-            <Title level={3}>Booking Not Found</Title>
-            <Paragraph>The booking you're looking for could not be found.</Paragraph>
+            <Title level={3}>Không tìm thấy đặt chỗ</Title>
+            <Paragraph>Đặt chỗ mà bạn đang tìm kiếm không thể được tìm thấy.</Paragraph>
             <Button type="primary" onClick={() => navigate('/vehicles')}>
-              Back to Vehicles
+              Quay lại xe
             </Button>
           </div>
         </Card>
@@ -500,7 +500,7 @@ const PaymentPage: React.FC = () => {
             loading={loading}
             className="flex items-center gap-2"
           >
-            Refresh
+            Tải lại
           </Button>
         </div>
         <Text type="secondary">
@@ -510,8 +510,8 @@ const PaymentPage: React.FC = () => {
         {/* Helpful message about payment errors */}
         <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
           <Text className="text-sm text-blue-800">
-            💡 <strong>Having payment issues?</strong> If you see duplicate error messages, please refresh the page and try again. 
-            Avoid clicking payment buttons multiple times to prevent duplicate requests.
+            <strong>Gặp sự cố với thanh toán?</strong> Nếu bạn thấy thông báo lỗi trùng lặp, vui lòng tải lại trang và thử lại.
+            Tránh nhấp vào các nút thanh toán nhiều lần để ngăn chặn các yêu cầu trùng lặp.
           </Text>
         </div>
       </div>

@@ -645,6 +645,7 @@ export class BookingService {
     console.log('[BookingService] status trong params:', params.status);
 
     const response = await api.post<ApiResponse<{
+      message: string;
       status: "SUCCESS" | "FAILED";
       bookingId?: string;
     }>>('/payments/vnpay/callback', params);

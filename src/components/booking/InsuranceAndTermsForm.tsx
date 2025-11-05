@@ -13,13 +13,13 @@ const InsuranceAndTermsForm: React.FC<InsuranceAndTermsFormProps> = ({ loading }
       title={
         <Space>
           <ShieldCheckIcon className="h-5 w-5" />
-          <span>Insurance & Terms</span>
+          <span>Bảo hiểm & Điều khoản</span>
         </Space>
       }
     >
       <Form.Item name="insurance_premium" valuePropName="checked">
         <Checkbox>
-          Add collision insurance coverage (+10% of rental cost)
+          Thêm bảo hiểm va chạm (+10% chi phí thuê)
         </Checkbox>
       </Form.Item>
 
@@ -32,19 +32,19 @@ const InsuranceAndTermsForm: React.FC<InsuranceAndTermsFormProps> = ({ loading }
               value
                 ? Promise.resolve()
                 : Promise.reject(
-                    new Error("You must agree to the terms and conditions")
+                    new Error("Bạn phải đồng ý với các điều khoản và điều kiện")
                   ),
           },
         ]}
       >
         <Checkbox>
-          I agree to the{" "}
-          <a href="#" className="text-primary-500 hover:underline">
-            terms and conditions
+          Tôi đồng ý với{" "}
+          <a href="/policy" className="text-primary-500 hover:underline">
+            các điều khoản và điều kiện
           </a>{" "}
-          and{" "}
-          <a href="#" className="text-primary-500 hover:underline">
-            privacy agreement
+          và{" "}
+          <a href="/privacy" className="text-primary-500 hover:underline">
+            thỏa thuận bảo mật
           </a>
         </Checkbox>
       </Form.Item>
@@ -56,7 +56,7 @@ const InsuranceAndTermsForm: React.FC<InsuranceAndTermsFormProps> = ({ loading }
         loading={loading}
         className="bg-primary-500 hover:bg-primary-600 mt-4 w-full"
       >
-        {loading ? "Creating Booking..." : "Continue to Payment"}
+        {loading ? "Tạo đặt chỗ..." : "Tiếp tục đến thanh toán"}
       </Button>
     </Card>
   );

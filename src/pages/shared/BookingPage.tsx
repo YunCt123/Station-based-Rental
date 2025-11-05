@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect, useCallback } from "react";
 import {
   useNavigate,
@@ -19,7 +20,7 @@ import { useAutoRefreshUser } from "../../hooks/useAutoRefreshUser";
 // Components
 import BookingSteps from "../../components/booking/BookingSteps";
 import RentalPeriodForm from "../../components/booking/RentalPeriodForm";
-import CustomerInformationForm from "../../components/booking/CustomerInformationForm";
+// import CustomerInformationForm from "../../components/booking/CustomerInformationForm";
 import InsuranceAndTermsForm from "../../components/booking/InsuranceAndTermsForm";
 import VehicleSummary from "../../components/booking/VehicleSummary";
 
@@ -50,9 +51,9 @@ const BookingPage: React.FC = () => {
   // Function to refresh user data from API
   const refreshUserData = async () => {
     try {
-      console.log('🔄 [BookingPage] Refreshing user data from API...');
+      console.log('🔄 [BookingPage] Làm mới dữ liệu người dùng từ API...');
       const freshUserData = await userService.getCurrentUser();
-      console.log('✅ [BookingPage] Fresh user data received:', freshUserData);
+      console.log('✅ [BookingPage] Nhận dữ liệu người dùng mới:', freshUserData);
       
       // Map UserProfile to User format for compatibility
       const mappedUser = {
@@ -80,26 +81,17 @@ const BookingPage: React.FC = () => {
       localStorage.setItem('user', JSON.stringify(mappedUser));
       setUser(mappedUser);
       
-      message.success('User data refreshed successfully');
+      message.success('Làm mới dữ liệu người dùng thành công');
     } catch (error) {
-      console.error('❌ [BookingPage] Failed to refresh user data:', error);
-      message.error('Failed to refresh user data. Please try logging in again.');
+      console.error('❌ [BookingPage] Không thể làm mới dữ liệu người dùng:', error);
+      message.error('Không thể làm mới dữ liệu người dùng. Vui lòng thử đăng nhập lại.');
     }
   };
-
-  // const [uploadStatus, setUploadStatus] = useState<{
-  //   [key: string]: DocumentUploadStatus["status"];
-  // }>
-  // ({
-  //   [DOCUMENT_TYPES.DRIVERS_LICENSE]: "not_started",
-  //   [DOCUMENT_TYPES.NATIONAL_ID_FRONT]: "not_started",
-  //   [DOCUMENT_TYPES.NATIONAL_ID_BACK]: "not_started",
-  // });
 
   // ---- Pricing ----
   const calculatePrice = useCallback(
     async (formDataOrStartAt: Record<string, unknown> | string, endAt?: string, insurancePremium = false) => {
-      console.log('🚀 [BookingPage] calculatePrice called with:', { 
+      console.log('🚀 [BookingPage] Tính giá được gọi với:', { 
         formDataOrStartAt, 
         endAt, 
         insurancePremium, 
@@ -108,7 +100,7 @@ const BookingPage: React.FC = () => {
       });
       
       if (!vehicleId) {
-        console.warn('❌ [BookingPage] No vehicleId, skipping price calculation');
+        console.warn('❌ [BookingPage] Không có vehicleId, bỏ qua tính giá');
         return;
       }
       
@@ -123,7 +115,7 @@ const BookingPage: React.FC = () => {
         // Check if called with form data (object) or legacy startAt/endAt strings
         if (typeof formDataOrStartAt === 'object' && formDataOrStartAt !== null) {
           // New way: format from form data
-          console.log('🔍 [BookingPage] Extracting insurance from form data:', formDataOrStartAt);
+          console.log('🔍 [BookingPage] Trích xuất bảo hiểm từ dữ liệu form:', formDataOrStartAt);
           const formData = { ...formDataOrStartAt, vehicleId };
           priceRequest = bookingService.formatPriceCalculationRequest(formData);
         } else {
@@ -136,18 +128,18 @@ const BookingPage: React.FC = () => {
           };
         }
         
-        console.log('📤 [BookingPage] Sending price request:', priceRequest);
+        console.log('📤 [BookingPage] Gửi yêu cầu tính giá:', priceRequest);
         
         const pricing = await bookingService.calculatePrice(priceRequest);
-        console.log('📥 [BookingPage] Received pricing response:', pricing);
+        console.log('📥 [BookingPage] Nhận phản hồi tính giá:', pricing);
         
         setPriceBreakdown(pricing);
-        console.log('✅ [BookingPage] Price breakdown set successfully');
+        console.log('✅ [BookingPage] Đặt giá thành công');
       } catch (error) {
-        console.error("💥 [BookingPage] Price calculation error:", error);
+        console.error("💥 [BookingPage] Lỗi tính giá:", error);
       } finally {
         setCalculatingPrice(false);
-        console.log('🏁 [BookingPage] Price calculation finished');
+        console.log('🏁 [BookingPage] Hoàn tất tính giá');
       }
     },
     [vehicleId]
@@ -157,7 +149,7 @@ const BookingPage: React.FC = () => {
   useEffect(() => {
     const checkAuthState = () => {
       const currentUser = getCurrentUser();
-      console.log('🔍 [BookingPage] Auth state check:', {
+      console.log('🔍 [BookingPage] Kiểm tra trạng thái xác thực:', {
         user: currentUser,
         verificationStatus: currentUser?.verificationStatus,
         isVerified: currentUser?.isVerified,
@@ -169,7 +161,7 @@ const BookingPage: React.FC = () => {
     checkAuthState();
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === "user" || e.key === "access_token") {
-        console.log('📢 [BookingPage] Storage changed:', e.key);
+        console.log('📢 [BookingPage] Thay đổi lưu trữ:', e.key);
         checkAuthState();
       }
     };
@@ -181,7 +173,7 @@ const BookingPage: React.FC = () => {
   useEffect(() => {
     const loadVehicle = async () => {
       if (!vehicleId) {
-        message.error("Vehicle ID is required");
+        message.error("Yêu cầu ID xe");
         navigate("/vehicles");
         return;
       }
@@ -204,11 +196,11 @@ const BookingPage: React.FC = () => {
           insurance_premium: false
         };
         
-        console.log('🔧 [BookingPage] Calculating initial price with default daily rental:', initialFormData);
+        console.log('🔧 [BookingPage] Tính giá ban đầu với thuê theo ngày mặc định:', initialFormData);
         await calculatePrice(initialFormData);
       } catch (error) {
-        console.error("Error loading vehicle:", error);
-        message.error("Failed to load vehicle information. Please try again.");
+        console.error("Lỗi tải xe:", error);
+        message.error("Không thể tải thông tin xe. Vui lòng thử lại.");
         navigate("/vehicles");
       } finally {
         setLoadingVehicle(false);
@@ -218,23 +210,22 @@ const BookingPage: React.FC = () => {
   }, [vehicleId, navigate, calculatePrice]);
 
   // ---- Submit ----
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleFinish = async (values: Record<string, any>) => {
     if (!user) {
-      message.error("Please log in to make a booking");
+      message.error("Vui lòng đăng nhập để đặt xe");
       navigate("/login", { state: { from: location.pathname } });
       return;
     }
     
     // ✅ Check verification status before allowing booking
     if (!isUserVerified(user)) {
-      message.error("Your account must be verified before making a booking");
+      message.error("Tài khoản của bạn cần được xác minh trước khi đặt xe");
       navigate("/settings");
       return;
     }
     
     if (!vehicleId) {
-      message.error("Vehicle ID is required for booking");
+      message.error("Yêu cầu ID xe để đặt");
       return;
     }
 
@@ -245,11 +236,10 @@ const BookingPage: React.FC = () => {
       const vehicleStationId = vehicle?.stationId || vehicle?.stationId;
       const finalStationId: string = vehicleStationId || stationId || "default-station-id";
 
-      console.log("=== STATION DEBUG ===");
-      console.log("URL stationId:", stationId);
-      console.log("Vehicle station_id:", vehicle?.stationId);
-      console.log("Vehicle stationId:", vehicle?.stationId);
-      console.log("Final stationId:", finalStationId);
+      console.log("=== DEBUG STATION ===");
+      console.log("stationId từ URL:", stationId);
+      console.log("station_id từ xe:", vehicle?.stationId);
+      console.log("stationId cuối cùng:", finalStationId);
 
       const formValues = {
         ...values,
@@ -257,19 +247,19 @@ const BookingPage: React.FC = () => {
         vehicleId,
       };
 
-      console.log("=== DEBUGGING FORM DATA ===");
-      console.log("Raw form values:", JSON.stringify(values, null, 2));
-      console.log("Final form values:", JSON.stringify(formValues, null, 2));
+      console.log("=== DEBUG DỮ LIỆU FORM ===");
+      console.log("Giá trị form thô:", JSON.stringify(values, null, 2));
+      console.log("Giá trị form cuối cùng:", JSON.stringify(formValues, null, 2));
 
       const bookingRequest = bookingService.formatBookingRequest(formValues);
-      console.log("Formatted booking request:", JSON.stringify(bookingRequest, null, 2));
+      console.log("Yêu cầu đặt xe đã định dạng:", JSON.stringify(bookingRequest, null, 2));
       
       const booking = await bookingService.createBooking(bookingRequest);
 
-      message.success("Booking created successfully! Redirecting to payment...");
+      message.success("Đặt xe thành công! Đang chuyển đến thanh toán...");
       navigate(`/payment?bookingId=${booking._id}`);
     } catch (error: unknown) {
-      console.error("Booking creation error:", error);
+      console.error("Lỗi tạo đặt xe:", error);
       const e = error as { response?: { status?: number }; message?: string };
       if (
         e?.response?.status === 401 ||
@@ -277,7 +267,7 @@ const BookingPage: React.FC = () => {
           (e.message.includes("unauthorized") ||
             e.message.includes("authentication")))
       ) {
-        message.error("Your session has expired. Please log in again.");
+        message.error("Phiên của bạn đã hết hạn. Vui lòng đăng nhập lại.");
         setUser(null);
         localStorage.removeItem("access_token");
         localStorage.removeItem("user");
@@ -285,43 +275,21 @@ const BookingPage: React.FC = () => {
         return;
       }
       message.error(
-        e?.message || "Failed to create booking. Please try again."
+        e?.message || "Không thể tạo đặt xe. Vui lòng thử lại."
       );
     } finally {
       setLoading(false);
     }
   };
 
-  // ---- Upload ----
-  // const handleUploadChange = (
-  //   info: { file: { status?: string; name: string }; fileList: UploadFile[] },
-  //   docType: string
-  // ) => {
-  //   const { status } = info.file;
-  //   const newFileList = [...info.fileList].slice(-1); // keep latest
-
-  //   setFileList((prev) => ({ ...prev, [docType]: newFileList }));
-
-  //   if (status === "uploading") {
-  //     setUploadStatus((prev) => ({ ...prev, [docType]: "uploading" }));
-  //   } else if (status === "done") {
-  //     setUploadStatus((prev) => ({ ...prev, [docType]: "success" }));
-  //     message.success(`${info.file.name} uploaded successfully.`);
-  //   } else if (status === "error") {
-  //     setUploadStatus((prev) => ({ ...prev, [docType]: "error" }));
-  //     message.error(`${info.file.name} upload failed.`);
-  //   }
-  // };
-
   // ---- Login required ----
   const LoginRequiredComponent = () => (
     <div className="max-w-md mx-auto mt-8">
       <Card className="text-center p-6">
         <UserOutlined className="text-4xl text-blue-500 mb-4" />
-        <h2 className="text-xl font-semibold mb-4">Login Required</h2>
+        <h2 className="text-xl font-semibold mb-4">Yêu cầu đăng nhập</h2>
         <p className="text-gray-600 mb-6">
-          You need to be logged in to make a booking. Please login or create an
-          account to continue.
+          Bạn cần đăng nhập để thực hiện đặt xe. Vui lòng đăng nhập hoặc tạo tài khoản để tiếp tục.
         </p>
         <div className="space-x-4">
           <Button
@@ -329,10 +297,10 @@ const BookingPage: React.FC = () => {
             icon={<LoginOutlined />}
             onClick={() => navigate("/login", { state: { from: location.pathname } })}
           >
-            Login
+            Đăng nhập
           </Button>
           <Button onClick={() => navigate("/register", { state: { from: location.pathname } })}>
-            Create Account
+            Tạo tài khoản
           </Button>
         </div>
       </Card>
@@ -359,11 +327,6 @@ const BookingPage: React.FC = () => {
               {getVerificationStatusMessage(user)}
             </span>
           </p>
-          {/* {user?.rejectionReason && (
-            <p className="text-sm text-red-600 mt-2">
-              Reason: {user.rejectionReason}
-            </p>
-          )} */}
         </div>
         <div className="space-x-4">
           {user?.verificationStatus === 'REJECTED' || user?.verificationStatus === 'PENDING' ? (
@@ -378,7 +341,7 @@ const BookingPage: React.FC = () => {
               type="primary"
               onClick={() => navigate("/settings")}
             >
-              Start Verification Process
+              Bắt đầu xác minh
             </Button>
           )}
           <Button onClick={() => navigate("/")}>
@@ -391,7 +354,7 @@ const BookingPage: React.FC = () => {
               refreshUserData();
             }}
           >
-            tải lại
+            Tải lại
           </Button>
         </div>
       </Card>
@@ -519,7 +482,6 @@ const BookingPage: React.FC = () => {
                   }}
                 >
                   <RentalPeriodForm />
-                  <CustomerInformationForm />
                   <InsuranceAndTermsForm loading={loading} />
                 </Form>
               </div>

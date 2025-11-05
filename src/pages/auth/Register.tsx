@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, Navigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -24,6 +24,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "@/contexts/TranslationContext";
 import { register as registerApi } from "@/services/authService";
+import { isAuthenticated, getCurrentUser, getDefaultRouteForRole } from "@/utils/auth";
 
 interface User {
   id: string;
@@ -56,6 +57,13 @@ const Register = ({ onRegister }: RegisterProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  // Nếu đã đăng nhập thì chuyển hướng ra route mặc định theo role
+  if (isAuthenticated()) {
+    const authUser = getCurrentUser();
+    const redirectPath = authUser ? getDefaultRouteForRole(authUser.role) : "/";
+    return <Navigate to={redirectPath} replace />;
+  }
 
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({

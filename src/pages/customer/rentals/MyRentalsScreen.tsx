@@ -102,11 +102,10 @@ const MyRentalsScreen: React.FC<MyRentalsScreenProps> = ({
     <div style={{ padding: '24px' }}>
       <div style={{ marginBottom: 24 }}>
         <Title level={2}>
-          <CarOutlined style={{ color: '#1890ff', marginRight: 8 }} />
-          Xe thuê của tôi
+          Lịch sử thuê xe
         </Title>
         <Paragraph type="secondary">
-          Quản lý và theo dõi tình trạng các xe bạn đã thuê
+          Quản lý và theo dõi trạng thái các xe đã thuê
         </Paragraph>
       </div>
 

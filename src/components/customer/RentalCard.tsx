@@ -38,12 +38,12 @@ const RentalCard: React.FC<RentalCardProps> = ({
 
   const getStatusConfig = (status: string) => {
     const configs = {
-      'CONFIRMED': { text: 'Chờ nhận xe', color: 'orange', icon: '📅' },
-      'ONGOING': { text: 'Đang sử dụng', color: 'green', icon: '🚗' },
-      'RETURN_PENDING': { text: 'Cần thanh toán', color: 'red', icon: '💰' },
-      'COMPLETED': { text: 'Hoàn tất', color: 'default', icon: '✅' }
+      'CONFIRMED': { text: 'Chờ nhận xe', color: 'orange', },
+      'ONGOING': { text: 'Đang sử dụng', color: 'green' },
+      'RETURN_PENDING': { text: 'Cần thanh toán', color: 'red' },
+      'COMPLETED': { text: 'Hoàn tất', color: 'default' }
     };
-    return configs[status as keyof typeof configs] || { text: status, color: 'default', icon: '📋' };
+    return configs[status as keyof typeof configs] || { text: status, color: 'default' };
   };
 
   const statusConfig = getStatusConfig(status);
@@ -98,7 +98,7 @@ const RentalCard: React.FC<RentalCardProps> = ({
               {vehicle_id.name}
             </Title>
             <Tag color={statusConfig.color} style={{ fontSize: '12px' }}>
-              {statusConfig.icon} {statusConfig.text}
+               {statusConfig.text}
             </Tag>
           </Space>
         }

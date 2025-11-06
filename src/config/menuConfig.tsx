@@ -83,29 +83,29 @@ export const getMenuSections = (): SidebarSection[] => [
     title: 'Vận hành trạm',
     roles: [UserRole.STATION_STAFF],
     items: [
-      {
-        id: 'payment-processing',
-        title: 'Thanh toán tại điểm',
-        icon: <CreditCardIcon className="w-5 h-5" />,
-        path: '/staff/payment',
-        roles: [UserRole.STATION_STAFF],
-        children: [
-          {
-            id: 'rental-payment',
-            title: 'Thanh toán phí thuê xe',
-            icon: <CurrencyDollarIcon className="w-4 h-4" />,
-            path: '/staff/payment/rental',
-            roles: [UserRole.STATION_STAFF]
-          },
-          {
-            id: 'deposit-collection',
-            title: 'Đặt cọc hoặc hoàn cọc',
-            icon: <CurrencyDollarIcon className="w-4 h-4" />,
-            path: '/staff/payment/deposit',
-            roles: [UserRole.STATION_STAFF]
-          }
-        ]
-      },
+      // {
+      //   id: 'payment-processing',
+      //   title: 'Thanh toán tại điểm',
+      //   icon: <CreditCardIcon className="w-5 h-5" />,
+      //   path: '/staff/payment',
+      //   roles: [UserRole.STATION_STAFF],
+      //   children: [
+      //     {
+      //       id: 'rental-payment',
+      //       title: 'Thanh toán phí thuê xe',
+      //       icon: <CurrencyDollarIcon className="w-4 h-4" />,
+      //       path: '/staff/payment/rental',
+      //       roles: [UserRole.STATION_STAFF]
+      //     },
+      //     {
+      //       id: 'deposit-collection',
+      //       title: 'Đặt cọc hoặc hoàn cọc',
+      //       icon: <CurrencyDollarIcon className="w-4 h-4" />,
+      //       path: '/staff/payment/deposit',
+      //       roles: [UserRole.STATION_STAFF]
+      //     }
+      //   ]
+      // },
       {
         id: 'vehicle-management',
         title: 'Quản lý xe tại điểm',
@@ -113,13 +113,13 @@ export const getMenuSections = (): SidebarSection[] => [
         path: '/staff/vehicle-management',
         roles: [UserRole.STATION_STAFF],
         children: [
-          {
-            id: 'battery-status',
-            title: 'Trạng thái pin',
-            icon: <BoltIcon className="w-4 h-4" />,
-            path: '/staff/station-management/battery-status',
-            roles: [UserRole.STATION_STAFF]
-          },
+          // {
+          //   id: 'battery-status',
+          //   title: 'Trạng thái pin',
+          //   icon: <BoltIcon className="w-4 h-4" />,
+          //   path: '/staff/station-management/battery-status',
+          //   roles: [UserRole.STATION_STAFF]
+          // },
           {
             id: 'technical-status',
             title: 'Tình trạng kỹ thuật',

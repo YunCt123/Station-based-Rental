@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { stationService, type Station } from '@/services/stationService';
 import {
   TruckIcon,
   ClipboardDocumentListIcon,
@@ -8,34 +9,106 @@ import {
   CheckCircleIcon,
   XCircleIcon
 } from '@heroicons/react/24/outline';
+import type { Vehicle } from '@/types/vehicle';
 
 const StaffDashboard: React.FC = () => {
-  const stats = [
-    {
-      title: 'Xe có sẵn',
-      value: '12',
-      color: 'bg-green-500',
-      icon: TruckIcon
-    },
-    {
-      title: 'Xe đang thuê',
-      value: '8',
-      color: 'bg-blue-500',
-      icon: TruckIcon
-    },
-    {
-      title: 'Chờ bàn giao',
-      value: '3',
-      color: 'bg-yellow-500',
-      icon: ClipboardDocumentListIcon
-    },
-    {
-      title: 'Cần bảo trì',
-      value: '2',
-      color: 'bg-red-500',
-      icon: ExclamationTriangleIcon
-    }
+  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [searchText, setSearchText] = useState('');
+  // Thành phố Việt Nam (tĩnh)
+  const cityOptionsRaw = [
+    'Hà Nội', 'Hồ Chí Minh', 'Đà Nẵng', 'Hải Phòng', 'Cần Thơ', 'Nha Trang', 'Huế', 'Vũng Tàu', 'Biên Hòa', 'Buôn Ma Thuột', 'Đà Lạt', 'Quy Nhơn', 'Thanh Hóa', 'Nam Định', 'Vinh', 'Thái Nguyên', 'Bắc Ninh', 'Phan Thiết', 'Long Xuyên', 'Rạch Giá', 'Bạc Liêu', 'Cà Mau', 'Tuy Hòa', 'Pleiku', 'Trà Vinh', 'Sóc Trăng', 'Hạ Long', 'Uông Bí', 'Lào Cai', 'Yên Bái', 'Điện Biên Phủ', 'Sơn La', 'Hòa Bình', 'Tuyên Quang', 'Bắc Giang', 'Bắc Kạn', 'Cao Bằng', 'Lạng Sơn', 'Hà Giang', 'Phủ Lý', 'Hưng Yên', 'Hà Tĩnh', 'Quảng Bình', 'Quảng Trị', 'Đông Hà', 'Quảng Ngãi', 'Tam Kỳ', 'Kon Tum', 'Gia Nghĩa', 'Tây Ninh', 'Bến Tre', 'Vĩnh Long', 'Cao Lãnh', 'Sa Đéc', 'Mỹ Tho', 'Châu Đốc', 'Tân An', 'Bình Dương', 'Bình Phước', 'Phước Long', 'Thủ Dầu Một', 'Bình Thuận', 'Bình Định', 'Quảng Nam', 'Quảng Ninh', 'Quảng Ngãi', 'Quảng Trị', 'Quảng Bình', 'Ninh Bình', 'Ninh Thuận', 'Hà Nam', 'Hà Tĩnh', 'Hậu Giang', 'Kiên Giang', 'Lâm Đồng', 'Lạng Sơn', 'Lào Cai', 'Nam Định', 'Nghệ An', 'Phú Thọ', 'Phú Yên', 'Quảng Bình', 'Quảng Nam', 'Quảng Ngãi', 'Quảng Ninh', 'Quảng Trị', 'Sóc Trăng', 'Sơn La', 'Tây Ninh', 'Thái Bình', 'Thái Nguyên', 'Thanh Hóa', 'Tiền Giang', 'Trà Vinh', 'Tuyên Quang', 'Vĩnh Long', 'Vĩnh Phúc', 'Yên Bái'
   ];
+  const cityOptions = Array.from(new Set(cityOptionsRaw));
+  const [selectedCity, setSelectedCity] = useState<string>('');
+  const [stationOptions, setStationOptions] = useState<any[]>([]);
+  const [selectedStation, setSelectedStation] = useState<string>('');
+  const [stationVehicles, setStationVehicles] = useState<any[]>([]);
+  const [vehiclesLoading, setVehiclesLoading] = useState(false);
+  const [vehiclesError, setVehiclesError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!selectedCity) return;
+    stationService.getStationsByCity(selectedCity)
+      .then((stations: any[]) => {
+        setStationOptions((stations || []).map((station: any) => ({
+          value: station.id,
+          label: station.name
+        })));
+        setSelectedStation('');
+      })
+      .catch(() => {
+        setStationOptions([]);
+      });
+  }, [selectedCity]);
+
+  useEffect(() => {
+    // When a station is selected, fetch its vehicles and show in Vehicle Status
+    if (!selectedStation) {
+      setStationVehicles([]);
+      return;
+    }
+
+    setVehiclesLoading(true);
+    setVehiclesError(null);
+
+    stationService.getStationVehicles(selectedStation)
+      .then((res) => {
+        // res.vehicles is expected to be an array of Vehicle (frontend type)
+        const mapped = (res.vehicles || []).map((v: any) => ({
+          id: v.id || v._id || v.vehicleId || '',
+          name: v.name || v.vehicle_name || 'Xe không tên',
+          // prefer frontend availability, fall back to backend status
+          status: v.availability || (v.status ? v.status.toLowerCase() : undefined) || 'available',
+          battery: v.batteryLevel ?? v.battery_soc ?? v.battery ?? 0,
+          location: v.location || v.station_name || v.position || 'Không xác định'
+        }));
+        setStationVehicles(mapped);
+      })
+      .catch((err) => {
+        console.error('Error fetching station vehicles', err);
+        setVehiclesError('Không thể tải danh sách xe');
+        setStationVehicles([]);
+      })
+      .finally(() => setVehiclesLoading(false));
+  }, [selectedStation]);
+
+  // Stats grid state: values fetched per-station+status
+  const initialStats = [
+    { id: 'available', title: 'Xe có sẵn', value: '0', color: 'bg-green-500', icon: TruckIcon, statusKey: 'AVAILABLE' },
+    { id: 'rented', title: 'Xe đang thuê', value: '0', color: 'bg-blue-500', icon: TruckIcon, statusKey: 'RENTED' },
+    { id: 'reserved', title: 'Chờ bàn giao', value: '0', color: 'bg-yellow-500', icon: ClipboardDocumentListIcon, statusKey: 'RESERVED' },
+    { id: 'maintenance', title: 'Cần bảo trì', value: '0', color: 'bg-red-500', icon: ExclamationTriangleIcon, statusKey: 'MAINTENANCE' }
+  ];
+
+  const [statsGrid, setStatsGrid] = useState(initialStats);
+  const [statsLoading, setStatsLoading] = useState(false);
+
+  useEffect(() => {
+    // Populate stats counts for the selected station using getStationVehicles
+    if (!selectedStation) {
+      setStatsGrid(initialStats);
+      return;
+    }
+
+    setStatsLoading(true);
+
+    const fetches = initialStats.map((s) =>
+      stationService
+        .getStationVehicles(selectedStation, s.statusKey)
+        .then((res) => (typeof res.count === 'number' ? res.count : (res.vehicles || []).length))
+        .catch((err) => {
+          console.error('Error fetching vehicles for status', s.statusKey, err);
+          return 0;
+        })
+    );
+
+    Promise.all(fetches)
+      .then((counts) => {
+        const updated = initialStats.map((s, idx) => ({ ...s, value: String(counts[idx] || 0) }));
+        setStatsGrid(updated);
+      })
+      .finally(() => setStatsLoading(false));
+  }, [selectedStation]);
 
   const pendingTasks = [
     {
@@ -76,15 +149,6 @@ const StaffDashboard: React.FC = () => {
     }
   ];
 
-  const vehicleStatus = [
-    { id: 'EV-001', status: 'available', battery: 95, location: 'Slot A1' },
-    { id: 'EV-002', status: 'rented', battery: 78, location: 'Đang thuê' },
-    { id: 'EV-003', status: 'available', battery: 88, location: 'Slot A3' },
-    { id: 'EV-004', status: 'maintenance', battery: 45, location: 'Bảo trì' },
-    { id: 'EV-005', status: 'available', battery: 92, location: 'Slot B1' },
-    { id: 'EV-006', status: 'rented', battery: 65, location: 'Đang thuê' }
-  ];
-
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'available': return 'text-green-600 bg-green-100';
@@ -118,7 +182,39 @@ const StaffDashboard: React.FC = () => {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Dashboard Nhân viên</h1>
-          <p className="text-gray-600">Quản lý trạm thuê xe - Trạm Cầu Giấy</p>
+          {/* Thành phố + Trạm selector (giống VehicleAvailable) */}
+          <div className="mt-1 flex items-center gap-4">
+            <div>
+              <label className="text-sm text-gray-500 mr-2">Thành phố:</label>
+              <input
+                list="city-list"
+                className="px-3 py-1 border rounded-md w-52"
+                placeholder="Tìm thành phố..."
+                value={selectedCity}
+                onChange={(e) => setSelectedCity(e.target.value)}
+              />
+              <datalist id="city-list">
+                {cityOptions.map((city, idx) => (
+                  <option key={city + idx} value={city} />
+                ))}
+              </datalist>
+            </div>
+
+            <div>
+              <label className="text-sm text-gray-500 mr-2">Trạm:</label>
+              <select
+                className="px-3 py-1 border rounded-md w-52"
+                value={selectedStation}
+                onChange={(e) => setSelectedStation(e.target.value)}
+                disabled={!stationOptions.length}
+              >
+                <option value="">Chọn trạm...</option>
+                {stationOptions.map((s) => (
+                  <option key={s.value} value={s.value}>{s.label}</option>
+                ))}
+              </select>
+            </div>
+          </div>
         </div>
         <div className="flex items-center space-x-2 text-sm text-gray-500">
           <ClockIcon className="w-4 h-4" />
@@ -128,12 +224,12 @@ const StaffDashboard: React.FC = () => {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map((stat) => (
+        {statsGrid.map((stat: any) => (
           <div key={stat.title} className="bg-white rounded-lg shadow p-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">{stat.title}</p>
-                <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
+                <p className="text-2xl font-bold text-gray-900">{statsLoading ? '...' : stat.value}</p>
               </div>
               <div className={`p-3 rounded-full ${stat.color}`}>
                 <stat.icon className="w-6 h-6 text-white" />
@@ -187,26 +283,54 @@ const StaffDashboard: React.FC = () => {
           </div>
           <div className="p-6">
             <div className="space-y-3">
-              {vehicleStatus.map((vehicle) => (
-                <div key={vehicle.id} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
-                  <div className="flex items-center space-x-3">
-                    <div className="font-medium text-gray-900">{vehicle.id}</div>
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(vehicle.status)}`}>
-                      {getStatusText(vehicle.status)}
-                    </span>
-                  </div>
-                  <div className="flex items-center space-x-4">
-                    <div className="text-right">
-                      <div className="text-sm font-medium text-gray-900">{vehicle.battery}%</div>
-                      <div className="text-xs text-gray-500">Pin</div>
+              {vehiclesLoading ? (
+                <div className="text-sm text-gray-500">Đang tải danh sách xe...</div>
+              ) : vehiclesError ? (
+                <div className="text-sm text-red-500">{vehiclesError}</div>
+              ) : !selectedStation ? (
+                <div className="text-sm text-gray-500">Vui lòng chọn trạm để xem trạng thái xe.</div>
+              ) : stationVehicles.length === 0 ? (
+                <div className="text-sm text-gray-500">Không có xe nào tại trạm này.</div>
+              ) : (
+                stationVehicles.map((vehicle) => (
+                  <div
+                    key={vehicle.id}
+                    className="flex items-center justify-between p-4 border border-gray-200 rounded-lg bg-white hover:shadow-sm transition-shadow"
+                  >
+                    {/* Left: id + status */}
+                    <div className="flex items-center space-x-4 min-w-0 w-full">
+                      {/* name + id stack: allow truncation */}
+                      <div className="min-w-0 flex-1">
+                        <div className="text-sm font-semibold text-gray-900 truncate" title={vehicle.name}>{vehicle.name}</div>
+                        <div className="text-xs text-gray-500 truncate" title={vehicle.id}>{vehicle.id}</div>
+                      </div>
+
+                      {/* status badge: fixed size, doesn't shrink */}
+                      <div className="flex-shrink-0">
+                        <span className={`inline-block px-3 py-1 text-xs font-medium rounded-full mr-1 ${getStatusColor(vehicle.status)}`}>
+                          {getStatusText(vehicle.status)}
+                        </span>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <div className="text-sm text-gray-900">{vehicle.location}</div>
+
+                    {/* Center: battery (with left dashed separator) */}
+                    <div className="border-l border-dashed border-gray-400 px-4">
+                      <div className="flex-1 flex items-center justify-center ">
+                        <div className="text-center">
+                          <div className="text-xs text-gray-500">Pin</div>
+                          <div className="text-lg font-bold text-gray-900">{vehicle.battery}%</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Right: location (with left dashed separator) */}
+                    <div className="flex-shrink-0 text-right min-w-0 border-l border-dashed border-gray-400 pl-6">
                       <div className="text-xs text-gray-500">Vị trí</div>
+                      <div className="text-sm font-medium text-gray-900 truncate">{vehicle.location}</div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
         </div>

@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { stationService } from '@/services/stationService';
+import { getIssuesWithFilters } from '@/services/issueService';
+import type { Issue as ISSUE } from '@/services/issueService';
 import {
   TruckIcon,
   ClipboardDocumentListIcon,
@@ -107,44 +109,55 @@ const StaffDashboard: React.FC = () => {
       .finally(() => setStatsLoading(false));
   }, [selectedStation]);
 
-  const pendingTasks = [
-    {
-      id: 1,
-      type: 'delivery',
-      title: 'Bàn giao xe EV-001',
-      customer: 'Nguyễn Văn A',
-      time: '09:30',
-      priority: 'high',
-      status: 'pending'
-    },
-    {
-      id: 2,
-      type: 'return',
-      title: 'Nhận xe EV-015',
-      customer: 'Trần Thị B',
-      time: '10:15',
-      priority: 'medium',
-      status: 'pending'
-    },
-    {
-      id: 3,
-      type: 'inspection',
-      title: 'Kiểm tra xe EV-023',
-      customer: 'Lê Văn C',
-      time: '11:00',
-      priority: 'low',
-      status: 'completed'
-    },
-    {
-      id: 4,
-      type: 'maintenance',
-      title: 'Bảo trì xe EV-045',
-      customer: 'Hệ thống',
-      time: '14:30',
-      priority: 'high',
-      status: 'in-progress'
+  // Pending issues (fetched from API). Typed as ISSUE
+  const [pendingIssues, setPendingIssues] = useState<ISSUE[]>([]);
+  const [pendingLoading, setPendingLoading] = useState(false);
+  const [pendingError, setPendingError] = useState<string | null>(null);
+
+  // Fetch issues for selected station with statuses OPEN and IN_PROGRESS
+  useEffect(() => {
+    if (!selectedStation) {
+      setPendingIssues([]);
+      return;
     }
-  ];
+
+    setPendingLoading(true);
+    setPendingError(null);
+
+    // Call API for both statuses and merge results. The service returns Promise<ISSUE[]>.
+    const pOpen = getIssuesWithFilters({ station_id: selectedStation, status: 'OPEN' });
+    const pInProgress = getIssuesWithFilters({ station_id: selectedStation, status: 'IN_PROGRESS' });
+
+    Promise.all([pOpen, pInProgress])
+      .then(([openList, inProgList]) => {
+        // Normalize responses: API may return array or wrapper objects like { data: [...] } or { issues: [...] }
+        const normalize = (r: any): ISSUE[] => {
+          if (!r) return [];
+          if (Array.isArray(r)) return r as ISSUE[];
+          if (r.data && Array.isArray(r.data)) return r.data as ISSUE[];
+          if (r.issues && Array.isArray(r.issues)) return r.issues as ISSUE[];
+          // If the API returns a single issue object, wrap it
+          if (typeof r === 'object' && r._id) return [r as ISSUE];
+          console.warn('Unexpected issues response format', r);
+          return [];
+        };
+
+        const merged = normalize(openList).concat(normalize(inProgList));
+        // merge and dedupe by _id
+        const map = new Map<string, ISSUE>();
+        merged.forEach((it) => {
+          if (!it || !it._id) return;
+          map.set(it._id, it);
+        });
+        setPendingIssues(Array.from(map.values()));
+      })
+      .catch((err) => {
+        console.error('Error fetching pending issues', err);
+        setPendingError('Không thể tải nhiệm vụ');
+        setPendingIssues([]);
+      })
+      .finally(() => setPendingLoading(false));
+  }, [selectedStation]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -244,31 +257,41 @@ const StaffDashboard: React.FC = () => {
           </div>
           <div className="p-6">
             <div className="space-y-4">
-              {pendingTasks.map((task) => (
-                <div key={task.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
-                  <div className="flex items-center space-x-3">
-                    <div className="flex-shrink-0">
-                      {task.status === 'completed' ? (
-                        <CheckCircleIcon className="w-5 h-5 text-green-500" />
-                      ) : task.status === 'in-progress' ? (
-                        <ClockIcon className="w-5 h-5 text-blue-500" />
-                      ) : (
-                        <XCircleIcon className="w-5 h-5 text-gray-400" />
-                      )}
+              {pendingLoading ? (
+                <div className="text-sm text-gray-500">Đang tải nhiệm vụ...</div>
+              ) : pendingError ? (
+                <div className="text-sm text-red-500">{pendingError}</div>
+              ) : !selectedStation ? (
+                <div className="text-sm text-gray-500">Vui lòng chọn trạm để xem nhiệm vụ.</div>
+              ) : pendingIssues.length === 0 ? (
+                <div className="text-sm text-gray-500">Không có nhiệm vụ mở tại trạm này.</div>
+              ) : (
+                pendingIssues.map((task) => (
+                  <div key={task._id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                    <div className="flex items-center space-x-3">
+                      <div className="flex-shrink-0">
+                        {task.status === 'RESOLVED' ? (
+                          <CheckCircleIcon className="w-5 h-5 text-green-500" />
+                        ) : task.status === 'IN_PROGRESS' ? (
+                          <ClockIcon className="w-5 h-5 text-blue-500" />
+                        ) : (
+                          <XCircleIcon className="w-5 h-5 text-gray-400" />
+                        )}
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">{task.title}</p>
+                        <p className="text-xs text-gray-500">Khách hàng: {task.reporter?.name || task.reporter_id}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">{task.title}</p>
-                      <p className="text-xs text-gray-500">Khách hàng: {task.customer}</p>
+                    <div className="flex items-center space-x-2">
+                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${getPriorityColor(task.status === 'OPEN' ? 'high' : 'medium')}`}>
+                        {task.status === 'OPEN' ? 'Cao' : task.status === 'IN_PROGRESS' ? 'Trung bình' : 'Thấp'}
+                      </span>
+                      <span className="text-sm text-gray-500">{new Date(task.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                     </div>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${getPriorityColor(task.priority)}`}>
-                      {task.priority === 'high' ? 'Cao' : task.priority === 'medium' ? 'Trung bình' : 'Thấp'}
-                    </span>
-                    <span className="text-sm text-gray-500">{task.time}</span>
-                  </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
         </div>

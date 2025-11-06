@@ -114,6 +114,16 @@ export const getAllIssues = async (): Promise<Issue[]> => {
     }
 };
 
+export const getIssuesWithFilters = async (filters: { status?: string; station_id?: string; vehicle_id?: string; }): Promise<Issue[]> => {
+  try {
+    const response = await api.get('/issues/all', { params: filters });
+    return response.data;
+  } catch (error: any) {
+    console.error('Error fetching issues with filters:', error);
+    throw error?.message || 'Failed to fetch issues';
+  }
+};
+
 /**
  * Update an issue (staff/admin only)
  * PATCH /v1/issues/{id}

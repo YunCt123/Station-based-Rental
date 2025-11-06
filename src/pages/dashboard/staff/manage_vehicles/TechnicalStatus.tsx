@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   WrenchScrewdriverIcon,
   ClockIcon,
@@ -17,6 +17,7 @@ import { VehicleDetailsModal } from '../../../../components/dashboard/staff/mana
 import { AddIncidentModal } from '../../../../components/dashboard/staff/manage_vehicles/AddIncidentModal';
 import { createIssue } from '@/services/issueService';
 import { toast } from 'sonner';
+import stationService from '@/services/stationService';
 
 interface MaintenanceRecord {
   id: string;
@@ -30,6 +31,7 @@ interface MaintenanceRecord {
 
 interface Vehicle {
   id: string;
+  image: string;
   model: string;
   licensePlate: string;
   technicalStatus: 'excellent' | 'good' | 'warning' | 'maintenance' | 'out-of-service';
@@ -41,118 +43,98 @@ interface Vehicle {
   issues: string[];
 }
 
-const mockVehicles: Vehicle[] = [
-  {
-    id: 'EV001',
-    model: 'Tesla Model 3',
-    licensePlate: '30A-12345',
-    technicalStatus: 'excellent',
-    lastInspection: '2024-10-10',
-    nextMaintenance: '2024-11-15',
-    mileage: 25400,
-    position: 'Vị trí 1',
-    issues: [],
-    maintenanceRecords: [
-      {
-        id: 'M001',
-        date: '2024-10-10',
-        type: 'inspection',
-        description: 'Kiểm tra định kỳ 6 tháng',
-        technician: 'Nguyễn Văn A',
-        status: 'completed'
-      },
-      {
-        id: 'M002',
-        date: '2024-09-15',
-        type: 'routine',
-        description: 'Thay lốp xe sau trái',
-        technician: 'Trần Văn B',
-        status: 'completed',
-        cost: 1500000
-      }
-    ]
-  },
-  {
-    id: 'EV002',
-    model: 'VinFast VF8',
-    licensePlate: '30B-67890',
-    technicalStatus: 'good',
-    lastInspection: '2024-09-25',
-    nextMaintenance: '2024-10-20',
-    mileage: 18200,
-    position: 'Vị trí 3',
-    issues: ['Tiếng ồn nhẹ từ động cơ'],
-    maintenanceRecords: [
-      {
-        id: 'M003',
-        date: '2024-10-20',
-        type: 'routine',
-        description: 'Bảo dưỡng định kỳ',
-        technician: 'Lê Thị C',
-        status: 'scheduled'
-      }
-    ]
-  },
-  {
-    id: 'EV003',
-    model: 'BYD Seal',
-    licensePlate: '30C-11111',
-    technicalStatus: 'warning',
-    lastInspection: '2024-08-15',
-    nextMaintenance: '2024-10-16',
-    mileage: 31500,
-    position: 'Vị trí 7',
-    issues: ['Phanh có tiếng kêu', 'Đèn báo lỗi ABS'],
-    maintenanceRecords: [
-      {
-        id: 'M004',
-        date: '2024-10-16',
-        type: 'repair',
-        description: 'Sửa chữa hệ thống phanh ABS',
-        technician: 'Phạm Văn D',
-        status: 'in-progress'
-      }
-    ]
-  },
-  {
-    id: 'EV004',
-    model: 'Hyundai Kona',
-    licensePlate: '30D-22222',
-    technicalStatus: 'maintenance',
-    lastInspection: '2024-10-05',
-    nextMaintenance: '2024-10-15',
-    mileage: 42300,
-    position: 'Xưởng bảo trì',
-    issues: ['Hư hỏng hệ thống sạc', 'Cần thay pin phụ'],
-    maintenanceRecords: [
-      {
-        id: 'M005',
-        date: '2024-10-15',
-        type: 'repair',
-        description: 'Thay thế hệ thống sạc và pin phụ',
-        technician: 'Nguyễn Thị E',
-        status: 'in-progress',
-        cost: 8500000
-      }
-    ]
-  }
-];
-
 export const TechnicalStatus: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
-  
+
   // Modal states
   const [showReportModal, setShowReportModal] = useState(false);
   const [showMaintenanceModal, setShowMaintenanceModal] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [modalVehicle, setModalVehicle] = useState<Vehicle | null>(null);
-  
+
   // Form states
   const [maintenanceType, setMaintenanceType] = useState('preventive');
   const [maintenanceDescription, setMaintenanceDescription] = useState('');
+
+  // Thành phố Việt Nam (tĩnh)
+    const cityOptionsRaw = [
+      'Hà Nội', 'Hồ Chí Minh', 'Đà Nẵng', 'Hải Phòng', 'Cần Thơ', 'Nha Trang', 'Huế', 'Vũng Tàu', 'Biên Hòa', 'Buôn Ma Thuột', 'Đà Lạt', 'Quy Nhơn', 'Thanh Hóa', 'Nam Định', 'Vinh', 'Thái Nguyên', 'Bắc Ninh', 'Phan Thiết', 'Long Xuyên', 'Rạch Giá', 'Bạc Liêu', 'Cà Mau', 'Tuy Hòa', 'Pleiku', 'Trà Vinh', 'Sóc Trăng', 'Hạ Long', 'Uông Bí', 'Lào Cai', 'Yên Bái', 'Điện Biên Phủ', 'Sơn La', 'Hòa Bình', 'Tuyên Quang', 'Bắc Giang', 'Bắc Kạn', 'Cao Bằng', 'Lạng Sơn', 'Hà Giang', 'Phủ Lý', 'Hưng Yên', 'Hà Tĩnh', 'Quảng Bình', 'Quảng Trị', 'Đông Hà', 'Quảng Ngãi', 'Tam Kỳ', 'Kon Tum', 'Gia Nghĩa', 'Tây Ninh', 'Bến Tre', 'Vĩnh Long', 'Cao Lãnh', 'Sa Đéc', 'Mỹ Tho', 'Châu Đốc', 'Tân An', 'Bình Dương', 'Bình Phước', 'Phước Long', 'Thủ Dầu Một', 'Bình Thuận', 'Bình Định', 'Quảng Nam', 'Quảng Ninh', 'Quảng Ngãi', 'Quảng Trị', 'Quảng Bình', 'Ninh Bình', 'Ninh Thuận', 'Hà Nam', 'Hà Tĩnh', 'Hậu Giang', 'Kiên Giang', 'Lâm Đồng', 'Lạng Sơn', 'Lào Cai', 'Nam Định', 'Nghệ An', 'Phú Thọ', 'Phú Yên', 'Quảng Bình', 'Quảng Nam', 'Quảng Ngãi', 'Quảng Ninh', 'Quảng Trị', 'Sóc Trăng', 'Sơn La', 'Tây Ninh', 'Thái Bình', 'Thái Nguyên', 'Thanh Hóa', 'Tiền Giang', 'Trà Vinh', 'Tuyên Quang', 'Vĩnh Long', 'Vĩnh Phúc', 'Yên Bái'
+    ];
+    const cityOptions = Array.from(new Set(cityOptionsRaw));
+    const [selectedCity, setSelectedCity] = useState<string>('');
+    const [stationOptions, setStationOptions] = useState<any[]>([]);
+    const [selectedStation, setSelectedStation] = useState<string>('');
+  
+    useEffect(() => {
+      if (!selectedCity) return;
+      stationService.getStationsByCity(selectedCity)
+        .then((stations: any[]) => {
+          setStationOptions((stations || []).map((station: any) => ({
+            value: station.id,
+            label: station.name
+          })));
+          setSelectedStation('');
+        })
+        .catch(() => {
+          setStationOptions([]);
+        });
+    }, [selectedCity]);
+
+  // Vehicles fetched from API for the selected station
+  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [loadingVehicles, setLoadingVehicles] = useState(false);
+  const [vehiclesError, setVehiclesError] = useState<string | null>(null);
+
+  // Map API vehicle shape to local Vehicle interface (defensive)
+  const mapApiVehicleToLocal = (v: any): Vehicle => ({
+    id: v.id || v._id || v.vehicleId || '',
+    image: v.image || v.vehicle_image || '',
+    model: v.model || v.make || v.type || 'Unknown',
+    licensePlate: v.licensePlate || v.plate || v.license_plate || '',
+    technicalStatus: (v.technicalStatus || v.status || 'good') as Vehicle['technicalStatus'],
+    lastInspection: v.lastInspection || v.last_inspection || '',
+    nextMaintenance: v.nextMaintenance || v.next_maintenance || '',
+    mileage: v.mileage || v.km || 0,
+    position: v.position || v.location || v.slot || '',
+    maintenanceRecords: v.maintenanceRecords || v.records || [],
+    issues: v.issues || v.problemReports || []
+  });
+
+  useEffect(() => {
+    if (!selectedStation) {
+      // no station selected -> keep demo/mock data
+      setVehicles([]);
+      setVehiclesError(null);
+      setLoadingVehicles(false);
+      return;
+    }
+
+    let cancelled = false;
+    setLoadingVehicles(true);
+    setVehiclesError(null);
+
+    stationService.getStationVehicles(selectedStation)
+      .then((res: any) => {
+        if (cancelled) return;
+        const apiVehicles = Array.isArray(res.vehicles) ? res.vehicles : [];
+        setVehicles(apiVehicles.map(mapApiVehicleToLocal));
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        console.error('Error fetching station vehicles:', err);
+        setVehiclesError('Không thể tải dữ liệu xe');
+        setVehicles([]);
+      })
+      .finally(() => {
+        if (cancelled) return;
+        setLoadingVehicles(false);
+      });
+
+    return () => { cancelled = true; };
+  }, [selectedStation]);
 
   // Modal handlers
   const handleReportIssue = (vehicle: Vehicle) => {
@@ -189,7 +171,7 @@ export const TechnicalStatus: React.FC = () => {
 
   const handleSubmitMaintenance = () => {
     if (!modalVehicle || !maintenanceDescription.trim()) return;
-    
+
     // Simulate API call
     console.log('Lên lịch bảo trì:', {
       vehicleId: modalVehicle.id,
@@ -197,7 +179,7 @@ export const TechnicalStatus: React.FC = () => {
       description: maintenanceDescription,
       scheduledDate: new Date()
     });
-    
+
     setShowMaintenanceModal(false);
     setMaintenanceType('preventive');
     setMaintenanceDescription('');
@@ -236,13 +218,13 @@ export const TechnicalStatus: React.FC = () => {
     }
   };
 
-  const filteredVehicles = mockVehicles.filter(vehicle => {
+  const filteredVehicles = vehicles.filter(vehicle => {
     const matchesSearch = vehicle.model.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         vehicle.licensePlate.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         vehicle.position.toLowerCase().includes(searchTerm.toLowerCase());
-    
+      vehicle.licensePlate.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      vehicle.position.toLowerCase().includes(searchTerm.toLowerCase());
+
     const matchesFilter = filterStatus === 'all' || vehicle.technicalStatus === filterStatus;
-    
+
     return matchesSearch && matchesFilter;
   });
 
@@ -257,6 +239,39 @@ export const TechnicalStatus: React.FC = () => {
         <p className="text-gray-600">
           Theo dõi tình trạng kỹ thuật và lịch bảo trì của các xe
         </p>
+        {/* Thành phố + Trạm selector (giống VehicleAvailable) */}
+        <div className="mt-1 flex items-center gap-4">
+          <div>
+            <label className="text-sm text-gray-500 mr-2">Thành phố:</label>
+            <input
+              list="city-list"
+              className="px-3 py-1 border rounded-md w-52"
+              placeholder="Tìm thành phố..."
+              value={selectedCity}
+              onChange={(e) => setSelectedCity(e.target.value)}
+            />
+            <datalist id="city-list">
+              {cityOptions.map((city, idx) => (
+                <option key={city + idx} value={city} />
+              ))}
+            </datalist>
+          </div>
+
+          <div>
+            <label className="text-sm text-gray-500 mr-2">Trạm:</label>
+            <select
+              className="px-3 py-1 border rounded-md w-52"
+              value={selectedStation}
+              onChange={(e) => setSelectedStation(e.target.value)}
+              disabled={!stationOptions.length}
+            >
+              <option value="">Chọn trạm...</option>
+              {stationOptions.map((s) => (
+                <option key={s.value} value={s.value}>{s.label}</option>
+              ))}
+            </select>
+          </div>
+        </div>
       </div>
 
       {/* Controls */}
@@ -298,7 +313,7 @@ export const TechnicalStatus: React.FC = () => {
               <div>
                 <p className="text-sm font-medium text-gray-600">{getStatusText(status)}</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {mockVehicles.filter(v => v.technicalStatus === status).length}
+                  {vehicles.filter(v => v.technicalStatus === status).length}
                 </p>
               </div>
               {getStatusIcon(status)}
@@ -316,7 +331,15 @@ export const TechnicalStatus: React.FC = () => {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
+          {loadingVehicles ? (
+            <div className="text-center py-8">
+              <WrenchScrewdriverIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-600">Đang tải danh sách xe...</p>
+            </div>
+          ) : vehiclesError ? (
+            <div className="text-center py-8 text-red-600">{vehiclesError}</div>
+          ) : (
+            <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -344,8 +367,8 @@ export const TechnicalStatus: React.FC = () => {
             </thead>
             <tbody className="bg-white divide-y divide-y-gray-200">
               {filteredVehicles.map((vehicle) => (
-                <tr 
-                  key={vehicle.id} 
+                <tr
+                  key={vehicle.id}
                   className="hover:bg-gray-50 cursor-pointer transition-colors"
                   onClick={() => {
                     setSelectedVehicle(vehicle);
@@ -353,16 +376,16 @@ export const TechnicalStatus: React.FC = () => {
                   }}
                 >
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <img 
-                      src="https://via.placeholder.com/80x60?text=Vehicle" 
-                      alt="vehicle" 
+                    <img
+                      src={vehicle.image}
+                      alt="vehicle"
                       className="w-16 h-12 object-cover rounded"
                     />
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div>
                       <div className="text-sm font-medium text-gray-900">ID: {vehicle.id}</div>
-                      <div className="text-sm text-gray-500">Biển số: {vehicle.licensePlate}</div>
+                      {/* <div className="text-sm text-gray-500">Biển số: {vehicle.licensePlate}</div> */}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -391,22 +414,21 @@ export const TechnicalStatus: React.FC = () => {
                     <div className="text-xs text-gray-500">{vehicle.mileage.toLocaleString()} km</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                      vehicle.technicalStatus === 'excellent' ? 'bg-green-100 text-green-800' :
-                      vehicle.technicalStatus === 'good' ? 'bg-blue-100 text-blue-800' :
-                      vehicle.technicalStatus === 'warning' ? 'bg-yellow-100 text-yellow-800' :
-                      vehicle.technicalStatus === 'maintenance' ? 'bg-orange-100 text-orange-800' :
-                      'bg-red-100 text-red-800'
-                    }`}>
+                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${vehicle.technicalStatus === 'excellent' ? 'bg-green-100 text-green-800' :
+                        vehicle.technicalStatus === 'good' ? 'bg-blue-100 text-blue-800' :
+                          vehicle.technicalStatus === 'warning' ? 'bg-yellow-100 text-yellow-800' :
+                            vehicle.technicalStatus === 'maintenance' ? 'bg-orange-100 text-orange-800' :
+                              'bg-red-100 text-red-800'
+                      }`}>
                       {vehicle.technicalStatus === 'excellent' ? 'Có sẵn' :
-                       vehicle.technicalStatus === 'good' ? 'Có sẵn' :
-                       vehicle.technicalStatus === 'warning' ? 'Cần kiểm tra' :
-                       vehicle.technicalStatus === 'maintenance' ? 'Bảo trì' : 'Không sẵn sàng'}
+                        vehicle.technicalStatus === 'good' ? 'Có sẵn' :
+                          vehicle.technicalStatus === 'warning' ? 'Cần kiểm tra' :
+                            vehicle.technicalStatus === 'maintenance' ? 'Bảo trì' : 'Không sẵn sàng'}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm">
                     <div className="flex space-x-2">
-                      <button 
+                      <button
                         onClick={(e) => {
                           e.stopPropagation();
                           handleReportIssue(vehicle);
@@ -415,7 +437,7 @@ export const TechnicalStatus: React.FC = () => {
                       >
                         Báo sự cố
                       </button>
-                      <button 
+                      <button
                         onClick={(e) => {
                           e.stopPropagation();
                           handleScheduleMaintenance(vehicle);
@@ -424,7 +446,7 @@ export const TechnicalStatus: React.FC = () => {
                       >
                         Bảo trì
                       </button>
-                      <button 
+                      <button
                         onClick={(e) => {
                           e.stopPropagation();
                           handleViewHistory(vehicle);
@@ -438,13 +460,7 @@ export const TechnicalStatus: React.FC = () => {
                 </tr>
               ))}
             </tbody>
-          </table>
-          
-          {filteredVehicles.length === 0 && (
-            <div className="text-center py-8">
-              <WrenchScrewdriverIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600">Không tìm thấy xe nào phù hợp với bộ lọc.</p>
-            </div>
+            </table>
           )}
         </div>
       </div>

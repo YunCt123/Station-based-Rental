@@ -278,7 +278,7 @@ const Settings = () => {
 
   const handleReplaceDocument = async (
     file: File,
-    documentType: "Driver License" | "Card Front" | "Card Back" | "Selfie Photo"
+    documentType: "Giấy phép lái xe" | "Căn cước công dân mặt trước" | "Căn cước công dân mặt sau" | "Ảnh chân dung"
   ) => {
     try {
       console.log(`🔄 Starting replace for ${documentType}, setting isUploadingDoc to true`);
@@ -322,10 +322,10 @@ const Settings = () => {
 
       // Map document type to correct backend field name
       const fieldMapping = {
-        "Driver License": "driverLicense",
-        "Card Front": "idCardFront", 
-        "Card Back": "idCardBack",
-        "Selfie Photo": "selfiePhoto"
+        "Giấy phép lái xe": "driverLicense",
+        "Căn cước công dân mặt trước": "idCardFront", 
+        "Căn cước công dân mặt sau": "idCardBack",
+        "Ảnh chân dung": "selfiePhoto"
       };
       
       const fieldName = fieldMapping[documentType] as 'idCardFront' | 'idCardBack' | 'driverLicense' | 'selfiePhoto';
@@ -345,7 +345,7 @@ const Settings = () => {
 
       toast({
         title: "Success",
-        description: `${documentType} replaced successfully!`,
+        description: `${documentType} Thay thế thành công!!`,
       });
     } catch (error: unknown) {
       console.error("Document replace error:", error);
@@ -393,7 +393,7 @@ const Settings = () => {
   };
 
   const getVerificationStatusText = () => {
-    if (!verificationStatus) return "Not verified";
+    if (!verificationStatus) return "Chưa xác thực";
 
     // Check if all required documents are uploaded
     const hasAllDocuments = verificationStatus.hasImages?.driverLicense && 
@@ -403,15 +403,15 @@ const Settings = () => {
 
     switch (verificationStatus.verificationStatus) {
       case "APPROVED":
-        return "Verified";
+        return "Đã xác thực";
       case "REJECTED":
-        return "Verification rejected";
+        return "Xác thực bị từ chối";
       default:
         // Only show "Pending review" if ALL 4 documents uploaded (ignore BE PENDING status if incomplete)
         if (hasAllDocuments) {
-          return "Pending review";
+          return "Đang chờ xem xét";
         }
-        return "Not verified";
+        return "Chưa xác thực";
     }
   };
 
@@ -432,14 +432,14 @@ const Settings = () => {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <Tabs defaultValue="profile" className="space-y-8">
           <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="profile">{t("settings.profile")}</TabsTrigger>
+            <TabsTrigger value="profile">Hồ sơ</TabsTrigger>
             {/* <TabsTrigger value="documents">Documents</TabsTrigger> */}
-            <TabsTrigger value="security">{t("settings.security")}</TabsTrigger>
+            <TabsTrigger value="security">Bảo mật</TabsTrigger>
             {/* <TabsTrigger value="notifications">
               {t("settings.notifications")}
             </TabsTrigger> */}
-            <TabsTrigger value="billing">{t("settings.billing")}</TabsTrigger>
-            <TabsTrigger value="language">{t("settings.language")}</TabsTrigger>
+            <TabsTrigger value="billing">Thanh toán</TabsTrigger>
+            <TabsTrigger value="language">Ngôn ngữ</TabsTrigger>
           </TabsList>
 
           {/* Profile Tab */}
@@ -448,7 +448,7 @@ const Settings = () => {
               <CardHeader>
                 <CardTitle className="flex items-center">
                   <User className="h-5 w-5 mr-2" />
-                  {t("settings.personalInfo")}
+                  Hồ sơ của tôi
                   <div className="ml-auto flex items-center space-x-2">
                     {getVerificationStatusIcon()}
                     <span className="text-sm font-normal">
@@ -468,13 +468,13 @@ const Settings = () => {
                 {isLoading ? (
                   <div className="flex items-center justify-center py-8">
                     <Loader2 className="h-6 w-6 animate-spin mr-2" />
-                    <span>Loading profile...</span>
+                    <span>Đang tải hồ sơ</span>
                   </div>
                 ) : profile ? (
                   <>
                     <div className="grid grid-cols-1 gap-4">
                       <div>
-                        <Label htmlFor="name">Full Name</Label>
+                        <Label htmlFor="name">Họ và tên</Label>
                         <Input
                           id="name"
                           defaultValue={`${profile.firstName} ${profile.lastName}`.trim()}
@@ -491,7 +491,7 @@ const Settings = () => {
                     </div>
 
                     <div>
-                      <Label htmlFor="email">{t("settings.email")}</Label>
+                      <Label htmlFor="email">Email</Label>
                       <Input
                         id="email"
                         type="email"
@@ -500,12 +500,12 @@ const Settings = () => {
                         disabled
                       />
                       <p className="text-sm text-gray-500 mt-1">
-                        Email cannot be changed
+                        Email không thể thay đổi
                       </p>
                     </div>
 
                     <div>
-                      <Label htmlFor="phone">{t("settings.phone")}</Label>
+                      <Label htmlFor="phone">Số điện thoại</Label>
                       <Input
                         id="phone"
                         type="tel"
@@ -513,7 +513,7 @@ const Settings = () => {
                         className={`text-black ${
                           validationErrors.phone ? "border-red-500" : ""
                         }`}
-                        placeholder="Enter phone number"
+                        placeholder="Nhập số điện thoại"
                       />
                       {validationErrors.phone && (
                         <p className="text-sm text-red-500 mt-1">
@@ -524,7 +524,7 @@ const Settings = () => {
 
                     <div>
                       <Label htmlFor="dateOfBirth">
-                        {t("settings.dateOfBirth")}
+                        Ngày tháng năm sinh
                       </Label>
                       <Input
                         id="dateOfBirth"
@@ -546,7 +546,7 @@ const Settings = () => {
                     <div>
                       {/* Document Upload/View Section */}
                       <div className="space-y-4">
-                        <h4 className="font-medium">Verification Documents</h4>
+                        <h4 className="font-medium">Xác thực tài liệu</h4>
 
                         {verificationStatus?.verificationStatus ===
                         "APPROVED" ? (
@@ -572,7 +572,7 @@ const Settings = () => {
                                 <CardHeader>
                                   <CardTitle className="flex items-center justify-between text-sm">
                                     <div className="flex items-center">
-                                      Driver's License
+                                      Giấy phép lái xe
                                       <CheckCircle className="ml-2 h-4 w-4 text-green-600" />
                                     </div>
                                     <div className="flex items-center space-x-2">
@@ -608,7 +608,7 @@ const Settings = () => {
                                           onChange={(e) => {
                                             const file = e.target.files?.[0];
                                             if (file) {
-                                              handleReplaceDocument(file, "Driver License");
+                                              handleReplaceDocument(file, "Giấy phép lái xe");
                                             }
                                           }}
                                         />
@@ -618,7 +618,7 @@ const Settings = () => {
                                           onClick={() => document.getElementById('replace-driver-license')?.click()}
                                           disabled={isUploadingDoc}
                                         >
-                                          {isUploadingDoc ? "Replacing..." : "Replace Image"}
+                                          {isUploadingDoc ? "Đang thay thế..." : "Thay thế hình ảnh"}
                                         </Button>
                                       </div>
                                     </div>
@@ -626,7 +626,7 @@ const Settings = () => {
                                     <div className="w-full max-w-md h-48 bg-gray-100 border rounded-lg flex items-center justify-center">
                                       <div className="text-center text-gray-500">
                                         <Eye className="w-8 h-8 mx-auto mb-2" />
-                                        <p className="text-sm">Click the eye icon to view document</p>
+                                        <p className="text-sm">Nhấn vào biểu tượng mắt để xem tài liệu</p>
                                       </div>
                                     </div>
                                   )}
@@ -639,7 +639,7 @@ const Settings = () => {
                                 <CardHeader>
                                   <CardTitle className="flex items-center justify-between text-sm">
                                     <div className="flex items-center">
-                                      National ID - Front
+                                      Căn cước công dân - Mặt trước
                                       <CheckCircle className="ml-2 h-4 w-4 text-green-600" />
                                     </div>
                                     <div className="flex items-center space-x-2">
@@ -675,7 +675,7 @@ const Settings = () => {
                                           onChange={(e) => {
                                             const file = e.target.files?.[0];
                                             if (file) {
-                                              handleReplaceDocument(file, "Card Front");
+                                              handleReplaceDocument(file, "Căn cước công dân mặt trước");
                                             }
                                           }}
                                         />
@@ -685,7 +685,7 @@ const Settings = () => {
                                           onClick={() => document.getElementById('replace-id-card-front')?.click()}
                                           disabled={isUploadingDoc}
                                         >
-                                          {isUploadingDoc ? "Replacing..." : "Replace Image"}
+                                          {isUploadingDoc ? "Đang thay thế..." : "Thay thế hình ảnh"}
                                         </Button>
                                       </div>
                                     </div>
@@ -693,7 +693,7 @@ const Settings = () => {
                                     <div className="w-full max-w-md h-48 bg-gray-100 border rounded-lg flex items-center justify-center">
                                       <div className="text-center text-gray-500">
                                         <Eye className="w-8 h-8 mx-auto mb-2" />
-                                        <p className="text-sm">Click the eye icon to view document</p>
+                                        <p className="text-sm">Nhấn vào biểu tượng mắt để xem tài liệu</p>
                                       </div>
                                     </div>
                                   )}
@@ -706,7 +706,7 @@ const Settings = () => {
                                 <CardHeader>
                                   <CardTitle className="flex items-center justify-between text-sm">
                                     <div className="flex items-center">
-                                      National ID - Back
+                                      Căn cước công dân - Mặt sau
                                       <CheckCircle className="ml-2 h-4 w-4 text-green-600" />
                                     </div>
                                     <div className="flex items-center space-x-2">
@@ -742,7 +742,7 @@ const Settings = () => {
                                           onChange={(e) => {
                                             const file = e.target.files?.[0];
                                             if (file) {
-                                              handleReplaceDocument(file, "Card Back");
+                                              handleReplaceDocument(file, "Căn cước công dân mặt sau");
                                             }
                                           }}
                                         />
@@ -760,7 +760,7 @@ const Settings = () => {
                                     <div className="w-full max-w-md h-48 bg-gray-100 border rounded-lg flex items-center justify-center">
                                       <div className="text-center text-gray-500">
                                         <Eye className="w-8 h-8 mx-auto mb-2" />
-                                        <p className="text-sm">Click the eye icon to view document</p>
+                                        <p className="text-sm">Nhấn vào biểu tượng mắt để xem tài liệu</p>
                                       </div>
                                     </div>
                                   )}
@@ -773,7 +773,7 @@ const Settings = () => {
                                 <CardHeader>
                                   <CardTitle className="flex items-center justify-between text-sm">
                                     <div className="flex items-center">
-                                      Selfie Photo
+                                      Ảnh chân dung
                                       <CheckCircle className="ml-2 h-4 w-4 text-green-600" />
                                     </div>
                                     <div className="flex items-center space-x-2">
@@ -809,7 +809,7 @@ const Settings = () => {
                                           onChange={(e) => {
                                             const file = e.target.files?.[0];
                                             if (file) {
-                                              handleReplaceDocument(file, "Selfie Photo");
+                                              handleReplaceDocument(file, "Ảnh chân dung");
                                             }
                                           }}
                                         />
@@ -827,7 +827,7 @@ const Settings = () => {
                                     <div className="w-full max-w-md h-48 bg-gray-100 border rounded-lg flex items-center justify-center">
                                       <div className="text-center text-gray-500">
                                         <Eye className="w-8 h-8 mx-auto mb-2" />
-                                        <p className="text-sm">Click the eye icon to view document</p>
+                                        <p className="text-sm">Nhấn vào biểu tượng mắt để xem tài liệu</p>
                                       </div>
                                     </div>
                                   )}
@@ -985,10 +985,10 @@ const Settings = () => {
                       {isUpdating ? (
                         <>
                           <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                          Saving...
+                          Đang lưu thay đổi...
                         </>
                       ) : (
-                        t("settings.saveChanges")
+                        "Lưu thay đổi"
                       )}
                     </Button>
                   </>

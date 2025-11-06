@@ -159,12 +159,12 @@ const VehicleCard = ({ vehicle, className = "" }: VehicleCardProps) => {
             <div>
                 <div className="flex items-center space-x-1">
                 <span className="text-lg font-bold text-primary">
-                  {(vehicle.pricePerHour)}₫
+                  {(vehicle.pricePerHour.toLocaleString("vi-VN"))}₫
                 </span>
                 <span className="text-sm text-muted-foreground">/ giờ</span>
                 </div>
                 <div className="text-xs text-muted-foreground">
-                {(vehicle.pricePerDay)}₫ / ngày
+                {(vehicle.pricePerDay.toLocaleString("vi-VN"))}₫ / ngày
                 </div>
             </div>
           </div>

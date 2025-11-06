@@ -377,7 +377,7 @@ const CheckinForm: React.FC<CheckinFormProps> = ({
             tooltip="Ghi nhận số km trên đồng hồ xe (không bắt buộc)"
           >
             <InputNumber
-              placeholder="VD: 15420"
+              placeholder={`VD: ${rental.vehicle_id.odo_km}`}
               style={{ width: '100%' }}
               min={0}
               max={999999}

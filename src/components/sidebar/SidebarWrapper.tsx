@@ -28,6 +28,7 @@ export const SidebarWrapper: React.FC<SidebarWrapperProps> = ({
   const navigate = useNavigate();
   const [isCollapsed, setIsCollapsed] = React.useState(false);
   const [realUserInfo, setRealUserInfo] = useState<UserDisplayInfo | null>(null);
+  const [forceUpdate, setForceUpdate] = useState(0);
   const hasLoadedUserInfo = useRef(false);
 
   // Reset user info loading flag when auth changes
@@ -138,6 +139,12 @@ export const SidebarWrapper: React.FC<SidebarWrapperProps> = ({
 
   // Get user info - prioritize real API data over localStorage
   const userDisplayInfo = React.useMemo(() => {
+    // Check if user is authenticated first
+    const authUser = getCurrentUser();
+    if (!authUser) {
+      return null; // Don't show user info if not authenticated
+    }
+
     // Use real user info if available
     if (realUserInfo) {
       return {
@@ -171,7 +178,7 @@ export const SidebarWrapper: React.FC<SidebarWrapperProps> = ({
       role: getRoleDisplayText(currentRole),
       avatar: null
     };
-  }, [realUserInfo, userInfo, currentRole]);
+  }, [realUserInfo, userInfo, currentRole, forceUpdate]);
 
   const handleToggleCollapse = () => {
     setIsCollapsed(!isCollapsed);
@@ -183,6 +190,7 @@ export const SidebarWrapper: React.FC<SidebarWrapperProps> = ({
 
   const handleLogout = () => {
     console.log('Logging out - clearing all user data...');
+    
     // Clear user session data
     clearUserSession();
     // Clear auth data
@@ -191,6 +199,10 @@ export const SidebarWrapper: React.FC<SidebarWrapperProps> = ({
     setRealUserInfo(null);
     // Reset loading flag
     hasLoadedUserInfo.current = false;
+    
+    // Dispatch custom logout event for other components
+    window.dispatchEvent(new CustomEvent('logout'));
+    
     // Navigate to login
     navigate('/login', { replace: true });
   };
@@ -206,7 +218,7 @@ export const SidebarWrapper: React.FC<SidebarWrapperProps> = ({
         onLogout={handleLogout}
         sections={menuSections}
         logo={logo}
-        userInfo={userDisplayInfo}
+        userInfo={userDisplayInfo || undefined}
       />
     </div>
   );

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import {
   ChevronRightIcon,
   CheckIcon,
@@ -15,13 +15,10 @@ import type { Vehicle } from "@/types/vehicle";
 
 const DetailsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const [selectedRental, setSelectedRental] = useState<"hourly" | "daily">(
-    "daily"
-  );
-  const [rentalDuration, setRentalDuration] = useState(1);
   const [loading, setLoading] = useState(true);
   const [vehicle, setVehicle] = useState<Vehicle | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchVehicle = async () => {
@@ -84,19 +81,8 @@ const DetailsPage: React.FC = () => {
     return "bg-red-500";
   };
 
-  const calculateTotal = () => {
-    const rate =
-      selectedRental === "hourly" ? vehicle.pricePerHour : vehicle.pricePerDay;
-    return rate * rentalDuration;
-  };
-
   const handleBookNow = () => {
-    console.log("Đặt xe:", {
-      vehicleId: vehicle.id,
-      rentalType: selectedRental,
-      duration: rentalDuration,
-      total: calculateTotal(),
-    });
+    navigate(`/booking/${vehicle.id}`);
   };
 
   return (
@@ -262,65 +248,23 @@ const DetailsPage: React.FC = () => {
               </div>
 
               <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-800 mb-3">
-                  Loại thuê
-                </label>
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    onClick={() => setSelectedRental("hourly")}
-                    className={`p-3 rounded-lg border-2 text-center transition-all ${
-                      selectedRental === "hourly"
-                        ? "border-blue-500 bg-blue-50 text-blue-700"
-                        : "border-gray-200 hover:border-blue-300 text-gray-800"
-                    }`}
-                  >
-                    <div className="font-semibold text-gray-900">
-                      ${vehicle.pricePerHour}
-                    </div>
-                    <div className="text-sm text-gray-600">mỗi giờ</div>
-                  </button>
-                  <button
-                    onClick={() => setSelectedRental("daily")}
-                    className={`p-3 rounded-lg border-2 text-center transition-all ${
-                      selectedRental === "daily"
-                        ? "border-blue-500 bg-blue-50 text-blue-700"
-                        : "border-gray-200 hover:border-blue-300 text-gray-800"
-                    }`}
-                  >
-                    <div className="font-semibold text-gray-900">
-                      ${vehicle.pricePerDay}
-                    </div>
-                    <div className="text-sm text-gray-600">mỗi ngày</div>
-                  </button>
+                <h4 className="text-lg font-semibold text-gray-900 mb-3">Giá thuê</h4>
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Theo giờ:</span>
+                    <span className="font-semibold text-gray-900">{vehicle.pricePerHour.toLocaleString("vn-VN")}đ/giờ</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Theo ngày:</span>
+                    <span className="font-semibold text-gray-900">{vehicle.pricePerDay.toLocaleString("vn-VN")}đ/ngày</span>
+                  </div>
                 </div>
               </div>
 
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-800 mb-2">
-                  Thời gian thuê ({selectedRental === "hourly" ? "giờ" : "ngày"})
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  value={rentalDuration}
-                  onChange={(e) => setRentalDuration(Number(e.target.value))}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
-                />
-              </div>
-
-              <div className="mb-6 p-4 bg-[#1E3A8A] text-white rounded-xl shadow-lg relative overflow-hidden">
-                <div className="flex justify-between items-center relative z-10">
-                  <span className="text-lg font-medium text-white">Tổng cộng</span>
-                  <span className="text-2xl font-bold text-white animate-fade-in">
-                    ${calculateTotal()}
-                  </span>
-                </div>
-                <div className="text-sm text-blue-100 mt-1 relative z-10">
-                  {rentalDuration}{" "}
-                  {selectedRental === "hourly" ? "giờ" : "ngày"} × $
-                  {selectedRental === "hourly"
-                    ? vehicle.pricePerHour
-                    : vehicle.pricePerDay}
+              <div className="mb-6 p-4 bg-blue-50 rounded-xl border border-blue-200">
+                <div className="text-center">
+                  <h4 className="font-medium text-blue-900 mb-1">Đặt ngay để chọn thời gian</h4>
+                  <p className="text-sm text-blue-700">Bạn sẽ có thể chọn thời gian và loại thuê ở trang tiếp theo</p>
                 </div>
               </div>
 

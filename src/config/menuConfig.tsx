@@ -34,7 +34,7 @@ export const getMenuSections = (): SidebarSection[] => [
       },
       {
         id: 'vehicle-handover',
-        title: 'Giao - nhận xe',
+        title: 'Quản lý xe',
         icon: <TruckIcon className="w-5 h-5" />,
         path: '/staff/vehicle-handover',
         roles: [UserRole.STATION_STAFF],
@@ -71,7 +71,7 @@ export const getMenuSections = (): SidebarSection[] => [
       },
       {
         id: 'delivery-procedures',
-        title: 'Quy trình giao nhận xe',
+        title: 'Giao - Nhận xe',
         icon: <TruckIcon className="w-5 h-5" />,
         path: '/staff/delivery-procedures',
         roles: [UserRole.STATION_STAFF],

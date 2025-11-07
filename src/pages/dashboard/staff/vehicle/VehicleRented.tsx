@@ -3,22 +3,7 @@ import { stationService } from "../../../../services/stationService";
 import { Input, Table, Tag, Card, Space } from "antd";
 import vehicleService from "@/services/vehicleService";
 import { SearchOutlined } from "@ant-design/icons";
-
-// Type for API vehicle data
-type Vehicle = {
-  id: number;
-  image?: string;
-  name?: string;
-  model?: string;
-  type?: string;
-  year?: number;
-  status?: string;
-  batteryLevel?: number;
-  location?: string;
-  pricePerHour?: number;
-  seats?: number;
-  tags?: string[];
-};
+import type { Vehicle } from "@/types/vehicle";
 
 const VehicleRented = () => {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
@@ -152,11 +137,12 @@ const VehicleRented = () => {
       return;
     }
     vehicleService
-      .getRentedVehiclesByStation(selectedStation)
-      .then((data: any[]) => {
-        setVehicles(data || []);
+      .searchVehicles({ station_id: selectedStation, status: 'RENTED' })
+      .then((result) => {
+        setVehicles(result.vehicles || []);
       })
-      .catch(() => {
+      .catch((error) => {
+        console.error("Error fetching rented vehicles:", error);
         setVehicles([]);
       });
   }, [selectedStation]);
@@ -167,7 +153,8 @@ const VehicleRented = () => {
     return (
       v.name?.toLowerCase().includes(text) ||
       v.model?.toLowerCase().includes(text) ||
-      v.type?.toLowerCase().includes(text)
+      v.type?.toLowerCase().includes(text) ||
+      v.brand?.toLowerCase().includes(text)
     );
   });
 
@@ -187,7 +174,7 @@ const VehicleRented = () => {
     {
       title: "Xe",
       key: "vehicleInfo",
-      render: (_: any, record: any) => (
+      render: (_: unknown, record: Vehicle) => (
         <div>
           <div style={{ fontWeight: 600 }}>{record.name}</div>
           <div style={{ color: "#888" }}>
@@ -203,10 +190,12 @@ const VehicleRented = () => {
     },
     {
       title: "Trạng thái",
-      dataIndex: "status",
-      key: "status",
-      render: (status: string) => (
-        <Tag color={status === "RENTED" ? "orange" : "blue"}>{status}</Tag>
+      dataIndex: "availability",
+      key: "availability",
+      render: (availability: string) => (
+        <Tag color={availability === "rented" ? "orange" : availability === "available" ? "green" : "red"}>
+          {availability === "rented" ? "RENTED" : availability === "available" ? "AVAILABLE" : "MAINTENANCE"}
+        </Tag>
       ),
     },
     {
@@ -224,7 +213,7 @@ const VehicleRented = () => {
       title: "Giá/giờ",
       dataIndex: "pricePerHour",
       key: "pricePerHour",
-      render: (_: any, record: any) =>
+      render: (_: unknown, record: Vehicle) =>
         record.pricePerHour
           ? `${record.pricePerHour.toLocaleString()} VND`
           : "--",
@@ -235,16 +224,16 @@ const VehicleRented = () => {
       key: "seats",
     },
     {
-      title: "Tags",
-      dataIndex: "tags",
-      key: "tags",
-      render: (tags: string[]) => (
+      title: "Tính năng",
+      dataIndex: "features",
+      key: "features",
+      render: (features: string[]) => (
         <div
           style={{ display: "flex", flexWrap: "wrap", gap: 6, maxWidth: 120 }}
         >
-          {tags?.map((tag) => (
-            <Tag key={tag} style={{ marginBottom: 4 }}>
-              {tag}
+          {features?.map((feature) => (
+            <Tag key={feature} style={{ marginBottom: 4 }}>
+              {feature}
             </Tag>
           ))}
         </div>

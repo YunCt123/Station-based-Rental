@@ -13,11 +13,11 @@ import {
   Bus,
   Truck,
 } from "lucide-react";
-import { useCurrency } from "@/lib/currency";
+// import { useCurrency } from "@/lib/currency";
 import type { Vehicle, VehicleCardProps } from "@/types/vehicle";
 
 const VehicleCard = ({ vehicle, className = "" }: VehicleCardProps) => {
-  const { formatPrice } = useCurrency();
+  // const { formatPrice } = useCurrency();
 
   const getStatusBadge = () => {
     switch (vehicle.availability) {

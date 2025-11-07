@@ -8,6 +8,9 @@ export interface User {
   phoneNumber?: string;
   dateOfBirth?: string;
   isVerified?: boolean; // Legacy field - deprecated
+  avatar?: string;
+  firebase_uid?: string;
+  auth_provider?: "local" | "firebase_google";
   
   // New verification fields from BE
   licenseNumber?: string;
@@ -25,16 +28,40 @@ export interface User {
 
 // Kiểm tra xem user có đăng nhập không
 export const isAuthenticated = (): boolean => {
-  const token = localStorage.getItem("access_token");
-  const user = localStorage.getItem("user");
-  return !!(token && user);
+  const localToken = localStorage.getItem("access_token");
+  const firebaseToken = localStorage.getItem("firebase_token");
+  const user = localStorage.getItem("user") || localStorage.getItem("userInfo");
+  
+  // User đăng nhập nếu có token (local hoặc firebase) và user info
+  return !!(user && (localToken || firebaseToken));
+};
+
+// Kiểm tra auth provider
+export const getAuthProvider = (): "local" | "firebase_google" | null => {
+  const firebaseToken = localStorage.getItem("firebase_token");
+  const localToken = localStorage.getItem("access_token");
+  
+  if (firebaseToken) return "firebase_google";
+  if (localToken) return "local";
+  return null;
 };
 
 // Lấy user từ localStorage
 export const getCurrentUser = (): User | null => {
   try {
-    const userStr = localStorage.getItem("user");
-    return userStr ? JSON.parse(userStr) : null;
+    // Ưu tiên userInfo (Firebase) trước, sau đó user (local auth)
+    const userStr = localStorage.getItem("userInfo") || localStorage.getItem("user");
+    if (!userStr) return null;
+    
+    const userData = JSON.parse(userStr);
+    
+    // Determine auth provider
+    const provider = getAuthProvider();
+    if (provider) {
+      userData.auth_provider = provider;
+    }
+    
+    return userData;
   } catch {
     return null;
   }
@@ -109,8 +136,10 @@ export const getDefaultRouteForRole = (role: string): string => {
 // Xóa tất cả dữ liệu authentication
 export const clearAuthData = (): void => {
   localStorage.removeItem("user");
+  localStorage.removeItem("userInfo");
   localStorage.removeItem("access_token");
   localStorage.removeItem("refresh_token");
+  localStorage.removeItem("firebase_token");
 };
 
 // Route permissions configuration

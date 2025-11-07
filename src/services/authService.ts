@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import api from "./api";
+import { signInWithGoogle, signOutFirebase } from "@/config/firebase";
 
 export interface AuthUser {
   id: string;
@@ -9,10 +10,19 @@ export interface AuthUser {
   phoneNumber?: string;
   dateOfBirth?: string;
   isVerified?: boolean;
+  avatar?: string;
+  firebase_uid?: string;
+  auth_provider?: "local" | "firebase_google";
 }
+
 export interface AuthResponse {
   user: AuthUser;
   tokens: { accessToken: string; refreshToken: string };
+}
+
+export interface FirebaseAuthResponse {
+  user: AuthUser;
+  auth_provider: "firebase_google";
 }
 
 function unwrap(raw: any) {
@@ -98,6 +108,105 @@ export async function getCurrentUser() {
     throw new Error("No current user available");
   } catch (error) {
     console.error("💥 [authService] getCurrentUser error:", error);
+    throw error;
+  }
+}
+
+// Google Authentication Functions
+export async function loginWithGoogle(additionalInfo?: {
+  phoneNumber?: string;
+  dateOfBirth?: string;
+}) {
+  try {
+    // 1. Sign in with Google popup
+    const result = await signInWithGoogle();
+    const idToken = await result.user.getIdToken();
+    
+    console.log("🔥 [authService] Google login result:", {
+      user: result.user.email,
+      uid: result.user.uid
+    });
+
+    // 2. Send token to backend
+    const { data } = await api.post("/auth/firebase/google", {
+      idToken,
+      additionalInfo: additionalInfo || {}
+    });
+
+    console.log("🔥 [authService] Backend response:", data);
+
+    // 3. Normalize response
+    const normalizedResponse: FirebaseAuthResponse = {
+      user: {
+        id: data.user.id || data.user._id || "",
+        name: data.user.name || result.user.displayName || "",
+        email: data.user.email || result.user.email || "",
+        role: data.user.role || "customer",
+        phoneNumber: data.user.phoneNumber,
+        dateOfBirth: data.user.dateOfBirth,
+        isVerified: data.user.email_verified || result.user.emailVerified,
+        avatar: data.user.avatar || result.user.photoURL || undefined,
+        firebase_uid: data.user.firebase_uid || result.user.uid,
+        auth_provider: "firebase_google"
+      },
+      auth_provider: "firebase_google"
+    };
+
+    // 4. Store Firebase token for API calls
+    localStorage.setItem("firebase_token", idToken);
+    
+    return normalizedResponse;
+  } catch (error) {
+    console.error("💥 [authService] Google login error:", error);
+    throw error;
+  }
+}
+
+export async function logoutGoogle() {
+  try {
+    // 1. Sign out from Firebase
+    await signOutFirebase();
+    
+    // 2. Clear tokens
+    localStorage.removeItem("firebase_token");
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("refresh_token");
+    localStorage.removeItem("user");
+    
+    console.log("✅ [authService] Google logout successful");
+  } catch (error) {
+    console.error("💥 [authService] Google logout error:", error);
+    throw error;
+  }
+}
+
+export async function getCurrentFirebaseUser() {
+  try {
+    const token = localStorage.getItem("firebase_token");
+    if (!token) {
+      throw new Error("No Firebase token found");
+    }
+
+    const { data } = await api.get("/auth/firebase/me", {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    return {
+      user: {
+        id: data.user.id || data.user._id || "",
+        name: data.user.name || "",
+        email: data.user.email || "",
+        role: data.user.role || "customer",
+        phoneNumber: data.user.phoneNumber,
+        dateOfBirth: data.user.dateOfBirth,
+        isVerified: data.user.email_verified,
+        avatar: data.user.avatar,
+        firebase_uid: data.user.firebase_uid,
+        auth_provider: "firebase_google"
+      }
+    };
+  } catch (error) {
+    console.error("💥 [authService] getCurrentFirebaseUser error:", error);
     throw error;
   }
 }

@@ -13,7 +13,6 @@ import { vehicleService } from '@/services/vehicleService';
 import { bookingService } from '@/services/bookingService';
 import type { Vehicle } from '@/types/vehicle';
 import type { Booking } from '@/services/bookingService';
-import type { StationRental } from '@/services/rentalService';
 
 interface StationInfo {
   id: string;
@@ -25,6 +24,13 @@ interface StationInfo {
     vehicles_in_use: number;
     utilization_rate: number;
   };
+}
+
+interface SimpleRental {
+  _id: string;
+  booking_id: string;
+  status: string;
+  vehicle_id?: { name?: string };
 }
 
 interface TaskItem {
@@ -105,98 +111,100 @@ const StaffDashboard: React.FC = () => {
 
   const generateTasksFromData = async (vehicleList: Vehicle[], stationId: string) => {
     try {
-      // Lấy bookings cho station trong vài ngày tới
+      // Lấy bookings cho station
       const confirmedBookings = await bookingService.getStationBookings(stationId, 'CONFIRMED');
       
-      // Lấy ongoing rentals để loại bỏ bookings đã được bàn giao
-      let ongoingRentals: StationRental[] = [];
+      // Lấy rentals để check trạng thái
+      let ongoingRentals: SimpleRental[] = [];
       try {
-        // Import rentalService if needed
         const { rentalService } = await import('@/services/rentalService');
         ongoingRentals = await rentalService.getStationRentals(stationId, 'ONGOING');
       } catch (error) {
-        console.warn('Could not load rental service, continuing without rental filtering:', error);
+        console.warn('Could not load rental service:', error);
       }
       
-      // Lọc ra những booking chưa được bàn giao (chưa có rental tương ứng)
-      const rentalBookingIds = ongoingRentals.map(rental => rental.booking_id);
-      const pendingBookings = confirmedBookings.filter(booking => !rentalBookingIds.includes(booking._id));
-      
-      console.log('🔍 [StaffDashboard] Debug data:', {
+      console.log('🔍 [StaffDashboard] Simple logic with rental check:', {
         stationId,
-        confirmedBookingsTotal: confirmedBookings.length,
+        confirmedBookingsCount: confirmedBookings.length,
         ongoingRentalsCount: ongoingRentals.length,
-        pendingBookingsCount: pendingBookings.length,
-        filteredOut: confirmedBookings.length - pendingBookings.length,
-        pendingBookings: pendingBookings.map(b => ({
+        bookings: confirmedBookings.map(b => ({
           id: b._id,
           vehicle: b.vehicle_snapshot?.name,
           startAt: b.start_at,
           endAt: b.end_at,
           status: b.status
+        })),
+        rentals: ongoingRentals.map(r => ({
+          id: r._id,
+          bookingId: r.booking_id,
+          vehicle: r.vehicle_id?.name,
+          status: r.status
         }))
       });
       
       const tasks: TaskItem[] = [];
-
-      // Tạo tasks từ pending bookings (xe thực sự cần bàn giao)
       const now = new Date();
       const nextWeek = new Date();
       nextWeek.setDate(nextWeek.getDate() + 7);
 
-      pendingBookings.forEach((booking: Booking) => {
-        const startAt = new Date(booking.start_at);
-        const endAt = new Date(booking.end_at);
-        
-        console.log('🕐 [StaffDashboard] Processing pending booking:', {
-          bookingId: booking._id,
-          vehicleName: booking.vehicle_snapshot?.name,
-          startAt: startAt.toISOString(),
-          endAt: endAt.toISOString(),
-          now: now.toISOString(),
-          nextWeek: nextWeek.toISOString(),
-          startAtFuture: startAt >= now,
-          startAtWithinWeek: startAt <= nextWeek
-        });
-        
-        // Chỉ tạo task bàn giao cho bookings chưa bắt đầu trong tuần tới
-        if (startAt >= now && startAt <= nextWeek) {
-          console.log('✅ [StaffDashboard] Creating DELIVERY task for booking:', booking._id);
-          tasks.push({
-            id: `delivery-${booking._id}`,
-            type: 'delivery',
-            title: `Bàn giao xe ${booking.vehicle_snapshot?.name || 'Unknown'}`,
-            customer: 'Khách hàng',
-            vehicleName: booking.vehicle_snapshot?.name || 'Unknown',
-            startAt,
-            endAt,
-            priority: startAt.getTime() - now.getTime() <= 24 * 60 * 60 * 1000 ? 'high' : 'medium',
-            status: 'pending',
-            bookingId: booking._id
-          });
-        } else {
-          console.log('❌ [StaffDashboard] Skipping booking (outside time range):', booking._id);
-        }
+      // Tạo map booking_id -> rental để check nhanh
+      const rentalByBookingId = new Map();
+      ongoingRentals.forEach(rental => {
+        rentalByBookingId.set(rental.booking_id, rental);
       });
 
-      // Tạo tasks nhận xe từ ongoing rentals sắp kết thúc
-      ongoingRentals.forEach((rental: StationRental) => {
-        const endAt = new Date(rental.end_at);
+      // Tạo tasks từ bookings dựa vào trạng thái booking
+      confirmedBookings.forEach((booking: Booking) => {
+        const startAt = new Date(booking.start_at);
+        const endAt = new Date(booking.end_at);
+        const hasOngoingRental = rentalByBookingId.has(booking._id);
         
-        if (endAt >= now && endAt <= nextWeek) {
-          console.log('✅ [StaffDashboard] Creating RETURN task for rental:', rental._id);
-          tasks.push({
-            id: `return-${rental._id}`,
-            type: 'return',
-            title: `Nhận lại xe ${rental.vehicle_id?.name || 'Unknown'}`,
-            customer: rental.user_id?.name || 'Khách hàng',
-            vehicleName: rental.vehicle_id?.name || 'Unknown',
-            startAt: endAt,
-            endAt,
-            priority: endAt.getTime() - now.getTime() <= 24 * 60 * 60 * 1000 ? 'high' : 'medium',
-            status: 'pending',
-            bookingId: rental.booking_id
-          });
+        console.log(`📋 [StaffDashboard] Processing booking ${booking._id}:`, {
+          vehicle: booking.vehicle_snapshot?.name,
+          bookingStatus: booking.status,
+          startAt: startAt.toLocaleDateString('vi-VN'),
+          endAt: endAt.toLocaleDateString('vi-VN'),
+          hasOngoingRental,
+          startInWeek: startAt >= now && startAt <= nextWeek,
+          endInWeek: endAt >= now && endAt <= nextWeek
+        });
+        
+        // Nếu booking status là CONFIRMED → Task bàn giao xe
+        if (booking.status === 'CONFIRMED' && !hasOngoingRental) {
+          if (startAt >= now && startAt <= nextWeek) {
+            tasks.push({
+              id: `delivery-${booking._id}`,
+              type: 'delivery',
+              title: `Bàn giao xe ${booking.vehicle_snapshot?.name || 'Unknown'}`,
+              customer: 'Khách hàng',
+              vehicleName: booking.vehicle_snapshot?.name || 'Unknown',
+              startAt,
+              endAt,
+              priority: startAt.getTime() - now.getTime() <= 24 * 60 * 60 * 1000 ? 'high' : 'medium',
+              status: 'pending',
+              bookingId: booking._id
+            });
+            console.log(`✅ Created DELIVERY task for CONFIRMED booking ${booking._id}`);
+          }
+        }
+        
+        // Nếu đã có rental ONGOING → Task nhận xe
+        if (hasOngoingRental) {
+          if (endAt >= now && endAt <= nextWeek) {
+            tasks.push({
+              id: `return-${booking._id}`,
+              type: 'return',
+              title: `Nhận lại xe ${booking.vehicle_snapshot?.name || 'Unknown'}`,
+              customer: 'Khách hàng',
+              vehicleName: booking.vehicle_snapshot?.name || 'Unknown',
+              startAt: endAt,
+              endAt,
+              priority: endAt.getTime() - now.getTime() <= 24 * 60 * 60 * 1000 ? 'high' : 'medium',
+              status: 'pending',
+              bookingId: booking._id
+            });
+            console.log(`✅ Created RETURN task for booking with ongoing rental ${booking._id}`);
+          }
         }
       });
 
@@ -224,7 +232,21 @@ const StaffDashboard: React.FC = () => {
       // Sắp xếp tasks theo thời gian
       tasks.sort((a, b) => a.startAt.getTime() - b.startAt.getTime());
       
-      console.log('Generated tasks from real data:', tasks);
+      console.log('🎯 [StaffDashboard] Tasks created:', {
+        totalTasks: tasks.length,
+        deliveryTasks: tasks.filter(t => t.type === 'delivery').length,
+        returnTasks: tasks.filter(t => t.type === 'return').length,
+        maintenanceTasks: tasks.filter(t => t.type === 'maintenance').length,
+        tasks: tasks.map(t => ({
+          id: t.id,
+          type: t.type,
+          title: t.title,
+          vehicle: t.vehicleName,
+          startAt: t.startAt.toLocaleString('vi-VN'),
+          priority: t.priority
+        }))
+      });
+      
       setPendingTasks(tasks);
       
     } catch (error) {

@@ -12,6 +12,7 @@ interface Sidebar extends SidebarProps {
     role: string;
     avatar?: string;
   };
+  onLogout?: () => void;
 }
 
 export const Sidebar: React.FC<Sidebar> = ({
@@ -20,6 +21,7 @@ export const Sidebar: React.FC<Sidebar> = ({
   isCollapsed = false,
   onToggleCollapse,
   onNavigate,
+  onLogout,
   sections,
   logo,
   userInfo
@@ -102,14 +104,19 @@ export const Sidebar: React.FC<Sidebar> = ({
   }, [currentPath, filteredSections]);
 
   const handleLogout = () => {
-    // Xóa dữ liệu xác thực và chuyển về trang đăng nhập
-    try {
-      clearAuthData();
-    } catch {
-      // ignore
+    // Sử dụng custom logout handler nếu có
+    if (onLogout) {
+      onLogout();
+    } else {
+      // Fallback to default logout logic
+      try {
+        clearAuthData();
+      } catch {
+        // ignore
+      }
+      onNavigate?.('/login');
+      navigate('/login', { replace: true });
     }
-    onNavigate?.('/login');
-    navigate('/login', { replace: true });
   };
 
   const renderMenuItem = (item: MenuItem, level: number = 0) => {

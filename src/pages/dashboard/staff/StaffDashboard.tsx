@@ -454,23 +454,6 @@ const StaffDashboard: React.FC = () => {
                           </div>
                         </div>
                       </div>
-                      <div className="flex space-x-2">
-                        {task.status === 'pending' && (
-                          <button className="px-3 py-1 text-xs font-medium text-white bg-blue-600 rounded hover:bg-blue-700 transition-colors">
-                            Bắt đầu
-                          </button>
-                        )}
-                        {task.status === 'in-progress' && (
-                          <button className="px-3 py-1 text-xs font-medium text-white bg-green-600 rounded hover:bg-green-700 transition-colors">
-                            Hoàn thành
-                          </button>
-                        )}
-                        {task.status === 'completed' && (
-                          <span className="px-3 py-1 text-xs font-medium text-green-700 bg-green-100 rounded">
-                            Đã xong
-                          </span>
-                        )}
-                      </div>
                     </div>
                   </div>
                 ))}
@@ -571,7 +554,7 @@ const StaffDashboard: React.FC = () => {
       </div>
 
       {/* Quick Actions */}
-      <div className="bg-white rounded-lg shadow p-6">
+      {/* <div className="bg-white rounded-lg shadow p-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Thao tác nhanh</h2>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <button className="flex items-center space-x-2 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
@@ -591,7 +574,7 @@ const StaffDashboard: React.FC = () => {
             <span className="text-sm font-medium">Báo cáo sự cố</span>
           </button>
         </div>
-      </div>
+      </div> */}
     </div>
   );
 };

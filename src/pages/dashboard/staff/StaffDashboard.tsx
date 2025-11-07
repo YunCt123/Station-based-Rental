@@ -369,13 +369,13 @@ const StaffDashboard: React.FC = () => {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Dashboard Nhân viên</h1>
           <p className="text-gray-600">
-            Quản lý trạm thuê xe - {stationInfo?.name || 'Đang tải...'}
+            Quản lý trạm {stationInfo?.name || 'Đang tải...'}
           </p>
         </div>
-        <div className="flex items-center space-x-2 text-sm text-gray-500">
-          <ClockIcon className="w-4 h-4" />
-          <span>Ca làm việc: 08:00 - 17:00</span>
-        </div>
+          {/* <div className="flex items-center space-x-2 text-sm text-gray-500">
+            <ClockIcon className="w-4 h-4" />
+            <span>Ca làm việc: 08:00 - 17:00</span>
+          </div> */}
       </div>
 
       {/* Stats Grid */}

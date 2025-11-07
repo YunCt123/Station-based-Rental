@@ -62,15 +62,22 @@ const VehicleReserved = () => {
       try {
         // Load confirmed bookings (waiting for pickup)
         const bookings = await bookingService.getStationBookings(selectedStation, 'CONFIRMED');
-        setConfirmedBookings(bookings);
         
         // Load ongoing rentals (vehicles currently rented out)
         const rentals = await rentalService.getStationRentals(selectedStation, 'ONGOING');
+        
+        // Filter out bookings that already have corresponding rentals
+        const rentalBookingIds = rentals.map(rental => rental.booking_id);
+        const pendingBookings = bookings.filter(booking => !rentalBookingIds.includes(booking._id));
+        
+        setConfirmedBookings(pendingBookings);
         setOngoingRentals(rentals);
         
         console.log('📋 [VehicleReserved] Data loaded:', {
-          bookings: bookings.length,
-          rentals: rentals.length
+          totalBookings: bookings.length,
+          pendingBookings: pendingBookings.length,
+          ongoingRentals: rentals.length,
+          filteredOutBookings: bookings.length - pendingBookings.length
         });
         
       } catch (error) {

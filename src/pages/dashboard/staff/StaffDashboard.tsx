@@ -5,13 +5,15 @@ import {
   CurrencyDollarIcon,
   ExclamationTriangleIcon,
   ClockIcon,
-  CheckCircleIcon,
-  XCircleIcon
+  CheckCircleIcon
 } from '@heroicons/react/24/outline';
 import { getCurrentUser } from '@/utils/auth';
 import { stationService } from '@/services/stationService';
 import { vehicleService } from '@/services/vehicleService';
+import { bookingService } from '@/services/bookingService';
 import type { Vehicle } from '@/types/vehicle';
+import type { Booking } from '@/services/bookingService';
+import type { StationRental } from '@/services/rentalService';
 
 interface StationInfo {
   id: string;
@@ -30,9 +32,12 @@ interface TaskItem {
   type: 'delivery' | 'return' | 'inspection' | 'maintenance';
   title: string;
   customer: string;
-  time: string;
+  vehicleName: string;
+  startAt: Date;
+  endAt: Date;
   priority: 'high' | 'medium' | 'low';
   status: 'pending' | 'in-progress' | 'completed';
+  bookingId?: string;
 }
 
 const StaffDashboard: React.FC = () => {
@@ -45,7 +50,7 @@ const StaffDashboard: React.FC = () => {
   // Load data when component mounts
   useEffect(() => {
     loadDashboardData();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadDashboardData = async () => {
     try {
@@ -88,7 +93,7 @@ const StaffDashboard: React.FC = () => {
       setVehicles(vehicleData.vehicles);
 
       // Generate tasks from vehicle and booking data
-      generateTasksFromData(vehicleData.vehicles);
+      await generateTasksFromData(vehicleData.vehicles, stationId);
 
     } catch (err) {
       console.error('Error loading dashboard data:', err);
@@ -98,30 +103,154 @@ const StaffDashboard: React.FC = () => {
     }
   };
 
-  const generateTasksFromData = (vehicleList: Vehicle[]) => {
-    // Generate tasks based on vehicle status - only for actual pending tasks
-    const tasks: TaskItem[] = [];
-    let taskId = 1;
-
-    vehicleList.forEach((vehicle) => {
-      // Only create maintenance tasks for vehicles that actually need maintenance
-      if (vehicle.availability === 'maintenance') {
-        tasks.push({
-          id: `task-${taskId++}`,
-          type: 'maintenance',
-          title: `Bảo trì xe ${vehicle.name}`,
-          customer: 'Hệ thống',
-          time: '14:00',
-          priority: 'high',
-          status: 'in-progress'
-        });
+  const generateTasksFromData = async (vehicleList: Vehicle[], stationId: string) => {
+    try {
+      // Lấy bookings cho station trong vài ngày tới
+      const confirmedBookings = await bookingService.getStationBookings(stationId, 'CONFIRMED');
+      
+      // Lấy ongoing rentals để loại bỏ bookings đã được bàn giao
+      let ongoingRentals: StationRental[] = [];
+      try {
+        // Import rentalService if needed
+        const { rentalService } = await import('@/services/rentalService');
+        ongoingRentals = await rentalService.getStationRentals(stationId, 'ONGOING');
+      } catch (error) {
+        console.warn('Could not load rental service, continuing without rental filtering:', error);
       }
-    });
+      
+      // Lọc ra những booking chưa được bàn giao (chưa có rental tương ứng)
+      const rentalBookingIds = ongoingRentals.map(rental => rental.booking_id);
+      const pendingBookings = confirmedBookings.filter(booking => !rentalBookingIds.includes(booking._id));
+      
+      console.log('🔍 [StaffDashboard] Debug data:', {
+        stationId,
+        confirmedBookingsTotal: confirmedBookings.length,
+        ongoingRentalsCount: ongoingRentals.length,
+        pendingBookingsCount: pendingBookings.length,
+        filteredOut: confirmedBookings.length - pendingBookings.length,
+        pendingBookings: pendingBookings.map(b => ({
+          id: b._id,
+          vehicle: b.vehicle_snapshot?.name,
+          startAt: b.start_at,
+          endAt: b.end_at,
+          status: b.status
+        }))
+      });
+      
+      const tasks: TaskItem[] = [];
 
-    // TODO: Add real booking-based tasks from API
-    // For now, we don't create tasks for rented vehicles since we don't know their return time
-    
-    setPendingTasks(tasks);
+      // Tạo tasks từ pending bookings (xe thực sự cần bàn giao)
+      const now = new Date();
+      const nextWeek = new Date();
+      nextWeek.setDate(nextWeek.getDate() + 7);
+
+      pendingBookings.forEach((booking: Booking) => {
+        const startAt = new Date(booking.start_at);
+        const endAt = new Date(booking.end_at);
+        
+        console.log('🕐 [StaffDashboard] Processing pending booking:', {
+          bookingId: booking._id,
+          vehicleName: booking.vehicle_snapshot?.name,
+          startAt: startAt.toISOString(),
+          endAt: endAt.toISOString(),
+          now: now.toISOString(),
+          nextWeek: nextWeek.toISOString(),
+          startAtFuture: startAt >= now,
+          startAtWithinWeek: startAt <= nextWeek
+        });
+        
+        // Chỉ tạo task bàn giao cho bookings chưa bắt đầu trong tuần tới
+        if (startAt >= now && startAt <= nextWeek) {
+          console.log('✅ [StaffDashboard] Creating DELIVERY task for booking:', booking._id);
+          tasks.push({
+            id: `delivery-${booking._id}`,
+            type: 'delivery',
+            title: `Bàn giao xe ${booking.vehicle_snapshot?.name || 'Unknown'}`,
+            customer: 'Khách hàng',
+            vehicleName: booking.vehicle_snapshot?.name || 'Unknown',
+            startAt,
+            endAt,
+            priority: startAt.getTime() - now.getTime() <= 24 * 60 * 60 * 1000 ? 'high' : 'medium',
+            status: 'pending',
+            bookingId: booking._id
+          });
+        } else {
+          console.log('❌ [StaffDashboard] Skipping booking (outside time range):', booking._id);
+        }
+      });
+
+      // Tạo tasks nhận xe từ ongoing rentals sắp kết thúc
+      ongoingRentals.forEach((rental: StationRental) => {
+        const endAt = new Date(rental.end_at);
+        
+        if (endAt >= now && endAt <= nextWeek) {
+          console.log('✅ [StaffDashboard] Creating RETURN task for rental:', rental._id);
+          tasks.push({
+            id: `return-${rental._id}`,
+            type: 'return',
+            title: `Nhận lại xe ${rental.vehicle_id?.name || 'Unknown'}`,
+            customer: rental.user_id?.name || 'Khách hàng',
+            vehicleName: rental.vehicle_id?.name || 'Unknown',
+            startAt: endAt,
+            endAt,
+            priority: endAt.getTime() - now.getTime() <= 24 * 60 * 60 * 1000 ? 'high' : 'medium',
+            status: 'pending',
+            bookingId: rental.booking_id
+          });
+        }
+      });
+
+      // Tạo tasks bảo trì từ vehicles cần bảo trì
+      vehicleList.forEach((vehicle) => {
+        if (vehicle.availability === 'maintenance') {
+          const maintenanceDate = new Date();
+          maintenanceDate.setHours(14, 0, 0, 0); // Default 14:00
+
+          tasks.push({
+            id: `maintenance-${vehicle.id}`,
+            type: 'maintenance',
+            title: `Bảo trì xe ${vehicle.name}`,
+            customer: 'Hệ thống',
+            vehicleName: vehicle.name,
+            startAt: maintenanceDate,
+            endAt: maintenanceDate,
+            priority: 'high',
+            status: 'in-progress',
+            bookingId: undefined
+          });
+        }
+      });
+
+      // Sắp xếp tasks theo thời gian
+      tasks.sort((a, b) => a.startAt.getTime() - b.startAt.getTime());
+      
+      console.log('Generated tasks from real data:', tasks);
+      setPendingTasks(tasks);
+      
+    } catch (error) {
+      console.error('Error generating tasks from bookings:', error);
+      // Fallback: chỉ hiển thị maintenance tasks
+      const tasks: TaskItem[] = [];
+      vehicleList.forEach((vehicle) => {
+        if (vehicle.availability === 'maintenance') {
+          const maintenanceDate = new Date();
+          maintenanceDate.setHours(14, 0, 0, 0);
+
+          tasks.push({
+            id: `maintenance-${vehicle.id}`,
+            type: 'maintenance',
+            title: `Bảo trì xe ${vehicle.name}`,
+            customer: 'Hệ thống',
+            vehicleName: vehicle.name,
+            startAt: maintenanceDate,
+            endAt: maintenanceDate,
+            priority: 'high',
+            status: 'in-progress'
+          });
+        }
+      });
+      setPendingTasks(tasks);
+    }
   };
 
   // Show loading state
@@ -178,6 +307,7 @@ const StaffDashboard: React.FC = () => {
     .map((vehicle: Vehicle) => ({
       id: vehicle.name || vehicle.id, // Show vehicle name instead of ID
       name: vehicle.name,
+      image: vehicle.image,
       status: vehicle.availability,
       battery: vehicle.batteryLevel,
       location: vehicle.availability === 'rented' ? 'Đang thuê' : vehicle.location
@@ -244,40 +374,81 @@ const StaffDashboard: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Available Vehicles Section */}
+      
+
         {/* Pending Tasks */}
         <div className="bg-white rounded-lg shadow">
           <div className="p-6 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-900">Nhiệm vụ hôm nay</h2>
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-gray-900">Nhiệm vụ</h2>
+              <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
+                {pendingTasks.filter(t => t.status === 'pending').length} cần xử lý
+              </span>
+            </div>
           </div>
           <div className="p-6">
             {pendingTasks.length === 0 ? (
               <div className="text-center text-gray-500 py-8">
-                <p>Không có nhiệm vụ nào trong hôm nay</p>
+                <ClipboardDocumentListIcon className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                <p className="font-medium">Không có nhiệm vụ nào</p>
+                <p className="text-sm">Tất cả công việc đã hoàn thành tốt!</p>
               </div>
             ) : (
               <div className="space-y-4">
                 {pendingTasks.map((task) => (
-                  <div key={task.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
-                    <div className="flex items-center space-x-3">
-                      <div className="flex-shrink-0">
-                        {task.status === 'completed' ? (
-                          <CheckCircleIcon className="w-5 h-5 text-green-500" />
-                        ) : task.status === 'in-progress' ? (
-                          <ClockIcon className="w-5 h-5 text-blue-500" />
-                        ) : (
-                          <XCircleIcon className="w-5 h-5 text-gray-400" />
+                  <div key={task.id} className="border border-gray-200 rounded-lg p-4 hover:border-blue-300 transition-colors">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <div className="flex-shrink-0">
+                          <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                            task.status === 'completed' 
+                              ? 'bg-green-100' 
+                              : task.status === 'in-progress' 
+                                ? 'bg-blue-100' 
+                                : 'bg-yellow-100'
+                          }`}>
+                            {task.status === 'completed' ? (
+                              <CheckCircleIcon className="w-6 h-6 text-green-600" />
+                            ) : task.status === 'in-progress' ? (
+                              <ClockIcon className="w-6 h-6 text-blue-600" />
+                            ) : (
+                              <ExclamationTriangleIcon className="w-6 h-6 text-yellow-600" />
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center space-x-2">
+                            <h3 className="text-sm font-medium text-gray-900">{task.title}</h3>
+                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${getPriorityColor(task.priority)}`}>
+                              {task.priority === 'high' ? 'Ưu tiên cao' : task.priority === 'medium' ? 'Trung bình' : 'Thấp'}
+                            </span>
+                          </div>
+                          <p className="text-sm text-gray-500">Khách hàng: {task.customer}</p>
+                          <div className="flex items-center space-x-4 text-xs text-gray-400">
+                            <span>Thời gian: {task.startAt.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</span>
+                            <span>Ngày: {task.startAt.toLocaleDateString('vi-VN')}</span>
+                            <span>Xe: {task.vehicleName}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex space-x-2">
+                        {task.status === 'pending' && (
+                          <button className="px-3 py-1 text-xs font-medium text-white bg-blue-600 rounded hover:bg-blue-700 transition-colors">
+                            Bắt đầu
+                          </button>
+                        )}
+                        {task.status === 'in-progress' && (
+                          <button className="px-3 py-1 text-xs font-medium text-white bg-green-600 rounded hover:bg-green-700 transition-colors">
+                            Hoàn thành
+                          </button>
+                        )}
+                        {task.status === 'completed' && (
+                          <span className="px-3 py-1 text-xs font-medium text-green-700 bg-green-100 rounded">
+                            Đã xong
+                          </span>
                         )}
                       </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">{task.title}</p>
-                        <p className="text-xs text-gray-500">Khách hàng: {task.customer}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${getPriorityColor(task.priority)}`}>
-                        {task.priority === 'high' ? 'Cao' : task.priority === 'medium' ? 'Trung bình' : 'Thấp'}
-                      </span>
-                      <span className="text-sm text-gray-500">{task.time}</span>
                     </div>
                   </div>
                 ))}
@@ -286,34 +457,87 @@ const StaffDashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Vehicle Status */}
+        {/* Vehicle Management */}
         <div className="bg-white rounded-lg shadow">
           <div className="p-6 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-900">Trạng thái xe</h2>
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-gray-900">Quản lý xe tại trạm</h2>
+              <span className="text-sm text-gray-500">{vehicleStatusData.length} xe</span>
+            </div>
           </div>
           <div className="p-6">
             {vehicleStatusData.length === 0 ? (
               <div className="text-center text-gray-500 py-8">
-                <p>Không có dữ liệu xe</p>
+                <p>Không có xe nào tại trạm này</p>
               </div>
             ) : (
-              <div className="space-y-3">
-                {vehicleStatusData.map((vehicle) => (
-                  <div key={vehicle.id} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
-                    <div className="flex items-center space-x-3">
-                      <div className="font-medium text-gray-900">{vehicle.name || vehicle.id}</div>
-                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(vehicle.status)}`}>
-                        {getStatusText(vehicle.status)}
-                      </span>
-                    </div>
-                    <div className="flex items-center space-x-4">
-                      <div className="text-right">
-                        <div className="text-sm font-medium text-gray-900">{vehicle.battery}%</div>
-                        <div className="text-xs text-gray-500">Pin</div>
+              <div className="space-y-4">
+                {vehicleStatusData.map((vehicle, index) => (
+                  <div key={vehicle.id} className="border border-gray-200 rounded-lg p-4 hover:border-gray-300 transition-colors">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-4">
+                        <div className="flex-shrink-0">
+                          <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden">
+                            {vehicle.image ? (
+                              <img 
+                                src={vehicle.image} 
+                                alt={vehicle.name || 'Vehicle'}
+                                className="w-full h-full object-cover rounded-lg"
+                                onError={(e) => {
+                                  const target = e.target as HTMLImageElement;
+                                  target.style.display = 'none';
+                                  target.nextElementSibling?.classList.remove('hidden');
+                                }}
+                              />
+                            ) : null}
+                            <TruckIcon className={`w-8 h-8 text-blue-600 ${vehicle.image ? 'hidden' : ''}`} />
+                          </div>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center space-x-2">
+                            <h3 className="text-sm font-medium text-gray-900 truncate">
+                              {vehicle.name || `Xe ${index + 1}`}
+                            </h3>
+                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(vehicle.status)}`}>
+                              {getStatusText(vehicle.status)}
+                            </span>
+                          </div>
+                          <p className="text-sm text-gray-500">{vehicle.location}</p>
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <div className="text-sm text-gray-900">{vehicle.location}</div>
-                        <div className="text-xs text-gray-500">Vị trí</div>
+                      <div className="flex items-center space-x-6">
+                        <div className="text-center">
+                          <div className="text-lg font-semibold text-gray-900">{vehicle.battery}%</div>
+                          <div className="text-xs text-gray-500">Pin</div>
+                          <div className="mt-1">
+                            <div className="w-12 h-2 bg-gray-200 rounded-full">
+                              <div 
+                                className={`h-2 rounded-full ${
+                                  vehicle.battery > 70 ? 'bg-green-500' : 
+                                  vehicle.battery > 30 ? 'bg-yellow-500' : 'bg-red-500'
+                                }`}
+                                style={{ width: `${vehicle.battery}%` }}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex space-x-2">
+                          {vehicle.status === 'available' && (
+                            <button className="px-3 py-1 text-xs font-medium text-blue-600 bg-blue-100 rounded hover:bg-blue-200 transition-colors">
+                              Có sẵn
+                            </button>
+                          )}
+                          {vehicle.status === 'maintenance' && (
+                            <button className="px-3 py-1 text-xs font-medium text-red-600 bg-red-100 rounded hover:bg-red-200 transition-colors">
+                              Bảo trì
+                            </button>
+                          )}
+                          {vehicle.status === 'rented' && (
+                            <button className="px-3 py-1 text-xs font-medium text-gray-600 bg-gray-100 rounded ">
+                              Đang thuê
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>

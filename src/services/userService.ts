@@ -59,8 +59,25 @@ export interface UploadVerificationImagesPayload {
 }
 
 export const userService = {
-  // Get current user profile using /users/me endpoint
+  // Get current user profile - auto-detect auth type
   async getCurrentUser(): Promise<UserProfile> {
+    const accessToken = localStorage.getItem("access_token");
+    const firebaseToken = localStorage.getItem("firebase_token");
+    
+    console.log('🔍 [userService] getCurrentUser - checking auth type:', {
+      hasAccessToken: !!accessToken,
+      hasFirebaseToken: !!firebaseToken
+    });
+    
+    // If user logged in via Firebase (Google), use Firebase endpoint
+    if (firebaseToken && !accessToken) {
+      console.log('🔥 [userService] Using Firebase endpoint: /auth/firebase/me');
+      const response = await api.get("/auth/firebase/me");
+      return response.data.user || response.data.data || response.data;
+    }
+    
+    // Otherwise use regular endpoint for local auth users
+    console.log('🔑 [userService] Using regular endpoint: /users/me');
     const response = await api.get("/users/me");
     return response.data.data;
   },
@@ -77,8 +94,25 @@ export const userService = {
     return response.data.data;
   },
 
-  // Update current user's own profile
+  // Update current user's own profile - auto-detect auth type  
   async updateSelf(payload: UpdateUserPayload): Promise<UserProfile> {
+    const accessToken = localStorage.getItem("access_token");
+    const firebaseToken = localStorage.getItem("firebase_token");
+    
+    console.log('🔍 [userService] updateSelf - checking auth type:', {
+      hasAccessToken: !!accessToken,
+      hasFirebaseToken: !!firebaseToken
+    });
+    
+    // If user logged in via Firebase (Google), use Firebase endpoint
+    if (firebaseToken && !accessToken) {
+      console.log('🔥 [userService] Updating via Firebase endpoint: /auth/firebase/profile');
+      const response = await api.put("/auth/firebase/profile", payload);
+      return response.data.user || response.data.data || response.data;
+    }
+    
+    // Otherwise use regular endpoint for local auth users
+    console.log('🔑 [userService] Updating via regular endpoint: /users/profile');
     const response = await api.patch("/users/profile", payload);
     return response.data.data;
   },

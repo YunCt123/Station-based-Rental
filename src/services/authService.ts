@@ -135,7 +135,24 @@ export async function loginWithGoogle(additionalInfo?: {
 
     console.log("🔥 [authService] Backend response:", data);
 
-    // 3. Normalize response
+    // 3. Store tokens
+    // Store Firebase token for Firebase-specific API calls
+    localStorage.setItem("firebase_token", idToken);
+    
+    // Also store access_token if backend provides it (for regular API calls)
+    if (data.tokens?.accessToken || data.accessToken) {
+      const accessToken = data.tokens?.accessToken || data.accessToken;
+      localStorage.setItem("access_token", accessToken);
+      console.log("✅ [authService] Stored access_token from backend");
+    }
+    
+    if (data.tokens?.refreshToken || data.refreshToken) {
+      const refreshToken = data.tokens?.refreshToken || data.refreshToken;
+      localStorage.setItem("refresh_token", refreshToken);
+    }
+
+    // 4. Normalize response
+    // 4. Normalize response
     const normalizedResponse: FirebaseAuthResponse = {
       user: {
         id: data.user.id || data.user._id || "",
@@ -151,9 +168,6 @@ export async function loginWithGoogle(additionalInfo?: {
       },
       auth_provider: "firebase_google"
     };
-
-    // 4. Store Firebase token for API calls
-    localStorage.setItem("firebase_token", idToken);
     
     return normalizedResponse;
   } catch (error) {
@@ -182,12 +196,21 @@ export async function logoutGoogle() {
 
 export async function getCurrentFirebaseUser() {
   try {
-    const token = localStorage.getItem("firebase_token");
+    // Try access_token first (if backend provided it), then firebase_token
+    const accessToken = localStorage.getItem("access_token");
+    const firebaseToken = localStorage.getItem("firebase_token");
+    const token = accessToken || firebaseToken;
+    
     if (!token) {
-      throw new Error("No Firebase token found");
+      throw new Error("No authentication token found");
     }
 
-    const { data } = await api.get("/auth/firebase/me", {
+    console.log("🔍 [authService] Getting current user with token type:", accessToken ? 'access_token' : 'firebase_token');
+
+    // Use the Firebase-specific endpoint if we have firebase token
+    const endpoint = accessToken ? "/auth/me" : "/auth/firebase/me";
+    
+    const { data } = await api.get(endpoint, {
       headers: { Authorization: `Bearer ${token}` }
     });
 

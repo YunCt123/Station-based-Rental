@@ -38,6 +38,13 @@ const GoogleAuthButton: React.FC<GoogleAuthButtonProps> = ({
         role: result.user.role
       }));
       
+      // Debug: Check what tokens we have now
+      console.log("🔍 [GoogleAuthButton] Token status after login:", {
+        accessToken: localStorage.getItem("access_token") ? "Available" : "Missing",
+        firebaseToken: localStorage.getItem("firebase_token") ? "Available" : "Missing",
+        userInfo: localStorage.getItem("userInfo") ? "Available" : "Missing"
+      });
+      
       onSuccess(result.user);
       
       toast({

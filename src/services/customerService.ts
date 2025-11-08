@@ -5,6 +5,7 @@ import type { ApiResponse } from './bookingService';
 export interface RentalStatus {
   CONFIRMED: 'CONFIRMED';
   ONGOING: 'ONGOING';
+  REJECTED: 'REJECTED';
   RETURN_PENDING: 'RETURN_PENDING';
   COMPLETED: 'COMPLETED';
 }
@@ -40,6 +41,8 @@ export interface RentalPickup {
   odo_km?: number;
   soc?: number;
   notes?: string;
+  reject_reason?: string;
+  reject_photos?: (string | { url: string; _id?: string })[];
 }
 
 export interface RentalReturn {
@@ -69,7 +72,7 @@ export interface PricingSnapshot {
 
 export interface Rental {
   _id: string;
-  status: 'CONFIRMED' | 'ONGOING' | 'RETURN_PENDING' | 'COMPLETED';
+  status: 'CONFIRMED' | 'ONGOING' | 'REJECTED' | 'RETURN_PENDING' | 'COMPLETED';
   user_id: string;
   booking_id: {
     _id: string;

@@ -4,7 +4,8 @@ import {
   CarOutlined, 
   ClockCircleOutlined, 
   CreditCardOutlined,
-  HistoryOutlined
+  HistoryOutlined,
+  CloseCircleOutlined
 } from '@ant-design/icons';
 import { useMyRentals } from '../../../hooks/customer/useRentals';
 import RentalCard from '../../../components/customer/RentalCard';
@@ -57,13 +58,14 @@ const MyRentalsScreen: React.FC<MyRentalsScreenProps> = ({
   // Filter rentals by status
   const activeRentals = rentals.filter((r: Rental) => r.status === 'ONGOING');
   const confirmedRentals = rentals.filter((r: Rental) => r.status === 'CONFIRMED');
+  const rejectedRentals = rentals.filter((r: Rental) => r.status === 'REJECTED');
   const pendingPaymentRentals = rentals.filter((r: Rental) => r.status === 'RETURN_PENDING');
   const completedRentals = rentals.filter((r: Rental) => r.status === 'COMPLETED');
 
   const renderRentalSection = (
     title: string, 
     rentals: Rental[], 
-    type: 'active' | 'pending_payment' | 'confirmed' | 'completed',
+    type: 'active' | 'pending_payment' | 'confirmed' | 'rejected' | 'completed',
     description?: string
   ) => {
     if (rentals.length === 0) {
@@ -172,6 +174,26 @@ const MyRentalsScreen: React.FC<MyRentalsScreenProps> = ({
             confirmedRentals,
             'confirmed',
             'Các booking đã được xác nhận, chờ đến trạm để nhận xe'
+          )}
+        </TabPane>
+
+        <TabPane 
+          tab={
+            <Space>
+              <CloseCircleOutlined />
+              <span>Bị từ chối</span>
+              {rejectedRentals.length > 0 && (
+                <Badge count={rejectedRentals.length} size="small" />
+              )}
+            </Space>
+          } 
+          key="rejected"
+        >
+          {renderRentalSection(
+            'Xe bị từ chối',
+            rejectedRentals,
+            'rejected',
+            'Các yêu cầu nhận xe đã bị từ chối bởi nhân viên'
           )}
         </TabPane>
 

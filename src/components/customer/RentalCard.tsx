@@ -1,11 +1,12 @@
 import React from 'react';
-import { Card, Button, Tag, Space, Typography, Image } from 'antd';
+import { Card, Button, Tag, Space, Typography, Image, Alert } from 'antd';
 import { 
   CalendarOutlined, 
   CarOutlined, 
   EnvironmentOutlined,
   CreditCardOutlined,
-  EyeOutlined
+  EyeOutlined,
+  InfoCircleOutlined
 } from '@ant-design/icons';
 import type { Rental } from '../../services/customerService';
 
@@ -14,7 +15,7 @@ const { Meta } = Card;
 
 interface RentalCardProps {
   rental: Rental;
-  type: 'active' | 'pending_payment' | 'confirmed' | 'completed';
+  type: 'active' | 'pending_payment' | 'confirmed' | 'rejected' | 'completed';
   onViewDetail: (rentalId: string) => void;
   onPayment?: (rental: Rental) => void;
 }
@@ -40,6 +41,7 @@ const RentalCard: React.FC<RentalCardProps> = ({
     const configs = {
       'CONFIRMED': { text: 'Chờ nhận xe', color: 'orange', },
       'ONGOING': { text: 'Đang sử dụng', color: 'green' },
+      'REJECTED': { text: 'Bị từ chối', color: 'red' },
       'RETURN_PENDING': { text: 'Cần thanh toán', color: 'red' },
       'COMPLETED': { text: 'Hoàn tất', color: 'default' }
     };
@@ -161,6 +163,18 @@ const RentalCard: React.FC<RentalCardProps> = ({
                 </Text>
               )}
             </Space>
+
+            {/* Rejection Info for REJECTED status */}
+            {status === 'REJECTED' && rental.pickup?.reject_reason && (
+              <Alert
+                message="Yêu cầu nhận xe bị từ chối"
+                description={rental.pickup.reject_reason}
+                type="error"
+                icon={<InfoCircleOutlined />}
+                showIcon
+                style={{ marginTop: 8 }}
+              />
+            )}
           </Space>
         }
       />

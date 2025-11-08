@@ -18,10 +18,12 @@ import {
   CreditCardOutlined,
   ClockCircleOutlined,
   CheckCircleOutlined,
+  CloseCircleOutlined,
   ArrowLeftOutlined,
 } from '@ant-design/icons';
 import type { Rental, Payment } from '../../../services/customerService';
 import PaymentHistory from '../../../components/customer/PaymentHistory';
+import RejectedRentalInfo from '../../../components/customer/RejectedRentalInfo';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -90,6 +92,7 @@ const RentalDetailScreen: React.FC<RentalDetailScreenProps> = ({
     const cfg = {
       CONFIRMED: { text: 'Chờ nhận xe', color: 'orange' },
       ONGOING: { text: 'Đang sử dụng', color: 'green' },
+      REJECTED: { text: 'Bị từ chối', color: 'red' },
       RETURN_PENDING: { text: 'Chờ thanh toán cuối', color: 'red' },
       COMPLETED: { text: 'Hoàn tất', color: 'default' },
     };
@@ -115,7 +118,31 @@ const RentalDetailScreen: React.FC<RentalDetailScreenProps> = ({
       },
     ];
 
-    if (pickup?.at) {
+    if (status === 'REJECTED' && pickup?.reject_reason) {
+      items.push({
+        dot: <CloseCircleOutlined style={{ fontSize: '16px' }} />,
+        color: 'red',
+        children: (
+          <div>
+            <Text strong style={{ color: '#ff4d4f' }}>Yêu cầu nhận xe bị từ chối</Text>
+            <br />
+            <Text type="secondary">{pickup.at ? formatDate(pickup.at) : ''}</Text>
+            <br />
+            <Text>
+              <strong>Lý do:</strong> {pickup.reject_reason}
+            </Text>
+            {pickup.notes && (
+              <>
+                <br />
+                <Text type="secondary">
+                  Ghi chú: {pickup.notes}
+                </Text>
+              </>
+            )}
+          </div>
+        ),
+      });
+    } else if (pickup?.at) {
       items.push({
         dot: <CarOutlined style={{ fontSize: '16px' }} />,
         color: 'green',
@@ -302,7 +329,14 @@ const RentalDetailScreen: React.FC<RentalDetailScreenProps> = ({
           </Card>
         </Col>
 
-        {/* ---------- Thông tin giá ---------- */}
+        {/* ---------- Thông tin từ chối (chỉ hiện khi REJECTED) ---------- */}
+        {status === 'REJECTED' && pickup && (
+          <Col xs={24}>
+            <RejectedRentalInfo pickup={pickup} showPhotos={false} />
+          </Col>
+        )}
+
+        {/* ---------- Thông tin trạm ---------- */}
         <Col xs={24} lg={12}>
           <Card title={<><CreditCardOutlined /> Thông tin giá</>}>
             <Space direction="vertical" size={8} style={{ width: '100%' }}>
@@ -470,8 +504,26 @@ const RentalDetailScreen: React.FC<RentalDetailScreenProps> = ({
                 )}
         </Col>
 
-        {/* ---------- Ảnh nhận xe ---------- */}
-        {pickup?.photos && pickup.photos.length > 0 && (
+        {/* ---------- Ảnh nhận xe / Ảnh từ chối ---------- */}
+        {status === 'REJECTED' && pickup?.reject_photos && pickup.reject_photos.length > 0 ? (
+          <Col xs={24}>
+            <Card title="Ảnh từ chối nhận xe" className="reject-photos-card">
+              <Row gutter={[8, 8]}>
+                {pickup.reject_photos.map((photo, idx) => (
+                  <Col key={idx} xs={12} sm={8} md={6} lg={4}>
+                    <Image
+                      width="100%"
+                      height={120}
+                      src={getPhotoUrl(photo)}
+                      style={{ objectFit: 'cover', borderRadius: 4, border: '2px solid #ff4d4f' }}
+                      fallback="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMIAAADDCAYAAADQvc6U"
+                    />
+                  </Col>
+                ))}
+              </Row>
+            </Card>
+          </Col>
+        ) : pickup?.photos && pickup.photos.length > 0 && (
           <Col xs={24}>
             <Card title="Ảnh nhận xe">
               <Row gutter={[8, 8]}>

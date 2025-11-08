@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
-import { Modal, Form, Upload, InputNumber, Input, Button, message, Typography, Space, Divider } from 'antd';
-import { UploadOutlined, CameraOutlined, CheckCircleOutlined, LoadingOutlined } from '@ant-design/icons';
+import { Modal, Form, Upload, InputNumber, Input, Button, message, Typography, Space, Divider, Radio, Select } from 'antd';
+import { UploadOutlined, CameraOutlined, CheckCircleOutlined, LoadingOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import type { UploadFile, UploadProps } from 'antd/es/upload';
 import type { RcFile } from 'antd/es/upload/interface';
 import api from '../../../../services/api';
+import { rentalService, COMMON_REJECT_REASONS } from '../../../../services/rentalService';
+import type { HandoverPayload } from '../../../../services/rentalService';
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
@@ -79,6 +81,9 @@ const CheckinForm: React.FC<CheckinFormProps> = ({
   const [fileList, setFileList] = useState<UploadFile[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [uploadedPhotos, setUploadedPhotos] = useState<string[]>([]); // Store uploaded URLs
+  const [handoverAction, setHandoverAction] = useState<'accept' | 'reject'>('accept');
+  const [rejectReason, setRejectReason] = useState<string>('');
+  const [customRejectReason, setCustomRejectReason] = useState<string>('');
 
   // Upload single file immediately when selected
   const uploadSingleFile = async (file: RcFile): Promise<string> => {
@@ -183,35 +188,71 @@ const CheckinForm: React.FC<CheckinFormProps> = ({
     odo_km?: number;
     soc?: number;
     notes?: string;
+    action?: 'accept' | 'reject';
+    rejectReason?: string;
+    customRejectReason?: string;
   }) => {
     try {
-      // Validate uploaded photos
-      if (uploadedPhotos.length < 3) {
-        message.error('Vui lòng tải lên ít nhất 3 ảnh để giao xe');
-        return;
-      }
-
       setSubmitting(true);
 
-      // Call checkin API with already uploaded photo URLs
-      const checkinData: CheckinData = {
-        photos: uploadedPhotos,
+      const vehicleData = {
         odo_km: values.odo_km,
-        soc: values.soc,
+        soc: values.soc ? values.soc / 100 : undefined, // Convert percentage to decimal
         notes: values.notes
       };
 
-      await performCheckin(uploadedPhotos, checkinData);
+      if (values.action === 'reject' || handoverAction === 'reject') {
+        // Handle reject flow
+        let finalRejectReason = values.rejectReason || rejectReason;
+        
+        // If "Other" was selected, use custom reason
+        if (finalRejectReason === 'Other (specify below)') {
+          finalRejectReason = values.customRejectReason || customRejectReason;
+        }
+
+        if (!finalRejectReason || finalRejectReason.trim().length < 5) {
+          message.error('Vui lòng nhập lý do từ chối ít nhất 5 ký tự');
+          return;
+        }
+
+        console.log('🚫 Processing handover rejection...');
+        await rentalService.rejectHandover(
+          rental._id,
+          finalRejectReason,
+          uploadedPhotos.length > 0 ? uploadedPhotos : undefined,
+          vehicleData
+        );
+
+        message.success('Đã từ chối giao xe và thông báo cho khách hàng');
+      } else {
+        // Handle accept flow (existing logic)
+        if (uploadedPhotos.length < 3) {
+          message.error('Vui lòng tải lên ít nhất 3 ảnh để giao xe');
+          return;
+        }
+
+        console.log('✅ Processing handover acceptance...');
+        await rentalService.acceptHandover(
+          rental._id,
+          uploadedPhotos,
+          vehicleData
+        );
+
+        message.success('Xe đã được giao thành công!');
+      }
 
       // Success - close modal and refresh
       form.resetFields();
       setFileList([]);
       setUploadedPhotos([]);
+      setHandoverAction('accept');
+      setRejectReason('');
+      setCustomRejectReason('');
       onSuccess();
 
     } catch (error) {
       console.error('Submit error:', error);
-      message.error(`Lỗi giao xe: ${(error as Error).message}`);
+      message.error(`Lỗi: ${(error as Error).message}`);
     } finally {
       setSubmitting(false);
     }
@@ -332,18 +373,101 @@ const CheckinForm: React.FC<CheckinFormProps> = ({
         layout="vertical"
         onFinish={handleSubmit}
         initialValues={{
-          soc: 100 // Default battery level
+          soc: 100, // Default battery level
+          action: 'accept'
         }}
       >
+        {/* Action Selection */}
+        <Form.Item
+          name="action"
+          label="Hành động"
+          rules={[{ required: true, message: 'Vui lòng chọn hành động!' }]}
+        >
+          <Radio.Group 
+            onChange={(e) => setHandoverAction(e.target.value)}
+            value={handoverAction}
+            size="large"
+          >
+            <Space direction="vertical">
+              <Radio value="accept" className="text-green-600">
+                <Space>
+                  <CheckCircleOutlined />
+                  <span>Chấp nhận giao xe cho khách hàng</span>
+                </Space>
+              </Radio>
+              <Radio value="reject" className="text-red-600">
+                <Space>
+                  <CloseCircleOutlined />
+                  <span>Từ chối giao xe (có vấn đề)</span>
+                </Space>
+              </Radio>
+            </Space>
+          </Radio.Group>
+        </Form.Item>
+
+        {/* Reject Reason Section - Only show when reject is selected */}
+        {handoverAction === 'reject' && (
+          <>
+            <Form.Item
+              name="rejectReason"
+              label="Lý do từ chối"
+              rules={[
+                { required: true, message: 'Vui lòng chọn lý do từ chối!' },
+                { min: 5, message: 'Lý do phải có ít nhất 5 ký tự!' }
+              ]}
+            >
+              <Select
+                placeholder="Chọn lý do từ chối"
+                onChange={setRejectReason}
+                size="large"
+              >
+                {COMMON_REJECT_REASONS.map(reason => (
+                  <Select.Option key={reason} value={reason}>
+                    {reason}
+                  </Select.Option>
+                ))}
+              </Select>
+            </Form.Item>
+
+            {/* Custom Reject Reason - Show when "Other" is selected */}
+            {rejectReason === 'Other (specify below)' && (
+              <Form.Item
+                name="customRejectReason"
+                label="Lý do cụ thể"
+                rules={[
+                  { required: true, message: 'Vui lòng nhập lý do cụ thể!' },
+                  { min: 5, message: 'Lý do phải có ít nhất 5 ký tự!' }
+                ]}
+              >
+                <TextArea
+                  placeholder="Nhập lý do từ chối chi tiết..."
+                  rows={3}
+                  maxLength={200}
+                  showCount
+                  onChange={(e) => setCustomRejectReason(e.target.value)}
+                />
+              </Form.Item>
+            )}
+          </>
+        )}
+
         <Form.Item
           label={
             <Space>
               <CameraOutlined />
-              <span>Ảnh tình trạng xe khi giao (tối thiểu 3 ảnh)</span>
+              <span>
+                {handoverAction === 'accept' 
+                  ? 'Ảnh tình trạng xe khi giao (tối thiểu 3 ảnh)' 
+                  : 'Ảnh minh chứng vấn đề (tùy chọn)'
+                }
+              </span>
             </Space>
           }
-          required
-          help="Cần chụp: 1) Toàn cảnh phía trước, 2) Nội thất xe, 3) Bảng điều khiển/đồng hồ"
+          required={handoverAction === 'accept'}
+          help={handoverAction === 'accept' 
+            ? "Cần chụp: 1) Toàn cảnh phía trước, 2) Nội thất xe, 3) Bảng điều khiển/đồng hồ"
+            : "Chụp ảnh minh chứng vấn đề nếu có"
+          }
         >
           <Upload.Dragger {...uploadProps} className="mb-2">
             <p className="ant-upload-drag-icon">
@@ -417,15 +541,30 @@ const CheckinForm: React.FC<CheckinFormProps> = ({
           <Button onClick={onCancel} disabled={submitting}>
             Hủy
           </Button>
-          <Button
-            type="primary"
-            htmlType="submit"
-            loading={submitting}
-            disabled={uploadedPhotos.length < 3}
-            icon={<CheckCircleOutlined />}
-          >
-            {submitting ? 'Đang giao xe...' : 'Xác nhận giao xe'}
-          </Button>
+          
+          {handoverAction === 'accept' ? (
+            <Button
+              type="primary"
+              htmlType="submit"
+              loading={submitting}
+              disabled={uploadedPhotos.length < 3}
+              icon={<CheckCircleOutlined />}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              {submitting ? 'Đang giao xe...' : 'Xác nhận giao xe'}
+            </Button>
+          ) : (
+            <Button
+              type="primary"
+              htmlType="submit"
+              loading={submitting}
+              disabled={!rejectReason || (rejectReason === 'Other (specify below)' && customRejectReason.length < 5)}
+              icon={<CloseCircleOutlined />}
+              danger
+            >
+              {submitting ? 'Đang từ chối...' : 'Xác nhận từ chối'}
+            </Button>
+          )}
         </div>
       </Form>
     </Modal>

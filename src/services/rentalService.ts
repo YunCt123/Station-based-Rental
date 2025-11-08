@@ -1,7 +1,57 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import api from "./api";
 
-// Types for rental data
+// Types for handover operations
+export interface AcceptHandoverPayload {
+  action: "accept";
+  photos: string[];
+  odo_km?: number;
+  soc?: number;
+  notes?: string;
+}
+
+export interface RejectHandoverPayload {
+  action: "reject";
+  rejectReason: string;
+  photos?: string[];
+  odo_km?: number;
+  soc?: number;
+  notes?: string;
+}
+
+export type HandoverPayload = AcceptHandoverPayload | RejectHandoverPayload;
+
+export interface HandoverResponse {
+  success: boolean;
+  data: {
+    rental: {
+      _id: string;
+      status: "ONGOING" | "REJECTED";
+      pickup: any;
+    };
+    photos: Array<{
+      _id: string;
+      url: string;
+      phase: "PICKUP" | "PICKUP_REJECT";
+      taken_at: string;
+    }>;
+    message: string;
+  };
+}
+
+// Common reject reasons for quick selection
+export const COMMON_REJECT_REASONS = [
+  "Xe gặp vấn đề kỹ thuật",
+  "Pin quá yếu để cho thuê",
+  "Phát hiện hư hỏng rõ ràng",
+  "Vấn đề về vệ sinh",
+  "Lo ngại về an toàn",
+  "Xe không có sẵn tại trạm",
+  "Tài liệu của khách hàng không hợp lệ",
+  "Khách hàng không đủ tuổi lái xe",
+  "Khách hàng không đồng ý với điều khoản thuê",
+  "Lý do khác (vui lòng ghi rõ bên dưới)",
+] as const;
 export interface RentalCustomer {
   id: string;
   name: string;
@@ -247,6 +297,86 @@ export const rentalService = {
     } catch (error: unknown) {
       console.error('[RentalService] Get user rentals error:', error);
       return [];
+    }
+  },
+
+  // Vehicle Handover Operations
+  // Process vehicle handover (accept or reject)
+  async processHandover(rentalId: string, payload: HandoverPayload): Promise<HandoverResponse> {
+    try {
+      console.log(`🚗 [rentalService] Processing handover for rental ${rentalId}:`, payload);
+      
+      const response = await api.post(`/rentals/${rentalId}/checkin`, payload);
+      
+      if (response.data.success) {
+        console.log("✅ [rentalService] Handover processed successfully:", response.data);
+        return response.data;
+      } else {
+        throw new Error(response.data.message || "Handover processing failed");
+      }
+    } catch (error: unknown) {
+      console.error("❌ [rentalService] Handover processing failed:", error);
+      
+      let errorMessage = "Failed to process handover";
+      if (error && typeof error === 'object' && 'response' in error) {
+        const axiosError = error as { response?: { data?: { message?: string; error?: { message?: string } } } };
+        if (axiosError.response?.data?.error?.message) {
+          errorMessage = axiosError.response.data.error.message;
+        } else if (axiosError.response?.data?.message) {
+          errorMessage = axiosError.response.data.message;
+        }
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      
+      throw new Error(errorMessage);
+    }
+  },
+
+  // Accept handover with photos
+  async acceptHandover(
+    rentalId: string, 
+    photos: string[], 
+    vehicleData?: { odo_km?: number; soc?: number; notes?: string }
+  ): Promise<HandoverResponse> {
+    const payload: AcceptHandoverPayload = {
+      action: "accept",
+      photos,
+      ...vehicleData
+    };
+    
+    return this.processHandover(rentalId, payload);
+  },
+
+  // Reject handover with reason
+  async rejectHandover(
+    rentalId: string,
+    rejectReason: string,
+    photos?: string[],
+    vehicleData?: { odo_km?: number; soc?: number; notes?: string }
+  ): Promise<HandoverResponse> {
+    if (!rejectReason || rejectReason.trim().length < 5) {
+      throw new Error("Reject reason must be at least 5 characters long");
+    }
+
+    const payload: RejectHandoverPayload = {
+      action: "reject", 
+      rejectReason: rejectReason.trim(),
+      photos,
+      ...vehicleData
+    };
+    
+    return this.processHandover(rentalId, payload);
+  },
+
+  // Get rentals ready for handover at a station
+  async getStationHandovers(stationId: string): Promise<SimpleRental[]> {
+    try {
+      const response = await api.get(`/rentals/station/${stationId}?status=CONFIRMED`);
+      return response.data.data || [];
+    } catch (error) {
+      console.error("❌ [rentalService] Failed to get station handovers:", error);
+      throw new Error("Failed to load pending handovers");
     }
   }
 };

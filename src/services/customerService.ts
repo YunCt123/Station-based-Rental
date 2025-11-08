@@ -41,8 +41,12 @@ export interface RentalPickup {
   odo_km?: number;
   soc?: number;
   notes?: string;
-  reject_reason?: string;
-  reject_photos?: (string | { url: string; _id?: string })[];
+  rejected?: {
+    at: string;
+    reason: string;
+    photos: (string | { url: string; _id?: string })[];
+    staff_id: string;
+  };
 }
 
 export interface RentalReturn {
@@ -144,6 +148,19 @@ export const customerService = {
       ).toString();
 
       const response = await api.get(`/rentals/?${queryString}`);
+      
+      // DEBUG: Log the actual API response
+      console.log('🔍 [customerService] API Response:', response.data);
+      console.log('🔍 [customerService] Rentals data:', response.data.data);
+      if (response.data.data) {
+        console.log('🔍 [customerService] Rental statuses:', response.data.data.map((r: any) => ({
+          id: r._id,
+          status: r.status,
+          hasPickup: !!r.pickup,
+          pickupData: r.pickup
+        })));
+      }
+      
       return response.data.data || [];
     } catch (error) {
       console.error('Failed to fetch rentals:', error);

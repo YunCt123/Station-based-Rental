@@ -55,7 +55,7 @@ const MyRentalsScreen: React.FC<MyRentalsScreenProps> = ({
     );
   }
 
-  // Filter rentals by status
+  // Filter rentals by status (now using API data with potential rejected rentals)
   const activeRentals = rentals.filter((r: Rental) => r.status === 'ONGOING');
   const confirmedRentals = rentals.filter((r: Rental) => r.status === 'CONFIRMED');
   const rejectedRentals = rentals.filter((r: Rental) => r.status === 'REJECTED');

@@ -165,10 +165,10 @@ const RentalCard: React.FC<RentalCardProps> = ({
             </Space>
 
             {/* Rejection Info for REJECTED status */}
-            {status === 'REJECTED' && rental.pickup?.reject_reason && (
+            {status === 'REJECTED' && rental.pickup?.rejected?.reason && (
               <Alert
                 message="Yêu cầu nhận xe bị từ chối"
-                description={rental.pickup.reject_reason}
+                description={rental.pickup.rejected.reason}
                 type="error"
                 icon={<InfoCircleOutlined />}
                 showIcon

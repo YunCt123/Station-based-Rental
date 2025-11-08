@@ -118,7 +118,7 @@ const RentalDetailScreen: React.FC<RentalDetailScreenProps> = ({
       },
     ];
 
-    if (status === 'REJECTED' && pickup?.reject_reason) {
+    if (status === 'REJECTED' && pickup?.rejected?.reason) {
       items.push({
         dot: <CloseCircleOutlined style={{ fontSize: '16px' }} />,
         color: 'red',
@@ -126,10 +126,10 @@ const RentalDetailScreen: React.FC<RentalDetailScreenProps> = ({
           <div>
             <Text strong style={{ color: '#ff4d4f' }}>Yêu cầu nhận xe bị từ chối</Text>
             <br />
-            <Text type="secondary">{pickup.at ? formatDate(pickup.at) : ''}</Text>
+            <Text type="secondary">{pickup.rejected.at ? formatDate(pickup.rejected.at) : ''}</Text>
             <br />
             <Text>
-              <strong>Lý do:</strong> {pickup.reject_reason}
+              <strong>Lý do:</strong> {pickup.rejected.reason}
             </Text>
             {pickup.notes && (
               <>
@@ -505,11 +505,11 @@ const RentalDetailScreen: React.FC<RentalDetailScreenProps> = ({
         </Col>
 
         {/* ---------- Ảnh nhận xe / Ảnh từ chối ---------- */}
-        {status === 'REJECTED' && pickup?.reject_photos && pickup.reject_photos.length > 0 ? (
+        {status === 'REJECTED' && pickup?.rejected?.photos && pickup.rejected.photos.length > 0 ? (
           <Col xs={24}>
             <Card title="Ảnh từ chối nhận xe" className="reject-photos-card">
               <Row gutter={[8, 8]}>
-                {pickup.reject_photos.map((photo, idx) => (
+                {pickup.rejected.photos.map((photo, idx) => (
                   <Col key={idx} xs={12} sm={8} md={6} lg={4}>
                     <Image
                       width="100%"

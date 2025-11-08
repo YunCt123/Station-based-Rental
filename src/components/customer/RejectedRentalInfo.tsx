@@ -18,9 +18,11 @@ const RejectedRentalInfo: React.FC<RejectedRentalInfoProps> = ({
   pickup, 
   showPhotos = true 
 }) => {
-  if (!pickup?.reject_reason) {
+  if (!pickup?.rejected?.reason) {
     return null;
   }
+
+  const { rejected } = pickup;
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return '';
@@ -40,13 +42,11 @@ const RejectedRentalInfo: React.FC<RejectedRentalInfoProps> = ({
         description={
           <Space direction="vertical" size="small" style={{ width: '100%' }}>
             <Text>
-              <strong>Lý do từ chối:</strong> {pickup.reject_reason}
+              <strong>Lý do từ chối:</strong> {rejected.reason}
             </Text>
-            {pickup.at && (
-              <Text type="secondary">
-                <strong>Thời gian:</strong> {formatDate(pickup.at)}
-              </Text>
-            )}
+            <Text type="secondary">
+              <strong>Thời gian:</strong> {formatDate(rejected.at)}
+            </Text>
             {pickup.notes && (
               <Text type="secondary">
                 <strong>Ghi chú thêm:</strong> {pickup.notes}
@@ -76,10 +76,10 @@ const RejectedRentalInfo: React.FC<RejectedRentalInfoProps> = ({
         </Space>
       </Card>
 
-      {showPhotos && pickup.reject_photos && pickup.reject_photos.length > 0 && (
+      {showPhotos && rejected.photos && rejected.photos.length > 0 && (
         <Card title="Ảnh minh chứng từ chối" size="small">
           <Row gutter={[8, 8]}>
-            {pickup.reject_photos.map((photo, idx) => (
+            {rejected.photos.map((photo: string | { url: string; _id?: string }, idx: number) => (
               <Col key={idx} xs={12} sm={8} md={6} lg={4}>
                 <Image
                   width="100%"

@@ -3,12 +3,12 @@
 /* Fonts */
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap");
 
+/* Customer Rental Styles */
+@import url("./styles/customer-rentals.css");
+
 /* Tailwind v4 */
 @import "tailwindcss";
 /* @plugin "tailwindcss-animate"; */
-
-/* Customer Rental Styles */
-@import url("./styles/customer-rentals.css");
 
 /* =========================
    THEME TOKENS (Tailwind v4)

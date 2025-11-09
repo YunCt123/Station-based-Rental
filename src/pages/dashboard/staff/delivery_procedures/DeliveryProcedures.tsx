@@ -6,11 +6,21 @@ import { useToast } from '../../../../hooks/use-toast';
 import api from '../../../../services/api';
 import CheckinForm from './CheckinForm';
 import VehicleReturnForm from './VehicleReturnForm';
+import bookingService from '../../../../services/bookingService';
 
 const { Title } = Typography;
 const { RangePicker } = DatePicker;
 const { Option } = Select;
 const { TabPane } = Tabs;
+
+// Interface for booking data
+interface BookingData {
+  _id: string;
+  end_at: string;
+  start_at: string;
+  status: string;
+  [key: string]: unknown;
+}
 
 // Interface matching backend Rental model
 interface BackendRental {
@@ -79,6 +89,7 @@ const DeliveryProcedures: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [rentalsForCheckin, setRentalsForCheckin] = useState<BackendRental[]>([]);
   const [rentalsForReturn, setRentalsForReturn] = useState<BackendRental[]>([]);
+  const [bookingsData, setBookingsData] = useState<Map<string, BookingData>>(new Map()); // Map booking_id -> booking data
   const [searchText, setSearchText] = useState('');
   
   // Checkin modal state
@@ -138,8 +149,27 @@ const DeliveryProcedures: React.FC = () => {
       console.log('Return API Response:', response.data);
       
       if (response.data.success) {
-        setRentalsForReturn(response.data.data || []);
-        console.log('Successfully loaded return rentals:', response.data.data?.length || 0);
+        const rentals = response.data.data || [];
+        setRentalsForReturn(rentals);
+        console.log('Successfully loaded return rentals:', rentals.length);
+
+        // Fetch booking data for each rental to get end_at time
+        const bookingMap = new Map();
+        for (const rental of rentals) {
+          if (rental.booking_id) {
+            try {
+              // Use bookingService to get booking details
+              const booking = await bookingService.getBookingById(rental.booking_id);
+              if (booking) {
+                bookingMap.set(rental.booking_id, booking);
+              }
+            } catch (error) {
+              console.warn(`Could not fetch booking ${rental.booking_id}:`, error);
+            }
+          }
+        }
+        setBookingsData(bookingMap);
+        console.log('Loaded booking data for', bookingMap.size, 'bookings');
       } else {
         console.error('API returned success=false:', response.data.message);
         toast({
@@ -318,6 +348,13 @@ const DeliveryProcedures: React.FC = () => {
       key: 'expected_return',
       sorter: (a, b) => {
         const getReturnDate = (record: BackendRental) => {
+          // Get end_at from booking data
+          const booking = bookingsData.get(record.booking_id);
+          if (booking && booking.end_at) {
+            return new Date(booking.end_at).getTime();
+          }
+          
+          // Fallback to calculation if no booking data
           if (!record.pickup?.at) return new Date().getTime();
           const pickupDate = new Date(record.pickup.at);
           const returnDate = new Date(pickupDate);
@@ -333,25 +370,30 @@ const DeliveryProcedures: React.FC = () => {
         return getReturnDate(a) - getReturnDate(b);
       },
       render: (_, record) => {
-        if (!record.pickup?.at) {
-          return <div className="text-gray-500">Chưa xác định</div>;
-        }
-
-        const pickupDate = new Date(record.pickup.at);
+        // First try to get end_at from booking data
+        const booking = bookingsData.get(record.booking_id);
         const now = new Date();
         
-        // Calculate expected return date based on rental duration
-        const expectedReturnDate = new Date(pickupDate);
+        let expectedReturnDate: Date;
         
-        // If there's daily rate, assume 1 day rental, otherwise default to 24 hours
-        if (record.pricing_snapshot?.daily_rate) {
-          expectedReturnDate.setDate(expectedReturnDate.getDate() + 1);
-        } else if (record.pricing_snapshot?.hourly_rate) {
-          // For hourly rentals, assume 8 hours as default
-          expectedReturnDate.setHours(expectedReturnDate.getHours() + 8);
+        if (booking && booking.end_at) {
+          // Use actual booking end_at time
+          expectedReturnDate = new Date(booking.end_at);
+        } else if (record.pickup?.at) {
+          // Fallback: calculate based on pickup time and pricing
+          const pickupDate = new Date(record.pickup.at);
+          expectedReturnDate = new Date(pickupDate);
+          
+          if (record.pricing_snapshot?.daily_rate) {
+            expectedReturnDate.setDate(expectedReturnDate.getDate() + 1);
+          } else if (record.pricing_snapshot?.hourly_rate) {
+            expectedReturnDate.setHours(expectedReturnDate.getHours() + 8);
+          } else {
+            expectedReturnDate.setHours(expectedReturnDate.getHours() + 24);
+          }
         } else {
-          // Default to 24 hours
-          expectedReturnDate.setHours(expectedReturnDate.getHours() + 24);
+          // No data available
+          return <div className="text-gray-500">Chưa xác định</div>;
         }
 
         const isOverdue = now > expectedReturnDate;
@@ -379,6 +421,13 @@ const DeliveryProcedures: React.FC = () => {
             <div className={`text-xs ${isOverdue ? "text-red-500 font-medium" : "text-orange-500"}`}>
               {isOverdue ? `Quá hạn ${timeDisplay}` : `Còn ${timeDisplay}`}
             </div>
+            {booking && booking.end_at ? (
+              <div className="text-xs text-blue-500 mt-1">
+              </div>
+            ) : (
+              <div className="text-xs text-gray-400 mt-1">
+              </div>
+            )}
           </div>
         );
       },
@@ -437,7 +486,6 @@ const DeliveryProcedures: React.FC = () => {
       {/* Header */}
       <div className="mb-8">
         <Title level={2} className="flex items-center">
-          <CarOutlined className="mr-3 text-blue-600" />
           Quy trình giao nhận xe
         </Title>
         <p className="text-gray-600">

@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Modal, Form, Upload, InputNumber, Input, Button, message, Typography, Space, Divider, Card, Tag } from 'antd';
 import { UploadOutlined, CheckCircleOutlined, DeleteOutlined, PlusOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
 import type { UploadFile, UploadProps } from 'antd/es/upload';
 import type { RcFile } from 'antd/es/upload/interface';
 import api from '../../../../services/api';
+import bookingService from '../../../../services/bookingService';
 
 const { Title, Text } = Typography;
 
@@ -85,18 +86,49 @@ const VehicleReturnForm: React.FC<VehicleReturnFormProps> = ({
   const [submitting, setSubmitting] = useState(false);
   const [extraFees, setExtraFees] = useState<ExtraFee[]>([]);
   const [uploadedPhotos, setUploadedPhotos] = useState<string[]>([]);
+  const [bookingData, setBookingData] = useState<{ end_at?: string; [key: string]: unknown } | null>(null); // Store booking info
+
+  // Fetch booking data when modal opens
+  useEffect(() => {
+    if (visible && rental.booking_id) {
+      const fetchBookingData = async () => {
+        try {
+          const booking = await bookingService.getBookingById(rental.booking_id);
+          setBookingData(booking as { end_at?: string; [key: string]: unknown });
+        } catch (error) {
+          console.warn('Could not fetch booking data:', error);
+        }
+      };
+      fetchBookingData();
+    }
+  }, [visible, rental.booking_id]);
 
   // Calculate if rental is overdue and suggest late fee
   const overdueInfo = React.useMemo(() => {
-    if (!rental.pickup?.at) return null;
-    
-    const pickupDate = new Date(rental.pickup.at);
     const now = new Date();
-    const expectedReturnDate = new Date(pickupDate);
+    let expectedReturnDate: Date | null = null;
     
-    if (rental.pricing_snapshot?.daily_rate) {
-      expectedReturnDate.setDate(expectedReturnDate.getDate() + 1);
-    } else if (rental.pricing_snapshot?.hourly_rate) {
+    // First try to use booking end_at
+    if (bookingData && bookingData.end_at) {
+      expectedReturnDate = new Date(bookingData.end_at);
+    } 
+    // Fallback: calculate from pickup time
+    else if (rental.pickup?.at) {
+      const pickupDate = new Date(rental.pickup.at);
+      expectedReturnDate = new Date(pickupDate);
+      
+      if (rental.pricing_snapshot?.daily_rate) {
+        expectedReturnDate.setDate(expectedReturnDate.getDate() + 1);
+      } else if (rental.pricing_snapshot?.hourly_rate) {
+        expectedReturnDate.setHours(expectedReturnDate.getHours() + 8);
+      } else {
+        expectedReturnDate.setHours(expectedReturnDate.getHours() + 24);
+      }
+    } else {
+      return null;
+    }
+    
+    if (expectedReturnDate && now > expectedReturnDate) {
       expectedReturnDate.setHours(expectedReturnDate.getHours() + 8);
     } else {
       expectedReturnDate.setHours(expectedReturnDate.getHours() + 24);

@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import {
   TruckIcon,
   ClipboardDocumentListIcon,
-  CurrencyDollarIcon,
   ExclamationTriangleIcon,
   ClockIcon,
   CheckCircleIcon
@@ -13,6 +12,7 @@ import { vehicleService } from '@/services/vehicleService';
 import { bookingService } from '@/services/bookingService';
 import type { Vehicle } from '@/types/vehicle';
 import type { Booking } from '@/services/bookingService';
+import type { StationRental } from '@/services/rentalService';
 
 interface StationInfo {
   id: string;
@@ -27,33 +27,6 @@ interface StationInfo {
 }
 
 // Types for rental data
-interface StationRental {
-  _id: string;
-  booking_id: string;
-  status: string;
-  start_at: string;
-  end_at: string;
-  pickup?: {
-    at: string;
-    photos?: string[];
-    odo_km?: number;
-    soc?: number;
-  };
-  vehicle_id: {
-    _id: string;
-    name: string;
-  };
-  user_id: {
-    _id: string;
-    name: string;
-    email: string;
-  };
-  pricing_snapshot?: {
-    daily_rate?: number;
-    hourly_rate?: number;
-  };
-}
-
 interface SimpleRental {
   _id: string;
   booking_id: string;
@@ -99,7 +72,6 @@ const StaffDashboard: React.FC = () => {
       }
 
       // First, get all available stations to find a valid station ID
-      console.log('Loading stations...');
       const stationsResponse = await stationService.getAllStations();
       
       if (!stationsResponse.stations || stationsResponse.stations.length === 0) {
@@ -109,8 +81,6 @@ const StaffDashboard: React.FC = () => {
       // Use the first available station
       const firstStation = stationsResponse.stations[0];
       const stationId = firstStation.id;
-      
-      console.log('Using station:', stationId, firstStation.name);
       
       // Load vehicles for the selected station
       const vehicleData = await vehicleService.searchVehicles({ station_id: stationId });
@@ -156,29 +126,30 @@ const StaffDashboard: React.FC = () => {
         console.warn('Could not load rental service:', error);
       }
       
-      console.log('🔍 [StaffDashboard] Simple logic with rental check:', {
-        stationId,
-        confirmedBookingsCount: confirmedBookings.length,
-        ongoingRentalsCount: ongoingRentals.length,
-        bookings: confirmedBookings.map(b => ({
-          id: b._id,
-          vehicle: b.vehicle_snapshot?.name,
-          startAt: b.start_at,
-          endAt: b.end_at,
-          status: b.status
-        })),
-        rentals: ongoingRentals.map(r => ({
-          id: r._id,
-          bookingId: r.booking_id,
-          vehicle: r.vehicle_id?.name,
-          status: r.status
-        }))
-      });
-      
       const tasks: TaskItem[] = [];
       const now = new Date();
       const nextWeek = new Date();
       nextWeek.setDate(nextWeek.getDate() + 7);
+
+      // TEMPORARY: Always add a test overdue task to demonstrate the feature
+      // console.log('🧪 [DEBUG] Adding test overdue task for demonstration');
+      // const testOverdueTime = new Date();
+      // testOverdueTime.setHours(testOverdueTime.getHours() - 25); // 25 hours ago
+      
+      // tasks.push({
+      //   id: 'test-overdue-1',
+      //   type: 'overdue',
+      //   title: '🚨 Xe quá hạn trả: Tesla Model 3',
+      //   customer: 'Nguyễn Văn A - Liên hệ ngay!',
+      //   vehicleName: 'Tesla Model 3',
+      //   startAt: testOverdueTime,
+      //   endAt: testOverdueTime,
+      //   priority: 'high',
+      //   status: 'pending',
+      //   bookingId: 'test-booking-1',
+      //   isOverdue: true,
+      //   overdueHours: 25
+      // });
 
       // Tạo map booking_id -> rental để check nhanh
       const rentalByBookingId = new Map();
@@ -186,21 +157,65 @@ const StaffDashboard: React.FC = () => {
         rentalByBookingId.set(rental.booking_id, rental);
       });
 
+      // Check for overdue vehicles từ detailed rentals
+      // Tạo map booking_id -> booking để lấy end_at nếu cần
+      const bookingMap = new Map();
+      confirmedBookings.forEach(booking => {
+        bookingMap.set(booking._id, booking);
+      });
+      
+      detailedRentals.forEach((rental: StationRental) => {
+        // Kiểm tra end_at từ rental trước, nếu không có thì lấy từ booking
+        let endTime: Date | null = null;
+        
+        if (rental.end_at) {
+          endTime = new Date(rental.end_at);
+          if (isNaN(endTime.getTime())) {
+            endTime = null;
+          }
+        }
+        
+        // Nếu rental không có end_at hợp lệ, lấy từ booking
+        if (!endTime && rental.booking_id) {
+          const booking = bookingMap.get(rental.booking_id);
+          if (booking && booking.end_at) {
+            endTime = new Date(booking.end_at);
+          }
+        }
+
+        if (!endTime) {
+          return;
+        }
+
+        const isOverdue = now > endTime;
+        
+        if (isOverdue) {
+          const overdueHours = Math.floor((now.getTime() - endTime.getTime()) / (1000 * 60 * 60));
+          const customerName = rental.user_id?.name || 'Khách hàng';
+          const vehicleName = rental.vehicle_id?.name || 'Unknown';
+          
+          tasks.push({
+            id: `overdue-${rental._id}`,
+            type: 'overdue',
+            title: `🚨 Xe quá hạn trả: ${vehicleName}`,
+            customer: `${customerName} - Liên hệ ngay!`,
+            vehicleName,
+            startAt: endTime,
+            endAt: endTime,
+            priority: overdueHours > 24 ? 'high' : 'medium',
+            status: 'pending',
+            bookingId: rental.booking_id,
+            isOverdue: true,
+            overdueHours
+          });
+        }
+      });
+
       // Tạo tasks từ bookings dựa vào trạng thái booking
       confirmedBookings.forEach((booking: Booking) => {
         const startAt = new Date(booking.start_at);
         const endAt = new Date(booking.end_at);
         const hasOngoingRental = rentalByBookingId.has(booking._id);
-        
-        console.log(`📋 [StaffDashboard] Processing booking ${booking._id}:`, {
-          vehicle: booking.vehicle_snapshot?.name,
-          bookingStatus: booking.status,
-          startAt: startAt.toLocaleDateString('vi-VN'),
-          endAt: endAt.toLocaleDateString('vi-VN'),
-          hasOngoingRental,
-          startInWeek: startAt >= now && startAt <= nextWeek,
-          endInWeek: endAt >= now && endAt <= nextWeek
-        });
         
         // Nếu booking status là CONFIRMED → Task bàn giao xe
         if (booking.status === 'CONFIRMED' && !hasOngoingRental) {
@@ -217,7 +232,6 @@ const StaffDashboard: React.FC = () => {
               status: 'pending',
               bookingId: booking._id
             });
-            console.log(`✅ Created DELIVERY task for CONFIRMED booking ${booking._id}`);
           }
         }
         
@@ -236,7 +250,6 @@ const StaffDashboard: React.FC = () => {
               status: 'pending',
               bookingId: booking._id
             });
-            console.log(`✅ Created RETURN task for booking with ongoing rental ${booking._id}`);
           }
         }
       });
@@ -262,22 +275,24 @@ const StaffDashboard: React.FC = () => {
         }
       });
 
-      // Sắp xếp tasks theo thời gian
-      tasks.sort((a, b) => a.startAt.getTime() - b.startAt.getTime());
-      
-      console.log('🎯 [StaffDashboard] Tasks created:', {
-        totalTasks: tasks.length,
-        deliveryTasks: tasks.filter(t => t.type === 'delivery').length,
-        returnTasks: tasks.filter(t => t.type === 'return').length,
-        maintenanceTasks: tasks.filter(t => t.type === 'maintenance').length,
-        tasks: tasks.map(t => ({
-          id: t.id,
-          type: t.type,
-          title: t.title,
-          vehicle: t.vehicleName,
-          startAt: t.startAt.toLocaleString('vi-VN'),
-          priority: t.priority
-        }))
+      // Sắp xếp tasks theo độ ưu tiên: overdue > high priority > thời gian
+      tasks.sort((a, b) => {
+        // Overdue tasks luôn lên đầu
+        if (a.type === 'overdue' && b.type !== 'overdue') return -1;
+        if (b.type === 'overdue' && a.type !== 'overdue') return 1;
+        
+        // Nếu cả 2 đều overdue, sắp xếp theo thời gian overdue (lâu nhất trước)
+        if (a.type === 'overdue' && b.type === 'overdue') {
+          return (b.overdueHours || 0) - (a.overdueHours || 0);
+        }
+        
+        // Sắp xếp theo priority
+        const priorityOrder = { high: 3, medium: 2, low: 1 };
+        const priorityDiff = priorityOrder[b.priority] - priorityOrder[a.priority];
+        if (priorityDiff !== 0) return priorityDiff;
+        
+        // Cuối cùng theo thời gian
+        return a.startAt.getTime() - b.startAt.getTime();
       });
       
       setPendingTasks(tasks);
@@ -341,10 +356,10 @@ const StaffDashboard: React.FC = () => {
       icon: TruckIcon
     },
     {
-      title: 'Chờ bàn giao',
-      value: pendingTasks.filter((t: TaskItem) => t.type === 'delivery' && t.status === 'pending').length.toString(),
-      color: 'bg-yellow-500',
-      icon: ClipboardDocumentListIcon
+      title: 'Xe quá hạn',
+      value: pendingTasks.filter((t: TaskItem) => t.type === 'overdue').length.toString(),
+      color: 'bg-orange-500',
+      icon: ExclamationTriangleIcon
     },
     {
       title: 'Cần bảo trì',
@@ -452,18 +467,24 @@ const StaffDashboard: React.FC = () => {
             ) : (
               <div className="space-y-4">
                 {pendingTasks.map((task) => (
-                  <div key={task.id} className="border border-gray-200 rounded-lg p-4 hover:border-blue-300 transition-colors">
+                  <div key={task.id} className={`border rounded-lg p-4 hover:border-blue-300 transition-colors ${
+                    task.type === 'overdue' ? 'border-red-300 bg-red-50' : 'border-gray-200'
+                  }`}>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-3">
                         <div className="flex-shrink-0">
                           <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                            task.status === 'completed' 
-                              ? 'bg-green-100' 
-                              : task.status === 'in-progress' 
-                                ? 'bg-blue-100' 
-                                : 'bg-yellow-100'
+                            task.type === 'overdue'
+                              ? 'bg-red-100'
+                              : task.status === 'completed' 
+                                ? 'bg-green-100' 
+                                : task.status === 'in-progress' 
+                                  ? 'bg-blue-100' 
+                                  : 'bg-yellow-100'
                           }`}>
-                            {task.status === 'completed' ? (
+                            {task.type === 'overdue' ? (
+                              <ExclamationTriangleIcon className="w-6 h-6 text-red-600" />
+                            ) : task.status === 'completed' ? (
                               <CheckCircleIcon className="w-6 h-6 text-green-600" />
                             ) : task.status === 'in-progress' ? (
                               <ClockIcon className="w-6 h-6 text-blue-600" />
@@ -474,12 +495,31 @@ const StaffDashboard: React.FC = () => {
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center space-x-2">
-                            <h3 className="text-sm font-medium text-gray-900">{task.title}</h3>
-                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${getPriorityColor(task.priority)}`}>
-                              {task.priority === 'high' ? 'Ưu tiên cao' : task.priority === 'medium' ? 'Trung bình' : 'Thấp'}
+                            <h3 className={`text-sm font-medium ${
+                              task.type === 'overdue' ? 'text-red-900' : 'text-gray-900'
+                            }`}>
+                              {task.title}
+                            </h3>
+                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                              task.type === 'overdue' 
+                                ? 'bg-red-200 text-red-800'
+                                : getPriorityColor(task.priority)
+                            }`}>
+                              {task.type === 'overdue' 
+                                ? `Quá hạn ${task.overdueHours}h`
+                                : task.priority === 'high' ? 'Ưu tiên cao' 
+                                  : task.priority === 'medium' ? 'Trung bình' : 'Thấp'
+                              }
                             </span>
                           </div>
-                          <p className="text-sm text-gray-500">Khách hàng: {task.customer}</p>
+                          <p className={`text-sm ${
+                            task.type === 'overdue' ? 'text-red-700 font-medium' : 'text-gray-500'
+                          }`}>
+                            {task.customer}
+                            {task.type === 'overdue' && (
+                              <span className="ml-2 text-red-600">📞 Gọi ngay!</span>
+                            )}
+                          </p>
                           <div className="flex items-center space-x-4 text-xs text-gray-400">
                             <span>Thời gian: {task.startAt.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</span>
                             <span>Ngày: {task.startAt.toLocaleDateString('vi-VN')}</span>

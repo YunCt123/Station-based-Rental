@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Modal, Form, Upload, InputNumber, Input, Button, message, Typography, Space, Divider, Card } from 'antd';
-import { UploadOutlined, CheckCircleOutlined, LoadingOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons';
+import { Modal, Form, Upload, InputNumber, Input, Button, message, Typography, Space, Divider, Card, Tag } from 'antd';
+import { UploadOutlined, CheckCircleOutlined, DeleteOutlined, PlusOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
 import type { UploadFile, UploadProps } from 'antd/es/upload';
 import type { RcFile } from 'antd/es/upload/interface';
 import api from '../../../../services/api';
@@ -87,7 +87,7 @@ const VehicleReturnForm: React.FC<VehicleReturnFormProps> = ({
   const [uploadedPhotos, setUploadedPhotos] = useState<string[]>([]);
 
   // Calculate if rental is overdue and suggest late fee
-  const calculateOverdueFee = () => {
+  const overdueInfo = React.useMemo(() => {
     if (!rental.pickup?.at) return null;
     
     const pickupDate = new Date(rental.pickup.at);
@@ -125,11 +125,10 @@ const VehicleReturnForm: React.FC<VehicleReturnFormProps> = ({
     }
     
     return { isOverdue: false };
-  };
+  }, [rental.pickup?.at, rental.pricing_snapshot]);
 
   // Auto-add late fee if overdue
   React.useEffect(() => {
-    const overdueInfo = calculateOverdueFee();
     if (overdueInfo?.isOverdue && 
         overdueInfo.suggestedFee !== undefined && 
         overdueInfo.description !== undefined &&
@@ -144,7 +143,7 @@ const VehicleReturnForm: React.FC<VehicleReturnFormProps> = ({
         }]);
       }
     }
-  }, [rental.pickup?.at, rental.pricing_snapshot, extraFees]);
+  }, [overdueInfo, extraFees]);
 
   // Upload single file immediately when selected
   const uploadSingleFile = async (file: RcFile): Promise<string> => {
@@ -487,29 +486,46 @@ const VehicleReturnForm: React.FC<VehicleReturnFormProps> = ({
           label={
             <Space>
               <UploadOutlined />
-              <span>Ảnh tình trạng xe khi trả (tối thiểu 4 ảnh)</span>
+              <span>Ảnh tình trạng xe khi trả</span>
+              <Tag color={uploadedPhotos.length >= 4 ? "success" : "warning"}>
+                {uploadedPhotos.length}/4 bức
+              </Tag>
             </Space>
           }
           required
-          help="Cần chụp: 1) Toàn cảnh phía trước, 2) Nội thất xe, 3) Bảng điều khiển/đồng hồ, 4) Toàn cảnh phía sau (Staff sẽ kiểm tra và tính phí, khách hàng thanh toán cuối sau)"
         >
-          <Upload {...uploadProps}>
-            <Button icon={<PlusOutlined />}>Tải ảnh lên</Button>
-          </Upload>
-          
-          {uploadedPhotos.length > 0 && (
-            <div className="mt-2">
-              <Text 
-                type={uploadedPhotos.length >= 4 ? "success" : "warning"}
-                className="flex items-center"
-              >
-                {uploadedPhotos.length >= 4 ? <CheckCircleOutlined /> : <LoadingOutlined />}
-                <span className="ml-1">
-                  Đã chụp {uploadedPhotos.length}/4 ảnh bắt buộc
-                </span>
-              </Text>
+          <div className="space-y-4">
+            {/* Upload Area with Picture Cards */}
+            <div className="space-y-3">
+              {/* Progress Indicator */}
+              <div className="flex justify-between items-center">
+                <div className="flex space-x-2">
+                </div>
+                
+                <Text 
+                  type={uploadedPhotos.length >= 4 ? "success" : "warning"}
+                  className="flex items-center"
+                >
+                  {uploadedPhotos.length >= 4 ? 
+                    <>
+                      <CheckCircleOutlined className="mr-1" />
+                      <span>Đã đủ ảnh yêu cầu</span>
+                    </> :
+                    <>
+                    </>
+                  }
+                </Text>
+              </div>
+
+              {/* Picture Upload */}
+              <Upload {...uploadProps}>
+                <div className="w-24 h-24 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center bg-gray-50 hover:bg-gray-100 hover:border-blue-400 transition-all duration-200 cursor-pointer">
+                  <PlusOutlined className="text-xl text-gray-400 mb-1" />
+                  <span className="text-xs text-gray-500">Thêm ảnh</span>
+                </div>
+              </Upload>
             </div>
-          )}
+          </div>
         </Form.Item>
 
         <div className="grid grid-cols-2 gap-4">

@@ -26,6 +26,34 @@ interface StationInfo {
   };
 }
 
+// Types for rental data
+interface StationRental {
+  _id: string;
+  booking_id: string;
+  status: string;
+  start_at: string;
+  end_at: string;
+  pickup?: {
+    at: string;
+    photos?: string[];
+    odo_km?: number;
+    soc?: number;
+  };
+  vehicle_id: {
+    _id: string;
+    name: string;
+  };
+  user_id: {
+    _id: string;
+    name: string;
+    email: string;
+  };
+  pricing_snapshot?: {
+    daily_rate?: number;
+    hourly_rate?: number;
+  };
+}
+
 interface SimpleRental {
   _id: string;
   booking_id: string;
@@ -35,7 +63,7 @@ interface SimpleRental {
 
 interface TaskItem {
   id: string;
-  type: 'delivery' | 'return' | 'inspection' | 'maintenance';
+  type: 'delivery' | 'return' | 'inspection' | 'maintenance' | 'overdue';
   title: string;
   customer: string;
   vehicleName: string;
@@ -44,6 +72,8 @@ interface TaskItem {
   priority: 'high' | 'medium' | 'low';
   status: 'pending' | 'in-progress' | 'completed';
   bookingId?: string;
+  isOverdue?: boolean;
+  overdueHours?: number;
 }
 
 const StaffDashboard: React.FC = () => {
@@ -116,9 +146,12 @@ const StaffDashboard: React.FC = () => {
       
       // Lấy rentals để check trạng thái
       let ongoingRentals: SimpleRental[] = [];
+      let detailedRentals: StationRental[] = [];
       try {
         const { rentalService } = await import('@/services/rentalService');
         ongoingRentals = await rentalService.getStationRentals(stationId, 'ONGOING');
+        // Lấy detailed data cho ONGOING rentals 
+        detailedRentals = await rentalService.getStationRentals(stationId, 'ONGOING');
       } catch (error) {
         console.warn('Could not load rental service:', error);
       }

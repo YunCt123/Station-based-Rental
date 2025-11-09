@@ -4,7 +4,8 @@ import {
   ClipboardDocumentListIcon,
   ExclamationTriangleIcon,
   ClockIcon,
-  CheckCircleIcon
+  CheckCircleIcon,
+  PhoneIcon
 } from '@heroicons/react/24/outline';
 import { getCurrentUser } from '@/utils/auth';
 import { stationService } from '@/services/stationService';
@@ -39,6 +40,7 @@ interface TaskItem {
   type: 'delivery' | 'return' | 'inspection' | 'maintenance' | 'overdue';
   title: string;
   customer: string;
+  customerPhone?: string;
   vehicleName: string;
   startAt: Date;
   endAt: Date;
@@ -131,25 +133,14 @@ const StaffDashboard: React.FC = () => {
       const nextWeek = new Date();
       nextWeek.setDate(nextWeek.getDate() + 7);
 
-      // TEMPORARY: Always add a test overdue task to demonstrate the feature
-      // console.log('🧪 [DEBUG] Adding test overdue task for demonstration');
-      // const testOverdueTime = new Date();
-      // testOverdueTime.setHours(testOverdueTime.getHours() - 25); // 25 hours ago
+      // TEMPORARY: Always add a test overdue task to demonstrate the phone feature
+      console.log('🧪 [DEBUG] Adding test overdue task with phone number for demonstration');
+      const testOverdueTime = new Date();
+      testOverdueTime.setHours(testOverdueTime.getHours() - 25); // 25 hours ago
       
-      // tasks.push({
-      //   id: 'test-overdue-1',
-      //   type: 'overdue',
-      //   title: '🚨 Xe quá hạn trả: Tesla Model 3',
-      //   customer: 'Nguyễn Văn A - Liên hệ ngay!',
-      //   vehicleName: 'Tesla Model 3',
-      //   startAt: testOverdueTime,
-      //   endAt: testOverdueTime,
-      //   priority: 'high',
-      //   status: 'pending',
-      //   bookingId: 'test-booking-1',
-      //   isOverdue: true,
-      //   overdueHours: 25
-      // });
+
+      
+
 
       // Tạo map booking_id -> rental để check nhanh
       const rentalByBookingId = new Map();
@@ -192,13 +183,32 @@ const StaffDashboard: React.FC = () => {
         if (isOverdue) {
           const overdueHours = Math.floor((now.getTime() - endTime.getTime()) / (1000 * 60 * 60));
           const customerName = rental.user_id?.name || 'Khách hàng';
+          // Thử nhiều trường phone khác nhau
+          const userRecord = rental.user_id as Record<string, unknown>;
+          const customerPhone = rental.user_id?.phoneNumber || 
+                               (userRecord?.phone as string) || 
+                               (userRecord?.mobile as string) || 
+                               (userRecord?.telephone as string) || '';
           const vehicleName = rental.vehicle_id?.name || 'Unknown';
+          
+          // Debug logging để kiểm tra dữ liệu phone
+          console.log('🔍 [DEBUG] Overdue rental data:', {
+            rentalId: rental._id,
+            customerName,
+            customerPhone,
+            phoneNumber: rental.user_id?.phoneNumber,
+            phone: userRecord?.phone,
+            mobile: userRecord?.mobile,
+            telephone: userRecord?.telephone,
+            fullUserData: rental.user_id
+          });
           
           tasks.push({
             id: `overdue-${rental._id}`,
             type: 'overdue',
-            title: `🚨 Xe quá hạn trả: ${vehicleName}`,
-            customer: `${customerName} - Liên hệ ngay!`,
+            title: `Xe quá hạn trả: ${vehicleName}`,
+            customer: customerName,
+            customerPhone: customerPhone,
             vehicleName,
             startAt: endTime,
             endAt: endTime,
@@ -512,14 +522,40 @@ const StaffDashboard: React.FC = () => {
                               }
                             </span>
                           </div>
-                          <p className={`text-sm ${
+                          <div className={`${
                             task.type === 'overdue' ? 'text-red-700 font-medium' : 'text-gray-500'
                           }`}>
-                            {task.customer}
-                            {task.type === 'overdue' && (
-                              <span className="ml-2 text-red-600">📞 Gọi ngay!</span>
+                            {task.type === 'overdue' ? (
+                              <div className="space-y-1.5">
+                                <p className="text-sm">
+                                  <span className="font-medium"> Khách hàng: {task.customer}</span>
+                                  
+                                </p>
+                                {task.customerPhone ? (
+                                  <div className="flex items-center justify-start">
+                                    <a
+                                      href={`tel:${task.customerPhone}`}
+                                      className="inline-flex items-center space-x-1.5 px-2.5 py-1 bg-green-100 text-green-700 rounded-md hover:bg-green-200 transition-colors border border-green-300 text-sm"
+                                      title={`Gọi ${task.customerPhone}`}
+                                    >
+                                      <PhoneIcon className="w-4 h-4" />
+                                      <span className="font-medium">{task.customerPhone}</span>
+                                      <span className="text-xs bg-green-200 px-1.5 py-0.5 rounded-sm">Gọi</span>
+                                    </a>
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center justify-start">
+                                    <span className="inline-flex items-center space-x-1.5 px-2.5 py-1 bg-gray-100 text-gray-500 rounded-md border border-gray-300 text-sm">
+                                      <PhoneIcon className="w-4 h-4" />
+                                      <span className="font-medium">Chưa có SĐT</span>
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                            ) : (
+                              <p className="text-sm">{task.customer}</p>
                             )}
-                          </p>
+                          </div>
                           <div className="flex items-center space-x-4 text-xs text-gray-400">
                             <span>Thời gian: {task.startAt.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</span>
                             <span>Ngày: {task.startAt.toLocaleDateString('vi-VN')}</span>

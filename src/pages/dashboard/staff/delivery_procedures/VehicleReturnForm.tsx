@@ -528,9 +528,6 @@ const VehicleReturnForm: React.FC<VehicleReturnFormProps> = ({
                     <div className={`text-sm ${isOverdue ? "text-red-500 font-medium" : "text-orange-500"}`}>
                       {isOverdue ? `Quá hạn ${timeDisplay}` : `Còn ${timeDisplay}`}
                     </div>
-                    <div className={`text-xs ${isFromBooking ? "text-blue-500" : "text-gray-400"} mt-1`}>
-                      {isFromBooking ? "📅 Thời gian từ booking" : "🔮 Thời gian dự đoán"}
-                    </div>
                     {isOverdue && (
                       <div className="text-xs text-red-400 mt-1">
                          Phát sinh phí trả muộn

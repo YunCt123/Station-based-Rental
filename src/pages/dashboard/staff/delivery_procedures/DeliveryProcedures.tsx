@@ -303,8 +303,9 @@ const DeliveryProcedures: React.FC = () => {
         <div>
           {record.pickup?.at ? (
             <div>
-              <div><strong>Đã giao:</strong> {new Date(record.pickup.at).toLocaleString('vi-VN')}</div>
-              <div className="text-sm text-gray-500">Staff: {record.pickup.staff_id}</div>
+              <div className="font-medium">{new Date(record.pickup.at).toLocaleDateString('vi-VN')}</div>
+              <div className="text-sm text-gray-500">{new Date(record.pickup.at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</div>
+              <div className="text-xs text-blue-600">Staff: {record.pickup.staff_id?.substring(0, 8)}...</div>
             </div>
           ) : (
             <div className="text-gray-500">Chưa có thông tin giao xe</div>
@@ -313,12 +314,82 @@ const DeliveryProcedures: React.FC = () => {
       ),
     },
     {
+      title: 'Ngày nhận xe dự kiến',
+      key: 'expected_return',
+      sorter: (a, b) => {
+        const getReturnDate = (record: BackendRental) => {
+          if (!record.pickup?.at) return new Date().getTime();
+          const pickupDate = new Date(record.pickup.at);
+          const returnDate = new Date(pickupDate);
+          if (record.pricing_snapshot?.daily_rate) {
+            returnDate.setDate(returnDate.getDate() + 1);
+          } else if (record.pricing_snapshot?.hourly_rate) {
+            returnDate.setHours(returnDate.getHours() + 8);
+          } else {
+            returnDate.setHours(returnDate.getHours() + 24);
+          }
+          return returnDate.getTime();
+        };
+        return getReturnDate(a) - getReturnDate(b);
+      },
+      render: (_, record) => {
+        if (!record.pickup?.at) {
+          return <div className="text-gray-500">Chưa xác định</div>;
+        }
+
+        const pickupDate = new Date(record.pickup.at);
+        const now = new Date();
+        
+        // Calculate expected return date based on rental duration
+        const expectedReturnDate = new Date(pickupDate);
+        
+        // If there's daily rate, assume 1 day rental, otherwise default to 24 hours
+        if (record.pricing_snapshot?.daily_rate) {
+          expectedReturnDate.setDate(expectedReturnDate.getDate() + 1);
+        } else if (record.pricing_snapshot?.hourly_rate) {
+          // For hourly rentals, assume 8 hours as default
+          expectedReturnDate.setHours(expectedReturnDate.getHours() + 8);
+        } else {
+          // Default to 24 hours
+          expectedReturnDate.setHours(expectedReturnDate.getHours() + 24);
+        }
+
+        const isOverdue = now > expectedReturnDate;
+        const timeDiff = Math.abs(now.getTime() - expectedReturnDate.getTime());
+        
+        // Calculate time difference
+        let timeDisplay = '';
+        const hoursDiff = Math.ceil(timeDiff / (1000 * 60 * 60));
+        const daysDiff = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
+        
+        if (daysDiff > 1) {
+          timeDisplay = `${daysDiff} ngày`;
+        } else {
+          timeDisplay = `${hoursDiff} giờ`;
+        }
+
+        return (
+          <div>
+            <div className={isOverdue ? "text-red-600 font-semibold" : "font-medium"}>
+              {expectedReturnDate.toLocaleDateString('vi-VN')}
+            </div>
+            <div className="text-sm text-gray-500">
+              {expectedReturnDate.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+            </div>
+            <div className={`text-xs ${isOverdue ? "text-red-500 font-medium" : "text-orange-500"}`}>
+              {isOverdue ? `Quá hạn ${timeDisplay}` : `Còn ${timeDisplay}`}
+            </div>
+          </div>
+        );
+      },
+    },
+    {
       title: 'Tình trạng',
       key: 'rental_status',
       render: (_, record) => {
         const now = new Date();
-        const createdTime = new Date(record.createdAt);
-        const hoursPassed = Math.ceil((now.getTime() - createdTime.getTime()) / (1000 * 60 * 60));
+        const pickupTime = record.pickup?.at ? new Date(record.pickup.at) : new Date(record.createdAt);
+        const hoursPassed = Math.ceil((now.getTime() - pickupTime.getTime()) / (1000 * 60 * 60));
         
         return (
           <div>
@@ -392,12 +463,13 @@ const DeliveryProcedures: React.FC = () => {
           
           <Select
             placeholder="Trạng thái"
-            className="w-32"
+            className="w-40"
             allowClear
           >
             <Option value="confirmed">Chờ giao xe</Option>
             <Option value="ongoing">Đang thuê</Option>
-            <Option value="overdue">Quá hạn</Option>
+            <Option value="overdue">Xe quá hạn</Option>
+            <Option value="returning_soon">Sắp đến hạn trả</Option>
           </Select>
           
           <Button 

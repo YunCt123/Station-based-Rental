@@ -86,6 +86,66 @@ const VehicleReturnForm: React.FC<VehicleReturnFormProps> = ({
   const [extraFees, setExtraFees] = useState<ExtraFee[]>([]);
   const [uploadedPhotos, setUploadedPhotos] = useState<string[]>([]);
 
+  // Calculate if rental is overdue and suggest late fee
+  const calculateOverdueFee = () => {
+    if (!rental.pickup?.at) return null;
+    
+    const pickupDate = new Date(rental.pickup.at);
+    const now = new Date();
+    const expectedReturnDate = new Date(pickupDate);
+    
+    if (rental.pricing_snapshot?.daily_rate) {
+      expectedReturnDate.setDate(expectedReturnDate.getDate() + 1);
+    } else if (rental.pricing_snapshot?.hourly_rate) {
+      expectedReturnDate.setHours(expectedReturnDate.getHours() + 8);
+    } else {
+      expectedReturnDate.setHours(expectedReturnDate.getHours() + 24);
+    }
+    
+    if (now > expectedReturnDate) {
+      const timeDiff = now.getTime() - expectedReturnDate.getTime();
+      const hoursDiff = Math.ceil(timeDiff / (1000 * 60 * 60));
+      const daysDiff = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
+      
+      // Calculate late fee: 50,000 VND per hour or 500,000 VND per day
+      let lateFee = 0;
+      if (rental.pricing_snapshot?.daily_rate) {
+        lateFee = daysDiff * 500000; // 500k per day
+      } else {
+        lateFee = hoursDiff * 50000; // 50k per hour
+      }
+      
+      return {
+        isOverdue: true,
+        hoursDiff,
+        daysDiff,
+        suggestedFee: lateFee,
+        description: `Trả muộn ${daysDiff > 0 ? `${daysDiff} ngày` : `${hoursDiff} giờ`}`
+      };
+    }
+    
+    return { isOverdue: false };
+  };
+
+  // Auto-add late fee if overdue
+  React.useEffect(() => {
+    const overdueInfo = calculateOverdueFee();
+    if (overdueInfo?.isOverdue && 
+        overdueInfo.suggestedFee !== undefined && 
+        overdueInfo.description !== undefined &&
+        overdueInfo.suggestedFee > 0) {
+      // Check if late fee already exists
+      const hasLateFee = extraFees.some(fee => fee.type === 'LATE');
+      if (!hasLateFee) {
+        setExtraFees(prev => [...prev, {
+          type: 'LATE',
+          amount: overdueInfo.suggestedFee!,
+          description: overdueInfo.description!
+        }]);
+      }
+    }
+  }, [rental.pickup?.at, rental.pricing_snapshot, extraFees]);
+
   // Upload single file immediately when selected
   const uploadSingleFile = async (file: RcFile): Promise<string> => {
     const formData = new FormData();
@@ -353,21 +413,64 @@ const VehicleReturnForm: React.FC<VehicleReturnFormProps> = ({
             </div>
           </div>
           
-          {rental.pickup?.at && (
-            <>
-              <Divider className="my-3" />
-              <div>
-                <Text strong>Thông tin giao xe:</Text>
-                <div>Đã giao lúc: {new Date(rental.pickup.at).toLocaleString('vi-VN')}</div>
-                {rental.pickup.odo_km && (
-                  <div>Km khi giao: {rental.pickup.odo_km.toLocaleString()} km</div>
-                )}
-                {rental.pickup.soc && (
-                  <div>Pin khi giao: {Math.round(rental.pickup.soc * 100)}%</div>
-                )}
-              </div>
-            </>
-          )}
+          {rental.pickup?.at && (() => {
+            const pickupDate = new Date(rental.pickup.at);
+            const now = new Date();
+            
+            // Calculate expected return date
+            const expectedReturnDate = new Date(pickupDate);
+            if (rental.pricing_snapshot?.daily_rate) {
+              expectedReturnDate.setDate(expectedReturnDate.getDate() + 1);
+            } else if (rental.pricing_snapshot?.hourly_rate) {
+              expectedReturnDate.setHours(expectedReturnDate.getHours() + 8);
+            } else {
+              expectedReturnDate.setHours(expectedReturnDate.getHours() + 24);
+            }
+            
+            const isOverdue = now > expectedReturnDate;
+            const timeDiff = Math.abs(now.getTime() - expectedReturnDate.getTime());
+            const hoursDiff = Math.ceil(timeDiff / (1000 * 60 * 60));
+            const daysDiff = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
+            
+            let timeDisplay = '';
+            if (daysDiff > 1) {
+              timeDisplay = `${daysDiff} ngày`;
+            } else {
+              timeDisplay = `${hoursDiff} giờ`;
+            }
+
+            return (
+              <>
+                <Divider className="my-3" />
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Text strong>Thông tin giao xe:</Text>
+                    <div>Đã giao lúc: {new Date(rental.pickup.at).toLocaleString('vi-VN')}</div>
+                    {rental.pickup.odo_km && (
+                      <div>Km khi giao: {rental.pickup.odo_km.toLocaleString()} km</div>
+                    )}
+                    {rental.pickup.soc && (
+                      <div>Pin khi giao: {Math.round(rental.pickup.soc * 100)}%</div>
+                    )}
+                  </div>
+                  <div>
+                    <Text strong>Thời hạn trả xe:</Text>
+                    <div className={isOverdue ? "text-red-600 font-semibold" : "font-medium"}>
+                      Dự kiến: {expectedReturnDate.toLocaleDateString('vi-VN')} {expectedReturnDate.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                    </div>
+                    <div className={`text-sm ${isOverdue ? "text-red-500 font-medium" : "text-orange-500"}`}>
+                      {isOverdue ? `Quá hạn ${timeDisplay}` : `Còn ${timeDisplay}`}
+                    </div>
+                    {isOverdue && (
+                      <div className="text-xs text-red-400 mt-1">
+                         Phát sinh phí trả muộn
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </>
+            );
+          })()}
         </div>
       </div>
 

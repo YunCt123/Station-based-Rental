@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Form, Upload, InputNumber, Input, Button, message, Typography, Space, Divider, Card, Tag } from 'antd';
-import { UploadOutlined, CheckCircleOutlined, DeleteOutlined, PlusOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
+import { UploadOutlined, CheckCircleOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import type { UploadFile, UploadProps } from 'antd/es/upload';
 import type { RcFile } from 'antd/es/upload/interface';
 import api from '../../../../services/api';
@@ -88,63 +88,86 @@ const VehicleReturnForm: React.FC<VehicleReturnFormProps> = ({
   const [uploadedPhotos, setUploadedPhotos] = useState<string[]>([]);
   const [bookingData, setBookingData] = useState<{ end_at?: string; [key: string]: unknown } | null>(null); // Store booking info
 
+  // Helper function to calculate expected return date consistently
+  const getExpectedReturnDate = React.useCallback((): { date: Date | null; isFromBooking: boolean } => {
+    // First try to use booking end_at
+    if (bookingData && bookingData.end_at) {
+      return { 
+        date: new Date(bookingData.end_at),
+        isFromBooking: true 
+      };
+    }
+    
+    // Fallback: calculate from pickup time
+    if (rental.pickup?.at) {
+      const pickupDate = new Date(rental.pickup.at);
+      const expectedDate = new Date(pickupDate);
+      
+      if (rental.pricing_snapshot?.daily_rate) {
+        expectedDate.setDate(expectedDate.getDate() + 1);
+      } else if (rental.pricing_snapshot?.hourly_rate) {
+        expectedDate.setHours(expectedDate.getHours() + 8);
+      } else {
+        expectedDate.setHours(expectedDate.getHours() + 24);
+      }
+      
+      return {
+        date: expectedDate,
+        isFromBooking: false
+      };
+    }
+    
+    return { date: null, isFromBooking: false };
+  }, [bookingData, rental.pickup?.at, rental.pricing_snapshot]);
+
   // Fetch booking data when modal opens
   useEffect(() => {
     if (visible && rental.booking_id) {
       const fetchBookingData = async () => {
         try {
           const booking = await bookingService.getBookingById(rental.booking_id);
-          setBookingData(booking as { end_at?: string; [key: string]: unknown });
+          setBookingData(booking as unknown as { end_at?: string; [key: string]: unknown });
         } catch (error) {
           console.warn('Could not fetch booking data:', error);
         }
       };
       fetchBookingData();
     }
+    
+    // Reset fees when modal opens
+    if (visible) {
+      setExtraFees([]);
+    }
   }, [visible, rental.booking_id]);
 
   // Calculate if rental is overdue and suggest late fee
   const overdueInfo = React.useMemo(() => {
     const now = new Date();
-    let expectedReturnDate: Date | null = null;
+    const { date: expectedReturnDate } = getExpectedReturnDate();
     
-    // First try to use booking end_at
-    if (bookingData && bookingData.end_at) {
-      expectedReturnDate = new Date(bookingData.end_at);
-    } 
-    // Fallback: calculate from pickup time
-    else if (rental.pickup?.at) {
-      const pickupDate = new Date(rental.pickup.at);
-      expectedReturnDate = new Date(pickupDate);
-      
-      if (rental.pricing_snapshot?.daily_rate) {
-        expectedReturnDate.setDate(expectedReturnDate.getDate() + 1);
-      } else if (rental.pricing_snapshot?.hourly_rate) {
-        expectedReturnDate.setHours(expectedReturnDate.getHours() + 8);
-      } else {
-        expectedReturnDate.setHours(expectedReturnDate.getHours() + 24);
-      }
-    } else {
+    if (!expectedReturnDate) {
       return null;
-    }
-    
-    if (expectedReturnDate && now > expectedReturnDate) {
-      expectedReturnDate.setHours(expectedReturnDate.getHours() + 8);
-    } else {
-      expectedReturnDate.setHours(expectedReturnDate.getHours() + 24);
     }
     
     if (now > expectedReturnDate) {
       const timeDiff = now.getTime() - expectedReturnDate.getTime();
       const hoursDiff = Math.ceil(timeDiff / (1000 * 60 * 60));
-      const daysDiff = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
+      const daysDiff = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
       
-      // Calculate late fee: 50,000 VND per hour or 500,000 VND per day
+      // Calculate late fee based on actual overdue time
       let lateFee = 0;
-      if (rental.pricing_snapshot?.daily_rate) {
-        lateFee = daysDiff * 500000; // 500k per day
+      if (hoursDiff >= 24) {
+        lateFee = daysDiff * 500000; // 500k per day for long delays
       } else {
-        lateFee = hoursDiff * 50000; // 50k per hour
+        lateFee = hoursDiff * 50000; // 50k per hour for short delays
+      }
+      
+      // Create accurate description
+      let description = '';
+      if (hoursDiff < 24) {
+        description = `Trả muộn ${hoursDiff} giờ`;
+      } else {
+        description = `Trả muộn ${daysDiff} ngày ${hoursDiff % 24} giờ`;
       }
       
       return {
@@ -152,30 +175,37 @@ const VehicleReturnForm: React.FC<VehicleReturnFormProps> = ({
         hoursDiff,
         daysDiff,
         suggestedFee: lateFee,
-        description: `Trả muộn ${daysDiff > 0 ? `${daysDiff} ngày` : `${hoursDiff} giờ`}`
+        description
       };
     }
     
     return { isOverdue: false };
-  }, [rental.pickup?.at, rental.pricing_snapshot]);
+  }, [getExpectedReturnDate]);
 
-  // Auto-add late fee if overdue
+  // Auto-add/update late fee if overdue
   React.useEffect(() => {
     if (overdueInfo?.isOverdue && 
         overdueInfo.suggestedFee !== undefined && 
         overdueInfo.description !== undefined &&
         overdueInfo.suggestedFee > 0) {
-      // Check if late fee already exists
-      const hasLateFee = extraFees.some(fee => fee.type === 'LATE');
-      if (!hasLateFee) {
-        setExtraFees(prev => [...prev, {
+      
+      // Use functional update to avoid dependency on extraFees
+      setExtraFees(prev => {
+        // Remove any existing late fees first
+        const nonLateFees = prev.filter(fee => fee.type !== 'LATE');
+        
+        // Add the new late fee
+        return [...nonLateFees, {
           type: 'LATE',
           amount: overdueInfo.suggestedFee!,
           description: overdueInfo.description!
-        }]);
-      }
+        }];
+      });
+    } else {
+      // Remove late fees if not overdue
+      setExtraFees(prev => prev.filter(fee => fee.type !== 'LATE'));
     }
-  }, [overdueInfo, extraFees]);
+  }, [overdueInfo]);
 
   // Upload single file immediately when selected
   const uploadSingleFile = async (file: RcFile): Promise<string> => {
@@ -445,29 +475,35 @@ const VehicleReturnForm: React.FC<VehicleReturnFormProps> = ({
           </div>
           
           {rental.pickup?.at && (() => {
-            const pickupDate = new Date(rental.pickup.at);
             const now = new Date();
             
-            // Calculate expected return date
-            const expectedReturnDate = new Date(pickupDate);
-            if (rental.pricing_snapshot?.daily_rate) {
-              expectedReturnDate.setDate(expectedReturnDate.getDate() + 1);
-            } else if (rental.pricing_snapshot?.hourly_rate) {
-              expectedReturnDate.setHours(expectedReturnDate.getHours() + 8);
-            } else {
-              expectedReturnDate.setHours(expectedReturnDate.getHours() + 24);
+            // Use the helper function to get consistent expected return date
+            const { date: expectedReturnDate, isFromBooking } = getExpectedReturnDate();
+            
+            if (!expectedReturnDate) {
+              return <div>Không thể xác định thời gian trả xe</div>;
             }
             
             const isOverdue = now > expectedReturnDate;
-            const timeDiff = Math.abs(now.getTime() - expectedReturnDate.getTime());
+            const timeDiff = isOverdue ? now.getTime() - expectedReturnDate.getTime() : expectedReturnDate.getTime() - now.getTime();
             const hoursDiff = Math.ceil(timeDiff / (1000 * 60 * 60));
-            const daysDiff = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
+            const daysDiff = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
             
             let timeDisplay = '';
-            if (daysDiff > 1) {
-              timeDisplay = `${daysDiff} ngày`;
+            if (isOverdue) {
+              // For overdue: show hours if < 24 hours, otherwise show days
+              if (hoursDiff < 24) {
+                timeDisplay = `${hoursDiff} giờ`;
+              } else {
+                timeDisplay = `${daysDiff} ngày ${hoursDiff % 24} giờ`;
+              }
             } else {
-              timeDisplay = `${hoursDiff} giờ`;
+              // For remaining time
+              if (hoursDiff < 24) {
+                timeDisplay = `${hoursDiff} giờ`;
+              } else {
+                timeDisplay = `${daysDiff} ngày`;
+              }
             }
 
             return (
@@ -487,10 +523,13 @@ const VehicleReturnForm: React.FC<VehicleReturnFormProps> = ({
                   <div>
                     <Text strong>Thời hạn trả xe:</Text>
                     <div className={isOverdue ? "text-red-600 font-semibold" : "font-medium"}>
-                      Dự kiến: {expectedReturnDate.toLocaleDateString('vi-VN')} {expectedReturnDate.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                      {expectedReturnDate.toLocaleDateString('vi-VN')} {expectedReturnDate.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
                     </div>
                     <div className={`text-sm ${isOverdue ? "text-red-500 font-medium" : "text-orange-500"}`}>
                       {isOverdue ? `Quá hạn ${timeDisplay}` : `Còn ${timeDisplay}`}
+                    </div>
+                    <div className={`text-xs ${isFromBooking ? "text-blue-500" : "text-gray-400"} mt-1`}>
+                      {isFromBooking ? "📅 Thời gian từ booking" : "🔮 Thời gian dự đoán"}
                     </div>
                     {isOverdue && (
                       <div className="text-xs text-red-400 mt-1">

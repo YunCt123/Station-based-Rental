@@ -12,6 +12,7 @@ import { stationService } from '@/services/stationService';
 import { vehicleService } from '@/services/vehicleService';
 import { bookingService } from '@/services/bookingService';
 import { getAllIssues, updateIssue, getIssueStatusText } from '@/services/issueService';
+import { userService } from '@/services/userService';
 import type { Vehicle } from '@/types/vehicle';
 import type { Booking } from '@/services/bookingService';
 import type { StationRental } from '@/services/rentalService';
@@ -302,21 +303,92 @@ const StaffDashboard: React.FC = () => {
       });
 
       // Tạo tasks từ issues cần xử lý
-      openIssues.forEach((issue: Issue) => {
+      for (const issue of openIssues) {
         const issueDate = new Date(issue.createdAt);
-        const reporterName = issue.reporter?.name || 'Khách hàng';
-        const vehicleName = issue.vehicle?.name || issue.vehicle?.model || 'Unknown';
+        
+        // Lấy thông tin reporter từ dữ liệu BE mới
+        const issueData = issue as unknown as Record<string, unknown>;
+        const reporterInfo = issueData.reporter_id as Record<string, unknown> || issue.reporter;
+        const reporterName = String((reporterInfo as Record<string, unknown>)?.name || 'Khách hàng');
+        const reporterId = String((reporterInfo as Record<string, unknown>)?._id || '');
+        
+        // Debug log để kiểm tra dữ liệu
+        console.log('🔍 [DEBUG] Issue reporter data:', {
+          issueId: issue._id,
+          reporterInfo,
+          reporter: issue.reporter,
+          reporterId,
+          fullIssueData: issueData
+        });
+        
+        // Thử lấy phone từ nhiều nguồn trong dữ liệu issue hiện tại
+        let reporterPhone = String(
+          (reporterInfo as Record<string, unknown>)?.phone || 
+          (reporterInfo as Record<string, unknown>)?.phoneNumber ||
+          (reporterInfo as Record<string, unknown>)?.mobile ||
+          (reporterInfo as Record<string, unknown>)?.telephone ||
+          (issue.reporter as Record<string, unknown>)?.phone ||
+          (issue.reporter as Record<string, unknown>)?.phoneNumber ||
+          ''
+        );
+        
+        // Nếu không có phone từ reporter, thử tìm từ rental_id
+        if (!reporterPhone && issueData.rental_id) {
+          const rentalInfo = issueData.rental_id as Record<string, unknown>;
+          const userInfo = rentalInfo.user_id as Record<string, unknown>;
+          if (userInfo) {
+            reporterPhone = String(
+              userInfo.phone ||
+              userInfo.phoneNumber ||
+              userInfo.mobile ||
+              userInfo.telephone ||
+              ''
+            );
+            console.log('🔍 [DEBUG] Found phone from rental user_id:', reporterPhone);
+          }
+        }
+        
+        // Nếu vẫn không có phone, gọi API để lấy thông tin user
+        if (!reporterPhone && reporterId) {
+          try {
+            console.log('🌐 [DEBUG] Calling getUserContact API for:', reporterId);
+            const userContact = await userService.getUserContact(reporterId);
+            reporterPhone = String(
+              userContact.phoneNumber ||
+              userContact.phone ||
+              userContact.mobile ||
+              userContact.telephone ||
+              ''
+            );
+            console.log('📞 [DEBUG] Got phone from API:', reporterPhone);
+          } catch (error) {
+            console.warn('⚠️ [DEBUG] Failed to get user contact:', error);
+          }
+        }
+        
+        // Lấy thông tin vehicle từ dữ liệu BE mới
+        const vehicleInfo = issueData.vehicle_id as Record<string, unknown> || issue.vehicle;
+        const vehicleName = String((vehicleInfo as Record<string, unknown>)?.name || 
+                                  (vehicleInfo as Record<string, unknown>)?.model || 'Unknown');
         
         // Tính priority dựa trên thời gian tạo issue
         const hoursSinceCreated = Math.floor((now.getTime() - issueDate.getTime()) / (1000 * 60 * 60));
         const priority: 'high' | 'medium' | 'low' = hoursSinceCreated > 2 ? 'high' : 
                                                     hoursSinceCreated > 1 ? 'medium' : 'low';
 
+        console.log('🔍 [DEBUG] Final task data:', {
+          issueId: issue._id,
+          reporterName,
+          reporterPhone,
+          vehicleName
+        });
+
         tasks.push({
           id: `issue-${issue._id}`,
           type: 'issue',
           title: `Sự cố: ${issue.title}`,
           customer: reporterName,
+          customerPhone: reporterPhone,
           vehicleName,
           startAt: issueDate,
           endAt: issueDate,
@@ -325,7 +397,7 @@ const StaffDashboard: React.FC = () => {
           issueId: issue._id,
           issueStatus: issue.status
         });
-      });
+      }
 
       // Sắp xếp tasks theo độ ưu tiên: overdue > issues > high priority > thời gian
       tasks.sort((a, b) => {
@@ -642,7 +714,7 @@ const StaffDashboard: React.FC = () => {
                             {task.type === 'overdue' ? (
                               <div className="space-y-1.5">
                                 <p className="text-sm">
-                                  <span className="font-medium"> Khách hàng: {task.customer}</span>
+                                  <span className="font-medium"> Khách hàng: {String(task.customer)}</span>
                                   
                                 </p>
                                 {task.customerPhone ? (
@@ -653,7 +725,7 @@ const StaffDashboard: React.FC = () => {
                                       title={`Gọi ${task.customerPhone}`}
                                     >
                                       <PhoneIcon className="w-4 h-4" />
-                                      <span className="font-medium">{task.customerPhone}</span>
+                                      <span className="font-medium">{String(task.customerPhone)}</span>
                                       <span className="text-xs bg-green-200 px-1.5 py-0.5 rounded-sm">Gọi</span>
                                     </a>
                                   </div>
@@ -666,8 +738,34 @@ const StaffDashboard: React.FC = () => {
                                   </div>
                                 )}
                               </div>
+                            ) : task.type === 'issue' ? (
+                              <div className="space-y-1.5">
+                                <p className="text-sm">
+                                  <span className="font-medium">Người báo cáo: {String(task.customer)}</span>
+                                </p>
+                                {task.customerPhone ? (
+                                  <div className="flex items-center justify-start">
+                                    <a
+                                      href={`tel:${task.customerPhone}`}
+                                      className="inline-flex items-center space-x-1.5 px-2.5 py-1 bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition-colors border border-blue-300 text-sm"
+                                      title={`Gọi ${task.customerPhone}`}
+                                    >
+                                      <PhoneIcon className="w-4 h-4" />
+                                      <span className="font-medium">{String(task.customerPhone)}</span>
+                                      <span className="text-xs bg-blue-200 px-1.5 py-0.5 rounded-sm">Gọi</span>
+                                    </a>
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center justify-start">
+                                    <span className="inline-flex items-center space-x-1.5 px-2.5 py-1 bg-gray-100 text-gray-500 rounded-md border border-gray-300 text-sm">
+                                      <PhoneIcon className="w-4 h-4" />
+                                      <span className="font-medium">Chưa có SĐT</span>
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
                             ) : (
-                              <p className="text-sm">{task.customer}</p>
+                              <p className="text-sm">{String(task.customer)}</p>
                             )}
                           </div>
                           <div className="flex items-center space-x-4 text-xs text-gray-400">
@@ -778,8 +876,8 @@ const StaffDashboard: React.FC = () => {
 
       {/* Issue Detail Modal */}
       {issueModalVisible && selectedIssue && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border">
             <div className="p-6">
               <div className="flex justify-between items-start mb-4">
                 <h2 className="text-xl font-bold text-gray-900">Chi tiết sự cố</h2>

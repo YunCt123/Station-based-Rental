@@ -88,6 +88,41 @@ export const userService = {
     return response.data.data;
   },
 
+  // Get user contact info by ID (for staff to get customer phone)
+  async getUserContact(userId: string): Promise<{
+    _id: string;
+    name: string;
+    email: string;
+    phoneNumber?: string;
+    phone?: string;
+    mobile?: string;
+    telephone?: string;
+  }> {
+    try {
+      console.log('🔍 [USER_SERVICE] Fetching contact for user:', userId);
+      const response = await api.get(`/users/${userId}`);
+      const userData = response.data.data || response.data;
+      console.log('🔍 [USER_SERVICE] User contact response:', userData);
+      return {
+        _id: userData._id,
+        name: userData.name || 'Unknown User',
+        email: userData.email || '',
+        phoneNumber: userData.phoneNumber,
+        phone: userData.phone,
+        mobile: userData.mobile,
+        telephone: userData.telephone
+      };
+    } catch (error: unknown) {
+      console.error('❌ [USER_SERVICE] Error fetching user contact:', error);
+      // Fallback - return empty contact if user not found
+      return {
+        _id: userId,
+        name: 'Unknown User',
+        email: ''
+      };
+    }
+  },
+
   // Update user profile (admin only for now)
   async updateUser(userId: string, payload: UpdateUserPayload): Promise<UserProfile> {
     const response = await api.patch(`/users/${userId}`, payload);

@@ -86,8 +86,8 @@ const ReportIssueModal: React.FC<ReportIssueModalProps> = ({
   // Success state
   if (success) {
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-        <div className="bg-white rounded-lg max-w-md w-full p-6 text-center">
+      <div className="fixed inset-0 flex items-center justify-center p-4 z-[9999]">
+        <div className="bg-white rounded-lg max-w-md w-full p-6 text-center shadow-2xl border relative z-[10000]">
           <CheckCircleIcon className="w-16 h-16 text-green-500 mx-auto mb-4" />
           <h3 className="text-lg font-semibold text-gray-900 mb-2">
             Báo cáo thành công!
@@ -104,8 +104,8 @@ const ReportIssueModal: React.FC<ReportIssueModalProps> = ({
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 flex items-center justify-center p-4 z-[9999]">
+      <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border relative z-[10000]">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div className="flex items-center space-x-3">

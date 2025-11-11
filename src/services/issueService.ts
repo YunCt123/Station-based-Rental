@@ -1,6 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import api from './api';
 
+export type IssueStatus = 'OPEN' | 'IN_PROGRESS' | 'RESOLVED';
+
 export interface Issue {
   _id: string;
   reporter_id: string;
@@ -10,7 +12,7 @@ export interface Issue {
   title: string;
   description?: string;
   photos: string[];
-  status: 'OPEN' | 'IN_PROGRESS' | 'RESOLVED';
+  status: IssueStatus;
   createdAt: string;
   updatedAt: string;
   // Populated fields
@@ -18,6 +20,8 @@ export interface Issue {
     _id: string;
     name: string;
     email: string;
+    phone?: string;
+    phoneNumber?: string;
   };
   vehicle?: {
     _id: string;
@@ -44,7 +48,7 @@ export interface CreateIssueData {
 export interface UpdateIssueData {
   title?: string;
   description?: string;
-  status?: 'OPEN' | 'IN_PROGRESS' | 'RESOLVED';
+  status?: IssueStatus;
   photos?: string[];
 }
 
@@ -52,152 +56,160 @@ export interface GetIssuesParams {
   rental_id?: string;
   vehicle_id?: string;
   station_id?: string;
-  status?: string;
+  status?: IssueStatus | string;
   limit?: number;
   page?: number;
 }
 
-/**
- * Customer APIs
- */
+/* ---------------- Customer APIs ---------------- */
 
 // Báo cáo sự cố cho rental đang thuê
-export const reportRentalIssue = async (rentalId: string, issueData: Omit<CreateIssueData, 'vehicle_id' | 'rental_id'>): Promise<Issue> => {
+export const reportRentalIssue = async (
+  rentalId: string,
+  issueData: Omit<CreateIssueData, 'vehicle_id' | 'rental_id'>
+): Promise<Issue> => {
   try {
-    const response = await api.post(`/rentals/${rentalId}/report-issue`, issueData);
-    return response.data.data;
-  } catch (error: any) {
-    console.error('Error reporting rental issue:', error);
-    throw error?.response?.data?.message || error?.message || 'Failed to report issue';
+    const payload = {
+      ...issueData,
+      rental_id: rentalId
+    };
+    // Try alternative endpoint if the current one doesn't work
+    const res = await api.post(`/rentals/${rentalId}/report-issue`, payload);
+    return res.data?.data ?? res.data;
+  } catch (err: any) {
+    const msg = err?.response?.data?.message ?? err?.message ?? 'Failed to report issue';
+    throw new Error(msg);
   }
 };
 
 // Xem sự cố của rental cụ thể (customer view)
-export const getRentalIssues = async (rentalId: string, params: Omit<GetIssuesParams, 'rental_id'> = {}): Promise<Issue[]> => {
+export const getRentalIssues = async (
+  rentalId: string,
+  params: Omit<GetIssuesParams, 'rental_id'> = {}
+): Promise<Issue[]> => {
   try {
-    const response = await api.get(`/rentals/${rentalId}/issues`, { params });
-    const data = response.data;
-    if (data.data && Array.isArray(data.data)) {
-      return data.data;
-    }
-    return Array.isArray(data) ? data : [];
-  } catch (error: any) {
-    console.error('Error fetching rental issues:', error);
-    throw error?.response?.data?.message || error?.message || 'Failed to fetch rental issues';
+    const res = await api.get(`/rentals/${rentalId}/issues`, { params });
+    const data = res.data;
+    if (Array.isArray(data?.data)) return data.data;
+    if (Array.isArray(data)) return data;
+    return [];
+  } catch (err: any) {
+    const msg = err?.response?.data?.message ?? err?.message ?? 'Failed to fetch rental issues';
+    throw new Error(msg);
   }
 };
 
-// Xem tất cả sự cố của customer
+// Xem sự cố do user tạo
 export const getMyIssues = async (params: GetIssuesParams = {}): Promise<Issue[]> => {
   try {
-    const response = await api.get('/issues', { params });
-    const data = response.data;
-    if (data.data && Array.isArray(data.data)) {
-      return data.data;
-    }
-    return Array.isArray(data) ? data : [];
-  } catch (error: any) {
-    console.error('Error fetching my issues:', error);
-    throw error?.response?.data?.message || error?.message || 'Failed to fetch issues';
+    const res = await api.get('/issues/my', { params });
+    const data = res.data;
+    if (Array.isArray(data?.data)) return data.data;
+    if (Array.isArray(data)) return data;
+    return [];
+  } catch (err: any) {
+    const msg = err?.response?.data?.message ?? err?.message ?? 'Failed to fetch my issues';
+    throw new Error(msg);
   }
 };
 
-/**
- * Create a new issue
- * POST /v1/issues
- */
+/* ---------------- Create Issue ---------------- */
+
 export const createIssue = async (issueData: CreateIssueData): Promise<Issue> => {
   try {
-    const response = await api.post('/issues', issueData);
-    return response.data.data || response.data;
-  } catch (error: any) {
-    console.error('Error creating issue:', error);
-    throw error?.response?.data?.message || error?.message || 'Failed to create issue';
+    const res = await api.post('/issues', issueData);
+    return res.data?.data ?? res.data;
+  } catch (err: any) {
+    const msg = err?.response?.data?.message ?? err?.message ?? 'Failed to create issue';
+    throw new Error(msg);
   }
 };
 
-/**
- * Staff/Admin APIs
- */
+/* ---------------- Staff/Admin APIs ---------------- */
 
 // Xem tất cả sự cố (staff/admin)
 export const getAllIssues = async (params: GetIssuesParams = {}): Promise<Issue[]> => {
   try {
-    const response = await api.get('/issues/all', { params });
-    const data = response.data;
-    if (data.data && Array.isArray(data.data)) {
-      return data.data;
-    }
-    if (data.issues && Array.isArray(data.issues)) {
-      return data.issues;
-    }
-    return Array.isArray(data) ? data : [];
-  } catch (error: any) {
-    console.error('Error fetching all issues:', error);
-    throw error?.response?.data?.message || error?.message || 'Failed to fetch all issues';
+    const res = await api.get('/issues/all', { params });
+    const data = res.data;
+    if (Array.isArray(data?.data)) return data.data;
+    if (Array.isArray(data?.issues)) return data.issues;
+    if (Array.isArray(data)) return data;
+    return [];
+  } catch (err: any) {
+    const msg = err?.response?.data?.message ?? err?.message ?? 'Failed to fetch all issues';
+    throw new Error(msg);
   }
 };
 
 // Xem sự cố của rental cụ thể (staff view)
-export const getStaffRentalIssues = async (rentalId: string, params: Omit<GetIssuesParams, 'rental_id'> = {}): Promise<Issue[]> => {
+export const getStaffRentalIssues = async (
+  rentalId: string,
+  params: Omit<GetIssuesParams, 'rental_id'> = {}
+): Promise<Issue[]> => {
   try {
-    const response = await api.get(`/issues/rental/${rentalId}`, { params });
-    const data = response.data;
-    if (data.data && Array.isArray(data.data)) {
-      return data.data;
-    }
-    return Array.isArray(data) ? data : [];
-  } catch (error: any) {
-    console.error('Error fetching staff rental issues:', error);
-    throw error?.response?.data?.message || error?.message || 'Failed to fetch rental issues';
+    const res = await api.get(`/issues/rental/${rentalId}`, { params });
+    const data = res.data;
+    if (Array.isArray(data?.data)) return data.data;
+    if (Array.isArray(data)) return data;
+    return [];
+  } catch (err: any) {
+    const msg = err?.response?.data?.message ?? err?.message ?? 'Failed to fetch rental issues';
+    throw new Error(msg);
   }
 };
 
-/**
- * Update an issue (staff/admin only)
- * PATCH /v1/issues/{id}
- */
-export const updateIssue = async (id: string, updateData: UpdateIssueData): Promise<Issue> => {
+/* ---------------- Update Issue ---------------- */
+
+// Cập nhật sự cố (admin/staff) – dùng PATCH khớp REST semantics
+export const updateIssue = async (issueId: string, data: UpdateIssueData): Promise<Issue> => {
   try {
-    const response = await api.patch(`/issues/${id}`, updateData);
-    return response.data.data || response.data;
-  } catch (error: any) {
-    console.error('Error updating issue:', error);
-    throw error?.response?.data?.message || error?.message || 'Failed to update issue';
+    const res = await api.patch(`/issues/${issueId}`, data);
+    return res.data?.data ?? res.data;
+  } catch (err: any) {
+    const msg = err?.response?.data?.message ?? err?.message ?? 'Failed to update issue';
+    throw new Error(msg);
   }
 };
 
-/**
- * Helper functions
- */
+/* ---------------- Helpers ---------------- */
 
-// Get status display text
 export const getIssueStatusText = (status: string): string => {
   switch (status) {
-    case 'OPEN': return 'Đã báo cáo';
-    case 'IN_PROGRESS': return 'Đang xử lý';
-    case 'RESOLVED': return 'Đã giải quyết';
-    default: return 'Không xác định';
+    case 'OPEN':
+      return 'Đã báo cáo';
+    case 'IN_PROGRESS':
+      return 'Đang xử lý';
+    case 'RESOLVED':
+      return 'Đã giải quyết';
+    default:
+      return 'Không xác định';
   }
 };
 
-// Get status color class
 export const getIssueStatusColor = (status: string): string => {
   switch (status) {
-    case 'OPEN': return 'bg-gray-100 text-gray-800';
-    case 'IN_PROGRESS': return 'bg-blue-100 text-blue-800';
-    case 'RESOLVED': return 'bg-green-100 text-green-800';
-    default: return 'bg-gray-100 text-gray-800';
+    case 'OPEN':
+      return 'bg-gray-100 text-gray-800';
+    case 'IN_PROGRESS':
+      return 'bg-blue-100 text-blue-800';
+    case 'RESOLVED':
+      return 'bg-green-100 text-green-800';
+    default:
+      return 'bg-gray-100 text-gray-800';
   }
 };
 
-// Get next status transition
 export const getNextStatus = (currentStatus: string): string | null => {
   switch (currentStatus) {
-    case 'OPEN': return 'IN_PROGRESS';
-    case 'IN_PROGRESS': return 'RESOLVED';
-    case 'RESOLVED': return null;
-    default: return null;
+    case 'OPEN':
+      return 'IN_PROGRESS';
+    case 'IN_PROGRESS':
+      return 'RESOLVED';
+    case 'RESOLVED':
+      return null;
+    default:
+      return null;
   }
 };
 
@@ -207,14 +219,14 @@ export default {
   getRentalIssues,
   getMyIssues,
   createIssue,
-  
+
   // Staff APIs
   getAllIssues,
-  updateIssue,
   getStaffRentalIssues,
-  
+  updateIssue,
+
   // Helpers
   getIssueStatusText,
   getIssueStatusColor,
-  getNextStatus
+  getNextStatus,
 };

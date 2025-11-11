@@ -13,8 +13,36 @@ import {
 } from '@heroicons/react/24/solid';
 import { AddIncidentModal } from '@/components/dashboard/staff/manage_vehicles/AddIncidentModal';
 import { IncidentDetailsModal } from '@/components/dashboard/staff/manage_vehicles/IncidentDetailsModal';
-import { createIssue, updateIssue, type Issue as APIIssue, getAllIssues } from '@/services/issueService';
+import { createIssue, updateIssue, getAllIssues } from '@/services/issueService';
 import { toast } from 'sonner';
+
+interface APIIssueData {
+  _id?: string;
+  vehicle_id?: {
+    _id?: string;
+    name?: string;
+    model?: string;
+    licensePlate?: string;
+    brand?: string;
+    year?: number;
+  };
+  reporter_id?: {
+    _id?: string;
+    name?: string;
+    email?: string;
+    role?: string;
+  };
+  station_id?: {
+    _id?: string;
+    name?: string;
+    address?: string;
+  };
+  title?: string;
+  description?: string;
+  status: 'OPEN' | 'IN_PROGRESS' | 'RESOLVED';
+  photos?: string[];
+  createdAt: string;
+}
 
 interface Incident {
   id: string;
@@ -49,21 +77,24 @@ const IncidentReport: React.FC = () => {
     try {
       const issues = await getAllIssues();
       // Map API response to local Incident interface
-      const mappedIncidents: Incident[] = issues.map((issue: APIIssue) => ({
-        id: issue._id,
-        vehicleId: issue.vehicle_id,
-        vehicleModel: issue.vehicle?.model || 'Unknown',
-        licensePlate: issue.vehicle?.licensePlate || 'Unknown',
-        reportedBy: issue.reporter?.name || 'Unknown',
-        reportedAt: new Date(issue.createdAt).toLocaleString('vi-VN'),
-        title: issue.title,
-        description: issue.description || '',
-        status: issue.status,
-        images: issue.photos || [],
-        stationName: issue.station?.name
-      }));
+      const mappedIncidents: Incident[] = issues.map((issue: unknown) => {
+        const issueData = issue as APIIssueData;
+        return {
+          id: String(issueData._id || ''),
+          vehicleId: String(issueData.vehicle_id?._id || 'Unknown'),
+          vehicleModel: String(issueData.vehicle_id?.model || 'Unknown'),
+          licensePlate: String(issueData.vehicle_id?.licensePlate || 'Unknown'), 
+          reportedBy: String(issueData.reporter_id?.name || 'Unknown'),
+          reportedAt: new Date(issueData.createdAt).toLocaleString('vi-VN'),
+          title: String(issueData.title || 'No title'),
+          description: String(issueData.description || ''),
+          status: issueData.status,
+          images: Array.isArray(issueData.photos) ? issueData.photos : [],
+          stationName: String(issueData.station_id?.name || '')
+        };
+      });
       setIncidents(mappedIncidents);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error fetching issues:', error);
       toast.error('Không thể tải danh sách sự cố');
     } finally {
@@ -120,26 +151,28 @@ const IncidentReport: React.FC = () => {
       });
 
       // Map the new issue to incident format
+      const issueData = newIssue as unknown as APIIssueData;
       const newIncident: Incident = {
-        id: newIssue._id,
-        vehicleId: newIssue.vehicle_id,
-        vehicleModel: newIssue.vehicle?.model || incidentData.vehicleModel,
-        licensePlate: newIssue.vehicle?.licensePlate || incidentData.licensePlate,
-        reportedBy: newIssue.reporter?.name || 'Unknown',
-        reportedAt: new Date(newIssue.createdAt).toLocaleString('vi-VN'),
-        title: newIssue.title,
-        description: newIssue.description || '',
-        status: newIssue.status,
-        images: newIssue.photos || [],
-        stationName: newIssue.station?.name
+        id: String(issueData._id || ''),
+        vehicleId: String(issueData.vehicle_id?._id || incidentData.vehicleId),
+        vehicleModel: String(issueData.vehicle_id?.model || incidentData.vehicleModel),
+        licensePlate: String(issueData.vehicle_id?.licensePlate || incidentData.licensePlate),
+        reportedBy: String(issueData.reporter_id?.name || 'Unknown'),
+        reportedAt: new Date(issueData.createdAt).toLocaleString('vi-VN'),
+        title: String(issueData.title || ''),
+        description: String(issueData.description || ''),
+        status: issueData.status,
+        images: Array.isArray(issueData.photos) ? issueData.photos : [],
+        stationName: String(issueData.station_id?.name || '')
       };
 
       setIncidents([newIncident, ...incidents]);
       setShowReportForm(false);
       toast.success('Báo cáo sự cố thành công!');
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error creating issue:', error);
-      toast.error(error || 'Không thể tạo báo cáo sự cố');
+      const errorMessage = error instanceof Error ? error.message : 'Không thể tạo báo cáo sự cố';
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -178,9 +211,10 @@ const IncidentReport: React.FC = () => {
       
       // Refresh issues list
       await fetchIssues();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error updating issue status:', error);
-      toast.error(error || 'Không thể cập nhật trạng thái');
+      const errorMessage = error instanceof Error ? error.message : 'Không thể cập nhật trạng thái';
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -247,7 +281,7 @@ const IncidentReport: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Tổng sự cố</p>
-              <p className="text-2xl font-bold text-gray-900">{incidents.length}</p>
+              <p className="text-2xl font-bold text-gray-900">{String(incidents.length)}</p>
             </div>
             <DocumentTextIcon className="w-8 h-8 text-gray-500" />
           </div>
@@ -258,7 +292,7 @@ const IncidentReport: React.FC = () => {
             <div>
               <p className="text-sm font-medium text-gray-600">Đang xử lý</p>
               <p className="text-2xl font-bold text-blue-600">
-                {incidents.filter(i => i.status === 'IN_PROGRESS').length}
+                {String(incidents.filter(i => i.status === 'IN_PROGRESS').length)}
               </p>
             </div>
             <ClockIcon className="w-8 h-8 text-blue-500" />
@@ -270,7 +304,7 @@ const IncidentReport: React.FC = () => {
             <div>
               <p className="text-sm font-medium text-gray-600">Đã giải quyết</p>
               <p className="text-2xl font-bold text-green-600">
-                {incidents.filter(i => i.status === 'RESOLVED').length}
+                {String(incidents.filter(i => i.status === 'RESOLVED').length)}
               </p>
             </div>
             <CheckCircleIcon className="w-8 h-8 text-green-500" />
@@ -282,7 +316,7 @@ const IncidentReport: React.FC = () => {
       <div className="bg-white rounded-lg shadow-sm border border-gray-200">
         <div className="p-6 border-b border-gray-200">
           <h2 className="text-xl font-semibold text-gray-900">
-            Danh sách sự cố ({filteredIncidents.length})
+            Danh sách sự cố ({String(filteredIncidents.length)})
           </h2>
         </div>
 
@@ -313,15 +347,15 @@ const IncidentReport: React.FC = () => {
                       className="hover:bg-gray-50 transition-colors"
                     >
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">{incident.vehicleId}</div>
-                        <div className="text-sm text-gray-500">{incident.licensePlate}</div>
+                        <div className="text-sm font-medium text-gray-900">{String(incident.vehicleId)}</div>
+                        <div className="text-sm text-gray-500">{String(incident.licensePlate)}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{incident.vehicleModel}</div>
+                        <div className="text-sm text-gray-900">{String(incident.vehicleModel)}</div>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="text-sm font-medium text-gray-900">{incident.title}</div>
-                        <div className="text-sm text-gray-500 line-clamp-1">{incident.description}</div>
+                        <div className="text-sm font-medium text-gray-900">{String(incident.title)}</div>
+                        <div className="text-sm text-gray-500 line-clamp-1">{String(incident.description)}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center gap-2">
@@ -332,11 +366,11 @@ const IncidentReport: React.FC = () => {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{incident.reportedBy}</div>
-                        <div className="text-sm text-gray-500">{incident.stationName || 'N/A'}</div>
+                        <div className="text-sm text-gray-900">{String(incident.reportedBy)}</div>
+                        <div className="text-sm text-gray-500">{String(incident.stationName || 'N/A')}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {incident.reportedAt}
+                        {String(incident.reportedAt)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
                         <div className="flex justify-center gap-2">

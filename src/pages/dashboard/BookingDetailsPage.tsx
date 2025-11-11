@@ -3,7 +3,6 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Card, Typography, Tag, Button, Spin, message } from 'antd';
 import { ArrowLeftOutlined, EnvironmentOutlined } from '@ant-design/icons';
 import { bookingService } from '../../services/bookingService';
-import { convertToVND } from '../../lib/currency';
 import type { Booking } from '../../services/bookingService';
 
 const { Title } = Typography;
@@ -14,23 +13,22 @@ const BookingDetailsPage: React.FC = () => {
   const [booking, setBooking] = useState<Booking | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // 💱 Helper function to convert VND back to USD for display
-  const convertVndToUsd = (vndAmount: number): number => {
-    if (!vndAmount) return 0;
-    const testUsdAmount = 1;
-    const vndEquivalent = convertToVND(testUsdAmount);
-    const usdAmount = Math.round(vndAmount / vndEquivalent);
-    return usdAmount;
+  // Format VND currency
+  const formatVND = (amount: number): string => {
+    if (!amount) return '0 ₫';
+    return new Intl.NumberFormat('vi-VN', {
+      style: 'currency',
+      currency: 'VND'
+    }).format(amount);
   };
 
-  // 💱 Helper function to format price for display
-  const formatPrice = (pricing?: { 
+  // Helper function to get pricing values directly from BE (VND)
+  const getPricing = (pricing?: { 
     total_price?: number;
     base_price?: number;
     taxes?: number;
     insurance_price?: number;
     deposit?: number;
-    currency?: string;
     details?: {
       days?: number;
       hours?: number;
@@ -46,20 +44,6 @@ const BookingDetailsPage: React.FC = () => {
       hours: 0
     };
 
-    // If currency is VND, convert all amounts to USD
-    if (pricing.currency === 'VND' || (pricing.total_price && pricing.total_price > 1000)) {
-      return {
-        total: convertVndToUsd(pricing.total_price || 0),
-        base: convertVndToUsd(pricing.base_price || 0),
-        insurance: convertVndToUsd(pricing.insurance_price || 0),
-        taxes: convertVndToUsd(pricing.taxes || 0),
-        deposit: convertVndToUsd(pricing.deposit || 0),
-        days: pricing.details?.days || 0,
-        hours: pricing.details?.hours || 0
-      };
-    }
-    
-    // Already in USD
     return {
       total: pricing.total_price || 0,
       base: pricing.base_price || 0,
@@ -86,10 +70,25 @@ const BookingDetailsPage: React.FC = () => {
     }
   };
 
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'HELD':
+        return 'Đang giữ chỗ';
+      case 'CONFIRMED':
+        return 'Đã xác nhận';
+      case 'CANCELLED':
+        return 'Đã hủy';
+      case 'EXPIRED':
+        return 'Đã hết hạn';
+      default:
+        return status;
+    }
+  };
+
   // Function to open directions to station
   const openDirections = () => {
     if (!booking) {
-      message.error('Booking information not available');
+      message.error('Thông tin booking không có sẵn');
       return;
     }
 
@@ -119,14 +118,14 @@ const BookingDetailsPage: React.FC = () => {
       console.log('🗺️ Opening directions with coordinates:', { lat, lng });
     } else {
       // Fallback: search by station name and address
-      const stationName = booking.station_snapshot?.name || 'EV Station';
+      const stationName = booking.station_snapshot?.name || 'Trạm EV';
       const stationAddress = booking.station_snapshot?.address || '';
       const searchQuery = `${stationName} ${stationAddress}`.trim();
       const searchUrl = `https://www.google.com/maps/search/${encodeURIComponent(searchQuery)}`;
       window.open(searchUrl, '_blank');
       
       console.log('🔍 Using fallback search:', searchQuery);
-      message.info('Using station name for directions. Coordinates not available.');
+      message.info('Sử dụng tên trạm để chỉ đường. Không có tọa độ chính xác.');
     }
   };
 
@@ -143,7 +142,7 @@ const BookingDetailsPage: React.FC = () => {
         setBooking(bookingData);
       } catch (error) {
         console.error('Error loading booking details:', error);
-        message.error('Failed to load booking details');
+        message.error('Không thể tải thông tin booking');
       } finally {
         setLoading(false);
       }
@@ -164,16 +163,16 @@ const BookingDetailsPage: React.FC = () => {
     return (
       <div className="min-h-screen bg-gray-50 p-6">
         <div className="text-center">
-          <Title level={3}>Booking Not Found</Title>
+          <Title level={3}>Không tìm thấy Booking</Title>
           <Button type="primary" onClick={() => navigate('/bookings')}>
-            Return to Bookings
+            Về trang Booking
           </Button>
         </div>
       </div>
     );
   }
 
-  const prices = formatPrice(booking.pricing_snapshot);
+  const prices = getPricing(booking.pricing_snapshot);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -183,7 +182,7 @@ const BookingDetailsPage: React.FC = () => {
             icon={<ArrowLeftOutlined />} 
             onClick={() => navigate('/bookings')}
           >
-            Back to Bookings
+            Về trang Booking
           </Button>
         </div>
 
@@ -191,34 +190,34 @@ const BookingDetailsPage: React.FC = () => {
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
           <div className="flex justify-between items-start">
             <div>
-              <Title level={2} className="mb-2">Booking Details</Title>
-              <p className="text-gray-500">Booking ID: <span className="font-mono text-sm">{booking._id}</span></p>
+              <Title level={2} className="mb-2">Chi tiết Booking</Title>
+              <p className="text-gray-500">Mã Booking: <span className="font-mono text-sm">{booking._id}</span></p>
             </div>
             <Tag color={getStatusColor(booking.status)} className="text-lg px-4 py-2">
-              {booking.status}
+              {getStatusText(booking.status)}
             </Tag>
           </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Vehicle Information */}
-          <Card title="Vehicle Information" className="shadow-sm">
+          <Card title="Thông tin xe" className="shadow-sm">
             <div className="space-y-4">
               <div>
-                <h4 className="font-semibold text-lg">{booking.vehicle_snapshot?.name || 'Unknown Vehicle'}</h4>
+                <h4 className="font-semibold text-lg">{booking.vehicle_snapshot?.name || 'Xe không xác định'}</h4>
                 <p className="text-gray-600">{booking.vehicle_snapshot?.type}</p>
-                <p className="text-sm text-gray-500">License: {booking.vehicle_snapshot?.licensePlate}</p>
+                <p className="text-sm text-gray-500">Biển số: {booking.vehicle_snapshot?.licensePlate}</p>
               </div>
             </div>
           </Card>
 
           {/* Station Information */}
-          <Card title="Station Information" className="shadow-sm">
+          <Card title="Thông tin trạm" className="shadow-sm">
             <div className="space-y-4">
               <div>
                 <div className="flex justify-between items-start">
                   <div>
-                    <h4 className="font-semibold">{booking.station_snapshot?.name || 'Unknown Station'}</h4>
+                    <h4 className="font-semibold">{booking.station_snapshot?.name || 'Trạm không xác định'}</h4>
                     {booking.station_snapshot?.address && (
                       <p className="text-gray-600 text-sm mt-1">
                         {booking.station_snapshot.address}
@@ -232,7 +231,7 @@ const BookingDetailsPage: React.FC = () => {
                     type="primary"
                     ghost
                   >
-                    Directions
+                    Chỉ đường
                   </Button>
                 </div>
               </div>
@@ -240,21 +239,21 @@ const BookingDetailsPage: React.FC = () => {
           </Card>
 
           {/* Time Information */}
-          <Card title="Rental Period" className="shadow-sm">
+          <Card title="Thời gian thuê" className="shadow-sm">
             <div className="space-y-4">
               <div className="grid grid-cols-1 gap-4">
                 <div>
-                  <p className="text-sm text-gray-500">Pickup Time</p>
-                  <p className="font-semibold">{new Date(booking.start_at).toLocaleDateString()}</p>
-                  <p className="text-gray-600 text-sm">{new Date(booking.start_at).toLocaleTimeString()}</p>
+                  <p className="text-sm text-gray-500">Thời gian nhận xe</p>
+                  <p className="font-semibold">{new Date(booking.start_at).toLocaleDateString('vi-VN')}</p>
+                  <p className="text-gray-600 text-sm">{new Date(booking.start_at).toLocaleTimeString('vi-VN')}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500">Return Time</p>
-                  <p className="font-semibold">{new Date(booking.end_at).toLocaleDateString()}</p>
-                  <p className="text-gray-600 text-sm">{new Date(booking.end_at).toLocaleTimeString()}</p>
+                  <p className="text-sm text-gray-500">Thời gian trả xe</p>
+                  <p className="font-semibold">{new Date(booking.end_at).toLocaleDateString('vi-VN')}</p>
+                  <p className="text-gray-600 text-sm">{new Date(booking.end_at).toLocaleTimeString('vi-VN')}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500">Duration</p>
+                  <p className="text-sm text-gray-500">Thời gian thuê</p>
                   <p className="font-semibold">
                     {(() => {
                       // Tính toán duration từ start_at và end_at
@@ -277,13 +276,13 @@ const BookingDetailsPage: React.FC = () => {
                       });
                       
                       if (days > 0 && hours > 0) {
-                        return `${days} day${days > 1 ? 's' : ''} ${hours} hour${hours > 1 ? 's' : ''}`;
+                        return `${days} ngày ${hours} giờ`;
                       } else if (days > 0) {
-                        return `${days} day${days > 1 ? 's' : ''}`;
+                        return `${days} ngày`;
                       } else if (hours > 0) {
-                        return `${hours} hour${hours > 1 ? 's' : ''}`;
+                        return `${hours} giờ`;
                       } else {
-                        return 'Less than 1 hour';
+                        return 'Dưới 1 giờ';
                       }
                     })()}
                   </p>
@@ -293,28 +292,28 @@ const BookingDetailsPage: React.FC = () => {
           </Card>
 
           {/* Pricing Information */}
-          <Card title="Pricing Details" className="shadow-sm">
+          <Card title="Chi tiết giá" className="shadow-sm">
             <div className="space-y-3">
               <div className="flex justify-between">
-                <span className="text-gray-600">Base Price:</span>
-                <span className="font-semibold">${prices.base}</span>
+                <span className="text-gray-600">Giá cơ bản:</span>
+                <span className="font-semibold">{formatVND(prices.base)}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">Insurance Fee:</span>
-                <span className="font-semibold">${prices.insurance}</span>
+                <span className="text-gray-600">Phí bảo hiểm:</span>
+                <span className="font-semibold">{formatVND(prices.insurance)}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">Taxes:</span>
-                <span className="font-semibold">${prices.taxes}</span>
+                <span className="text-gray-600">Thuế:</span>
+                <span className="font-semibold">{formatVND(prices.taxes)}</span>
               </div>
               <div className="border-t pt-3">
                 <div className="flex justify-between">
-                  <span className="text-lg font-semibold">Total Amount:</span>
-                  <span className="text-lg font-bold text-blue-600">${prices.total}</span>
+                  <span className="text-lg font-semibold">Tổng tiền:</span>
+                  <span className="text-lg font-bold text-blue-600">{formatVND(prices.total)}</span>
                 </div>
                 <div className="flex justify-between text-sm mt-2">
-                  <span className="text-gray-500">Required Deposit:</span>
-                  <span className="text-orange-600 font-medium">${prices.deposit}</span>
+                  <span className="text-gray-500">Tiền cọc yêu cầu:</span>
+                  <span className="text-orange-600 font-medium">{formatVND(prices.deposit)}</span>
                 </div>
               </div>
             </div>
@@ -322,16 +321,16 @@ const BookingDetailsPage: React.FC = () => {
         </div>
 
         {/* Booking Timeline */}
-        <Card title="Booking Timeline" className="shadow-sm mt-6">
+        <Card title="Lịch sử Booking" className="shadow-sm mt-6">
           <div className='mgt-4'>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <p className="text-sm text-gray-500">Created At</p>
-              <p className="font-medium">{new Date(booking.createdAt).toLocaleString()}</p>
+              <p className="text-sm text-gray-500">Thời gian tạo</p>
+              <p className="font-medium">{new Date(booking.createdAt).toLocaleString('vi-VN')}</p>
             </div>
             <div>
-              <p className="text-sm text-gray-500">Last Updated</p>
-              <p className="font-medium">{new Date(booking.updatedAt).toLocaleString()}</p>
+              <p className="text-sm text-gray-500">Cập nhật lần cuối</p>
+              <p className="font-medium">{new Date(booking.updatedAt).toLocaleString('vi-VN')}</p>
             </div>
           </div>
           </div>
@@ -346,7 +345,7 @@ const BookingDetailsPage: React.FC = () => {
               className="px-8"
               onClick={() => navigate(`/payment?bookingId=${booking._id}`)}
             >
-              Proceed to Payment
+              Tiến hành thanh toán
             </Button>
           )}
           
@@ -356,7 +355,7 @@ const BookingDetailsPage: React.FC = () => {
             className="px-6"
             onClick={openDirections}
           >
-            Get Directions
+            Xem đường đi
           </Button>
           
           <Button 
@@ -364,7 +363,7 @@ const BookingDetailsPage: React.FC = () => {
             className="px-6"
             onClick={() => navigate('/bookings')}
           >
-            My Bookings
+            Booking của tôi
           </Button>
         </div>
 
@@ -375,10 +374,10 @@ const BookingDetailsPage: React.FC = () => {
               <div className="flex items-start">
                 <div className="text-orange-500 mr-3 mt-1">⚠️</div>
                 <div>
-                  <h4 className="font-semibold text-orange-800">Payment Required</h4>
+                  <h4 className="font-semibold text-orange-800">Cần thanh toán</h4>
                   <p className="text-sm text-orange-700 mt-1">
-                    This booking is on hold and requires payment to be confirmed. 
-                    Please proceed with payment to secure your vehicle.
+                    Booking này đang được giữ chỗ và cần thanh toán để được xác nhận. 
+                    Vui lòng tiến hành thanh toán để đảm bảo xe của bạn.
                   </p>
                 </div>
               </div>

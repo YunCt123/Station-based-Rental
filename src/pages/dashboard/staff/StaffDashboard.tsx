@@ -11,9 +11,11 @@ import { getCurrentUser } from '@/utils/auth';
 import { stationService } from '@/services/stationService';
 import { vehicleService } from '@/services/vehicleService';
 import { bookingService } from '@/services/bookingService';
+import { getAllIssues, updateIssue, getIssueStatusText } from '@/services/issueService';
 import type { Vehicle } from '@/types/vehicle';
 import type { Booking } from '@/services/bookingService';
 import type { StationRental } from '@/services/rentalService';
+import type { Issue } from '@/services/issueService';
 
 interface StationInfo {
   id: string;
@@ -37,7 +39,7 @@ interface SimpleRental {
 
 interface TaskItem {
   id: string;
-  type: 'delivery' | 'return' | 'inspection' | 'maintenance' | 'overdue';
+  type: 'delivery' | 'return' | 'inspection' | 'maintenance' | 'overdue' | 'issue';
   title: string;
   customer: string;
   customerPhone?: string;
@@ -49,6 +51,8 @@ interface TaskItem {
   bookingId?: string;
   isOverdue?: boolean;
   overdueHours?: number;
+  issueId?: string;
+  issueStatus?: 'OPEN' | 'IN_PROGRESS' | 'RESOLVED';
 }
 
 const StaffDashboard: React.FC = () => {
@@ -57,6 +61,9 @@ const StaffDashboard: React.FC = () => {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [pendingTasks, setPendingTasks] = useState<TaskItem[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [issueModalVisible, setIssueModalVisible] = useState(false);
+  const [selectedIssue, setSelectedIssue] = useState<Issue | null>(null);
+  const [updating, setUpdating] = useState(false);
 
   // Load data when component mounts
   useEffect(() => {
@@ -127,6 +134,15 @@ const StaffDashboard: React.FC = () => {
       } catch (error) {
         console.warn('Could not load rental service:', error);
       }
+
+      // Lấy issues cần xử lý
+      let openIssues: Issue[] = [];
+      try {
+        openIssues = await getAllIssues({ station_id: stationId, status: 'OPEN' });
+        console.log('🔧 [DEBUG] Loaded issues for station:', { stationId, issuesCount: openIssues.length });
+      } catch (error) {
+        console.warn('Could not load issues:', error);
+      }
       
       const tasks: TaskItem[] = [];
       const now = new Date();
@@ -184,7 +200,7 @@ const StaffDashboard: React.FC = () => {
           const overdueHours = Math.floor((now.getTime() - endTime.getTime()) / (1000 * 60 * 60));
           const customerName = rental.user_id?.name || 'Khách hàng';
           // Thử nhiều trường phone khác nhau
-          const userRecord = rental.user_id as Record<string, unknown>;
+          const userRecord = rental.user_id as unknown as Record<string, unknown>;
           const customerPhone = rental.user_id?.phoneNumber || 
                                (userRecord?.phone as string) || 
                                (userRecord?.mobile as string) || 
@@ -285,11 +301,41 @@ const StaffDashboard: React.FC = () => {
         }
       });
 
-      // Sắp xếp tasks theo độ ưu tiên: overdue > high priority > thời gian
+      // Tạo tasks từ issues cần xử lý
+      openIssues.forEach((issue: Issue) => {
+        const issueDate = new Date(issue.createdAt);
+        const reporterName = issue.reporter?.name || 'Khách hàng';
+        const vehicleName = issue.vehicle?.name || issue.vehicle?.model || 'Unknown';
+        
+        // Tính priority dựa trên thời gian tạo issue
+        const hoursSinceCreated = Math.floor((now.getTime() - issueDate.getTime()) / (1000 * 60 * 60));
+        const priority: 'high' | 'medium' | 'low' = hoursSinceCreated > 2 ? 'high' : 
+                                                    hoursSinceCreated > 1 ? 'medium' : 'low';
+
+        tasks.push({
+          id: `issue-${issue._id}`,
+          type: 'issue',
+          title: `Sự cố: ${issue.title}`,
+          customer: reporterName,
+          vehicleName,
+          startAt: issueDate,
+          endAt: issueDate,
+          priority,
+          status: 'pending',
+          issueId: issue._id,
+          issueStatus: issue.status
+        });
+      });
+
+      // Sắp xếp tasks theo độ ưu tiên: overdue > issues > high priority > thời gian
       tasks.sort((a, b) => {
         // Overdue tasks luôn lên đầu
         if (a.type === 'overdue' && b.type !== 'overdue') return -1;
         if (b.type === 'overdue' && a.type !== 'overdue') return 1;
+        
+        // Issues có ưu tiên cao hơn các task khác
+        if (a.type === 'issue' && b.type !== 'issue' && b.type !== 'overdue') return -1;
+        if (b.type === 'issue' && a.type !== 'issue' && a.type !== 'overdue') return 1;
         
         // Nếu cả 2 đều overdue, sắp xếp theo thời gian overdue (lâu nhất trước)
         if (a.type === 'overdue' && b.type === 'overdue') {
@@ -411,6 +457,58 @@ const StaffDashboard: React.FC = () => {
     }
   };
 
+  // Handler functions for issue tasks
+  const handleIssueClick = (task: TaskItem) => {
+    if (task.type === 'issue' && task.issueId) {
+      // Find the issue in the tasks data or fetch it
+      const issueTitle = task.title;
+      const mockIssue: Issue = {
+        _id: task.issueId,
+        reporter_id: '',
+        vehicle_id: '',
+        station_id: stationInfo?.id || '',
+        title: issueTitle.replace('Sự cố: ', ''),
+        description: issueTitle.replace('Sự cố: ', ''),
+        photos: [],
+        status: task.issueStatus || 'OPEN',
+        createdAt: task.startAt.toISOString(),
+        updatedAt: task.startAt.toISOString(),
+        reporter: {
+          _id: '',
+          name: task.customer,
+          email: ''
+        }
+      };
+      
+      setSelectedIssue(mockIssue);
+      setIssueModalVisible(true);
+    }
+  };
+
+  const handleUpdateIssueStatus = async (issueId: string, newStatus: 'OPEN' | 'IN_PROGRESS' | 'RESOLVED') => {
+    try {
+      setUpdating(true);
+      await updateIssue(issueId, { status: newStatus });
+      
+      // Update the task in local state
+      setPendingTasks(prevTasks => 
+        prevTasks.map(task => 
+          task.issueId === issueId 
+            ? { ...task, issueStatus: newStatus, status: newStatus === 'RESOLVED' ? 'completed' : 'in-progress' }
+            : task
+        )
+      );
+
+      if (newStatus === 'RESOLVED') {
+        setIssueModalVisible(false);
+      }
+    } catch (error) {
+      console.error('Error updating issue status:', error);
+    } finally {
+      setUpdating(false);
+    }
+  };
+
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'high': return 'text-red-600 bg-red-100';
@@ -477,23 +575,33 @@ const StaffDashboard: React.FC = () => {
             ) : (
               <div className="space-y-4">
                 {pendingTasks.map((task) => (
-                  <div key={task.id} className={`border rounded-lg p-4 hover:border-blue-300 transition-colors ${
-                    task.type === 'overdue' ? 'border-red-300 bg-red-50' : 'border-gray-200'
-                  }`}>
+                  <div 
+                    key={task.id} 
+                    className={`border rounded-lg p-4 transition-colors ${
+                      task.type === 'overdue' ? 'border-red-300 bg-red-50' : 
+                      task.type === 'issue' ? 'border-orange-300 bg-orange-50 hover:border-orange-400 cursor-pointer' :
+                      'border-gray-200 hover:border-blue-300'
+                    }`}
+                    onClick={() => task.type === 'issue' ? handleIssueClick(task) : undefined}
+                  >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-3">
                         <div className="flex-shrink-0">
                           <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
                             task.type === 'overdue'
                               ? 'bg-red-100'
-                              : task.status === 'completed' 
-                                ? 'bg-green-100' 
-                                : task.status === 'in-progress' 
-                                  ? 'bg-blue-100' 
-                                  : 'bg-yellow-100'
+                              : task.type === 'issue'
+                                ? 'bg-orange-100'
+                                : task.status === 'completed' 
+                                  ? 'bg-green-100' 
+                                  : task.status === 'in-progress' 
+                                    ? 'bg-blue-100' 
+                                    : 'bg-yellow-100'
                           }`}>
                             {task.type === 'overdue' ? (
                               <ExclamationTriangleIcon className="w-6 h-6 text-red-600" />
+                            ) : task.type === 'issue' ? (
+                              <ExclamationTriangleIcon className="w-6 h-6 text-orange-600" />
                             ) : task.status === 'completed' ? (
                               <CheckCircleIcon className="w-6 h-6 text-green-600" />
                             ) : task.status === 'in-progress' ? (
@@ -506,19 +614,25 @@ const StaffDashboard: React.FC = () => {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center space-x-2">
                             <h3 className={`text-sm font-medium ${
-                              task.type === 'overdue' ? 'text-red-900' : 'text-gray-900'
+                              task.type === 'overdue' ? 'text-red-900' : 
+                              task.type === 'issue' ? 'text-orange-900' :
+                              'text-gray-900'
                             }`}>
                               {task.title}
                             </h3>
                             <span className={`px-2 py-1 text-xs font-medium rounded-full ${
                               task.type === 'overdue' 
                                 ? 'bg-red-200 text-red-800'
-                                : getPriorityColor(task.priority)
+                                : task.type === 'issue'
+                                  ? 'bg-orange-200 text-orange-800'
+                                  : getPriorityColor(task.priority)
                             }`}>
                               {task.type === 'overdue' 
                                 ? `Quá hạn ${task.overdueHours}h`
-                                : task.priority === 'high' ? 'Ưu tiên cao' 
-                                  : task.priority === 'medium' ? 'Trung bình' : 'Thấp'
+                                : task.type === 'issue'
+                                  ? `${task.issueStatus === 'OPEN' ? 'Mới báo cáo' : task.issueStatus === 'IN_PROGRESS' ? 'Đang xử lý' : 'Đã giải quyết'}`
+                                  : task.priority === 'high' ? 'Ưu tiên cao' 
+                                    : task.priority === 'medium' ? 'Trung bình' : 'Thấp'
                               }
                             </span>
                           </div>
@@ -661,6 +775,106 @@ const StaffDashboard: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Issue Detail Modal */}
+      {issueModalVisible && selectedIssue && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex justify-between items-start mb-4">
+                <h2 className="text-xl font-bold text-gray-900">Chi tiết sự cố</h2>
+                <button 
+                  onClick={() => setIssueModalVisible(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-600 mb-1">Khách hàng báo cáo</label>
+                    <p className="text-gray-900">{selectedIssue.reporter?.name || 'Không rõ'}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-600 mb-1">Thời gian báo cáo</label>
+                    <p className="text-gray-900">
+                      {new Date(selectedIssue.createdAt).toLocaleString('vi-VN')}
+                    </p>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">Tiêu đề sự cố</label>
+                  <p className="text-gray-900">{selectedIssue.title}</p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">Mô tả chi tiết</label>
+                  <p className="text-gray-900">{selectedIssue.description || 'Không có mô tả'}</p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">Trạng thái hiện tại</label>
+                  <span className={`px-3 py-1 text-sm font-medium rounded-full ${
+                    selectedIssue.status === 'OPEN' ? 'bg-red-100 text-red-800' :
+                    selectedIssue.status === 'IN_PROGRESS' ? 'bg-yellow-100 text-yellow-800' :
+                    'bg-green-100 text-green-800'
+                  }`}>
+                    {getIssueStatusText(selectedIssue.status)}
+                  </span>
+                </div>
+
+                {selectedIssue.photos && selectedIssue.photos.length > 0 && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-600 mb-2">Ảnh đính kèm</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {selectedIssue.photos.map((photo, index) => (
+                        <img 
+                          key={index} 
+                          src={photo} 
+                          alt={`Issue photo ${index + 1}`}
+                          className="w-full h-32 object-cover rounded-lg border"
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex justify-end space-x-3 mt-6 pt-4 border-t">
+                {selectedIssue.status === 'OPEN' && (
+                  <button
+                    onClick={() => handleUpdateIssueStatus(selectedIssue._id, 'IN_PROGRESS')}
+                    disabled={updating}
+                    className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 disabled:opacity-50"
+                  >
+                    {updating ? 'Đang cập nhật...' : 'Bắt đầu xử lý'}
+                  </button>
+                )}
+                {selectedIssue.status === 'IN_PROGRESS' && (
+                  <button
+                    onClick={() => handleUpdateIssueStatus(selectedIssue._id, 'RESOLVED')}
+                    disabled={updating}
+                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+                  >
+                    {updating ? 'Đang cập nhật...' : 'Đánh dấu đã giải quyết'}
+                  </button>
+                )}
+                <button
+                  onClick={() => setIssueModalVisible(false)}
+                  className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+                >
+                  Đóng
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Quick Actions */}
       {/* <div className="bg-white rounded-lg shadow p-6">

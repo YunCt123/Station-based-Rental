@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Card,
   Typography,
@@ -10,6 +10,7 @@ import {
   Button,
   Timeline,
   Divider,
+  message,
 } from 'antd';
 import {
   CarOutlined,
@@ -20,10 +21,12 @@ import {
   CheckCircleOutlined,
   CloseCircleOutlined,
   ArrowLeftOutlined,
+  ExclamationCircleOutlined,
 } from '@ant-design/icons';
 import type { Rental, Payment } from '../../../services/customerService';
 import PaymentHistory from '../../../components/customer/PaymentHistory';
 import RejectedRentalInfo from '../../../components/customer/RejectedRentalInfo';
+import ReportIssueModal from '../../../components/ReportIssueModal';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -54,6 +57,8 @@ const RentalDetailScreen: React.FC<RentalDetailScreenProps> = ({
   onBack,
   onPayment,
 }) => {
+  const [showReportModal, setShowReportModal] = useState(false);
+
   const {
     vehicle_id,
     station_id,
@@ -569,6 +574,28 @@ const RentalDetailScreen: React.FC<RentalDetailScreenProps> = ({
           <PaymentHistory payments={payments} pricingSnapshot={pricing_snapshot}/>
         </Col>
 
+        {/* ---------- Nút báo cáo sự cố (ONGOING) ---------- */}
+        {status === 'ONGOING' && (
+          <Col xs={24}>
+            <Card>
+              <div style={{ textAlign: 'center' }}>
+                <Paragraph>
+                  Gặp sự cố trong quá trình sử dụng xe? Báo cáo ngay để được hỗ trợ kịp thời.
+                </Paragraph>
+                <Button
+                  type="default"
+                  size="large"
+                  danger
+                  icon={<ExclamationCircleOutlined />}
+                  onClick={() => setShowReportModal(true)}
+                >
+                  Báo cáo sự cố
+                </Button>
+              </div>
+            </Card>
+          </Col>
+        )}
+
         {/* ---------- Nút thanh toán (RETURN_PENDING) ---------- */}
         {status === 'RETURN_PENDING' && onPayment && (
           <Col xs={24}>
@@ -590,6 +617,17 @@ const RentalDetailScreen: React.FC<RentalDetailScreenProps> = ({
           </Col>
         )}
       </Row>
+
+      {/* Report Issue Modal */}
+      <ReportIssueModal
+        isOpen={showReportModal}
+        onClose={() => setShowReportModal(false)}
+        rentalId={rental._id}
+        vehicleName={vehicle_id?.name || 'Xe thuê'}
+        onSuccess={() => {
+          message.success('Báo cáo sự cố thành công! Nhân viên sẽ liên hệ sớm nhất.');
+        }}
+      />
     </div>
   );
 };

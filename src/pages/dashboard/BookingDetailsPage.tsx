@@ -235,9 +235,8 @@ const BookingDetailsPage: React.FC = () => {
           <Card title="Thông tin xe" className="shadow-sm">
             <div className="space-y-4">
               <div>
-                <h4 className="font-semibold text-lg">{booking.vehicle_snapshot?.name || 'Xe không xác định'}</h4>
-                <p className="text-gray-600">{booking.vehicle_snapshot?.type}</p>
-                <p className="text-sm text-gray-500">Biển số: {booking.vehicle_snapshot?.licensePlate}</p>
+                <h4 className="font-semibold text-lg">Tên xe: {booking.vehicle_snapshot?.name || 'Xe không xác định'}</h4>
+                <p className="text-gray-600">Loại xe: {booking.vehicle_snapshot?.type || 'Không xác định'}</p>
               </div>
             </div>
           </Card>
@@ -251,7 +250,7 @@ const BookingDetailsPage: React.FC = () => {
                     <h4 className="font-semibold">{booking.station_snapshot?.name || 'Trạm không xác định'}</h4>
                     {booking.station_snapshot?.address && (
                       <p className="text-gray-600 text-sm mt-1">
-                        {booking.station_snapshot.address}
+                        {booking.station_snapshot?.address}
                       </p>
                     )}
                   </div>

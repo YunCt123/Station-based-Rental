@@ -133,8 +133,8 @@ const LoginPage = ({ onLogin }: LoginProps) => {
         JSON.stringify(err, null, 2) ||
         "Thông tin đăng nhập không hợp lệ.";
       toast({
-        title: "Lỗi",
-        description: message,
+        title: "Đăng nhập không thành công!",
+        description: "Tài khoản hoặc mật khẩu không đúng.",
         variant: "destructive",
       });
     } finally {

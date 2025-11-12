@@ -26,7 +26,22 @@ export interface FirebaseAuthResponse {
 }
 
 function unwrap(raw: any) {
-  if (raw && typeof raw === "object" && "data" in raw && raw.data) return raw.data;
+  console.debug("[authService] unwrap input:", raw);
+  
+  if (raw && typeof raw === "object") {
+    // If it has a data property, use that
+    if ("data" in raw && raw.data) {
+      console.debug("[authService] unwrap using raw.data");
+      return raw.data;
+    }
+    // If it has status and other properties but no data, it might be the actual response
+    if ("status" in raw || "user" in raw || "tokens" in raw) {
+      console.debug("[authService] unwrap using raw directly");
+      return raw;
+    }
+  }
+  
+  console.debug("[authService] unwrap fallback to raw");
   return raw;
 }
 
@@ -35,12 +50,15 @@ function normalize(raw: any, opts: { requireTokens?: boolean } = {}): AuthRespon
   const unwrapped = unwrap(raw);
   console.debug("[authService] raw:", raw);
   console.debug("[authService] unwrapped:", unwrapped);
-  console.debug("[authService] unwrapped.data:", unwrapped?.data);
 
-  const user = unwrapped?.user || unwrapped?.data || unwrapped || {};
-  console.debug("[authService] extracted user:", user);
+  // For login response: data.user and data.tokens
+  // For other responses: might be different structure
+  const user = unwrapped?.user || unwrapped?.data?.user || unwrapped?.data || unwrapped || {};
+  const tokensObj = unwrapped?.tokens || unwrapped?.data?.tokens || {};
   
-  const tokensObj = unwrapped?.tokens || {};
+  console.debug("[authService] extracted user:", user);
+  console.debug("[authService] user keys:", Object.keys(user));
+  console.debug("[authService] extracted tokens:", tokensObj);
 
   const accessToken =
     tokensObj.accessToken ||
@@ -48,11 +66,14 @@ function normalize(raw: any, opts: { requireTokens?: boolean } = {}): AuthRespon
     tokensObj.access?.token ||
     unwrapped.accessToken ||
     unwrapped.token ||
+    unwrapped?.data?.accessToken ||
+    unwrapped?.data?.token ||
     "";
   const refreshToken =
     tokensObj.refreshToken ||
     tokensObj.refresh?.token ||
     unwrapped.refreshToken ||
+    unwrapped?.data?.refreshToken ||
     "";
 
   if (requireTokens && !accessToken) {
@@ -60,14 +81,17 @@ function normalize(raw: any, opts: { requireTokens?: boolean } = {}): AuthRespon
     throw new Error("Missing access token in server response");
   }
 
+  // Handle email_verified field from backend
   const normalizedUser = {
     id: user.id || user._id || "",
     name: user.name || "",
     email: user.email || "",
-    role: user.role || "user",
+    role: user.role || "customer",
     phoneNumber: user.phoneNumber,
     dateOfBirth: user.dateOfBirth,
-    isVerified: user.isVerified,
+    // Priority: email_verified from BE > isVerified > fallback to true
+    isVerified: user.email_verified ?? user.isVerified ?? true,
+    status: user.status, // Include status if BE provides it
   };
   
   console.debug("[authService] normalizedUser:", normalizedUser);
@@ -80,7 +104,18 @@ function normalize(raw: any, opts: { requireTokens?: boolean } = {}): AuthRespon
 
 export async function login(email: string, password: string) {
   const { data } = await api.post("/auth/login", { email, password });
-  return normalize(data, { requireTokens: true });
+  console.log("🔍 [authService] Raw login response from API:", data);
+  console.log("🔍 [authService] typeof data:", typeof data);
+  console.log("🔍 [authService] Object.keys(data):", Object.keys(data || {}));
+  
+  // Let's also try to log the full structure
+  console.log("🔍 [authService] JSON.stringify(data):", JSON.stringify(data, null, 2));
+  
+  const normalized = normalize(data, { requireTokens: true });
+  console.log("🔍 [authService] Normalized login response:", normalized);
+  console.log("🔍 [authService] Normalized user.isVerified:", normalized.user.isVerified);
+  
+  return normalized;
 }
 
 export async function register(payload: {
@@ -233,3 +268,63 @@ export async function getCurrentFirebaseUser() {
     throw error;
   }
 }
+
+// Email Verification Functions
+export const verifyEmail = async (payload: { code?: string; token?: string }): Promise<{ user: AuthUser }> => {
+  try {
+    const { data } = await api.post("/auth/verify-email", payload);
+    console.log("✅ [authService] verifyEmail response:", data);
+    console.log("✅ [authService] verifyEmail data.user:", data?.user);
+    
+    // Handle case where user might be in different location in response
+    const user = data?.user || data?.data?.user || data || {};
+    console.log("✅ [authService] extracted user for verify:", user);
+    
+    if (!user || typeof user !== 'object') {
+      console.error("💥 [authService] No user data in verify response:", data);
+      throw new Error("Invalid response format from server");
+    }
+    
+    return {
+      user: {
+        id: user.id || user._id || "",
+        name: user.name || "",
+        email: user.email || "",
+        role: user.role || "customer",
+        phoneNumber: user.phoneNumber,
+        dateOfBirth: user.dateOfBirth,
+        isVerified: user.email_verified || user.isVerified || true,
+        avatar: user.avatar,
+        auth_provider: user.auth_provider || "local"
+      }
+    };
+  } catch (error: any) {
+    console.error("💥 [authService] verifyEmail error:", error);
+    console.error("💥 [authService] verifyEmail error response:", error?.response?.data);
+    throw new Error(error?.response?.data?.message || error.message || "Email verification failed");
+  }
+};
+
+export const resendVerification = async (payload: { email: string }): Promise<{ message: string }> => {
+  try {
+    const { data } = await api.post("/auth/resend-verification", payload);
+    return data;
+  } catch (error: any) {
+    console.error("💥 [authService] resendVerification error:", error);
+    throw new Error(error?.response?.data?.message || error.message || "Resend verification failed");
+  }
+};
+
+export const checkVerificationStatus = async (email: string): Promise<{
+  isVerified: boolean;
+  hasPendingVerification: boolean;
+  pendingExpiresAt?: string;
+}> => {
+  try {
+    const { data } = await api.get(`/auth/verification-status/${encodeURIComponent(email)}`);
+    return data;
+  } catch (error: any) {
+    console.error("💥 [authService] checkVerificationStatus error:", error);
+    throw new Error(error?.response?.data?.message || error.message || "Check verification status failed");
+  }
+};

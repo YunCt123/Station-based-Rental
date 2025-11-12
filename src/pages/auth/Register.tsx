@@ -103,22 +103,19 @@ const Register = ({ onRegister }: RegisterProps) => {
         dateOfBirth: formData.dateOfBirth,
         password: formData.password,
       };
+      
       await registerApi(payload);
-      // KHÔNG: lưu token / onRegister / navigate
+      
+      // Theo docs: Registration successful, cần verify email
       toast({
-        title: t("register.welcome"),
-        description: t("register.accountCreated"),
+        title: "Đăng ký thành công!",
+        description: "Vui lòng kiểm tra email để xác thực tài khoản của bạn.",
+        duration: 5000,
       });
-      navigate("/login");
-      // Reset form để user ở lại trang và tự quyết định đăng nhập
-      setFormData({
-        name: "",
-        email: "",
-        phoneNumber: "",
-        dateOfBirth: "",
-        password: "",
-        confirmPassword: "",
-      });
+      
+      // Chuyển hướng đến trang verify email với email
+      navigate(`/verify-email?email=${encodeURIComponent(formData.email)}`);
+      
     } catch (err: unknown) {
       console.error("[Register] error:", err);
       let message = t("register.fillAllFields");

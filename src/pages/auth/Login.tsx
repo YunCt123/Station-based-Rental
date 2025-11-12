@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useState } from "react";
-import { Link, useNavigate, Navigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useNavigate, Navigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -38,7 +38,26 @@ const LoginPage = ({ onLogin }: LoginProps) => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
+
+  // Show message from verification redirect
+  useEffect(() => {
+    if (location.state?.message) {
+      toast({
+        title: "Thành công",
+        description: location.state.message,
+      });
+      
+      // Pre-fill email if provided
+      if (location.state?.email) {
+        setEmail(location.state.email);
+      }
+      
+      // Clear the state
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state, toast]);
 
   // Nếu đã đăng nhập thì chuyển hướng ra route mặc định theo role
   if (isAuthenticated()) {
@@ -52,7 +71,23 @@ const LoginPage = ({ onLogin }: LoginProps) => {
     setIsLoading(true);
     try {
       const res = await loginApi(email, password);
-      console.debug("[Login] normalized response:", res);
+      console.debug("[Login] Login response:", res);
+      console.debug("[Login] user.isVerified:", res.user.isVerified);
+      
+      // Check if user email is verified (now from BE response)
+      if (!res.user.isVerified) {
+        console.warn("[Login] User not verified according to login response");
+        toast({
+          title: "Email chưa được xác thực",
+          description: "Vui lòng xác thực email trước khi đăng nhập.",
+          variant: "destructive",
+        });
+        navigate(`/verify-email?email=${encodeURIComponent(email)}`);
+        return;
+      }
+      
+      console.log("[Login] Email verified, login successful");
+      
       if (!res.tokens.accessToken) {
         console.error("[Login] Missing accessToken. Full response:", res);
         toast({
@@ -79,6 +114,18 @@ const LoginPage = ({ onLogin }: LoginProps) => {
       navigate(redirectPath);
     } catch (err: any) {
       console.error("[Login] Auth error raw:", err);
+      
+      // Handle specific email verification errors
+      if (err?.message?.includes('email not verified') || err?.message?.includes('Please verify your email')) {
+        toast({
+          title: "Email chưa được xác thực",
+          description: "Vui lòng xác thực email trước khi đăng nhập.",
+          variant: "destructive",
+        });
+        navigate(`/verify-email?email=${encodeURIComponent(email)}`);
+        return;
+      }
+      
       const message =
         err?.message ||
         err?.error ||

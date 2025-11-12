@@ -337,20 +337,36 @@ const RentalDetailScreen: React.FC<RentalDetailScreenProps> = ({
                   <Text code>{vehicle_id.licensePlate}</Text>
                 </Text>
               )}
-            </Space>
-          </Card>
-        </Col>
 
-        {/* ---------- Trạm thuê ---------- */}
-        <Col xs={24} lg={12}>
-          <Card title={<><EnvironmentOutlined /> Trạm thuê</>}>
-            <Space direction="vertical" size={8} style={{ width: '100%' }}>
-              <Title level={4} style={{ margin: 0, color: '#52c41a' }}>
-                {station_id.name}
-              </Title>
-
-              <Text><Text strong>Địa chỉ:</Text> {station_id.address}</Text>
-              <Text><Text strong>Thành phố:</Text> {station_id.city}</Text>
+              <Divider style={{ margin: '12px 0' }} />
+              
+              {/* Thông tin giá thuê */}
+              <div style={{ 
+                borderRadius: 6, 
+                padding: 12
+              }}>
+                <Text strong style={{ display: 'block', marginBottom: 8 }}>
+                  Bảng giá thuê:
+                </Text>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {pricing_snapshot.hourly_rate != null && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <Text style={{ fontSize: 13 }}>Giá theo giờ:</Text>
+                      <Text strong style={{fontSize: 13 }}>
+                        {formatCurrency(pricing_snapshot.hourly_rate, pricing_snapshot.currency)}
+                      </Text>
+                    </div>
+                  )}
+                  {pricing_snapshot.daily_rate != null && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <Text style={{ fontSize: 13 }}>Giá theo ngày:</Text>
+                      <Text strong style={{fontSize: 13 }}>
+                        {formatCurrency(pricing_snapshot.daily_rate, pricing_snapshot.currency)}
+                      </Text>
+                    </div>
+                  )}
+                </div>
+              </div>
             </Space>
           </Card>
         </Col>
@@ -363,6 +379,14 @@ const RentalDetailScreen: React.FC<RentalDetailScreenProps> = ({
                 <Text strong>Thời gian thuê:</Text>
                 <br />
                 <Text>{formatDate(booking_id.start_at)} - {formatDate(booking_id.end_at)}</Text>
+              </div>
+
+              <div>
+                <Text strong>Lấy xe tại trạm:</Text>
+                <br />
+                <Text style={{ color: '#52c41a' }}>{station_id.name}</Text>
+                <br />
+                <Text type="secondary">{station_id.address}, {station_id.city}</Text>
               </div>
 
               <Divider />
@@ -378,42 +402,52 @@ const RentalDetailScreen: React.FC<RentalDetailScreenProps> = ({
           </Col>
         )}
 
-        {/* ---------- Thông tin giá ---------- */}
+        {/* ---------- Thông tin thanh toán ---------- */}
         <Col xs={24} lg={12}>
-          <Card title={<><CreditCardOutlined /> Thông tin giá</>}>
-            <Space direction="vertical" size={8} style={{ width: '100%' }}>
+          <Card 
+            title={
+              <>
+                <CreditCardOutlined style={{ marginRight: 8 }} />
+                Thông tin thanh toán
+              </>
+            }
+          >
+            <Space direction="vertical" size={12} style={{ width: '100%' }}>
               {/* Hình thức thuê */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Text strong>Hình thức thuê:</Text>
-                <Tag color={getRentalTypeInfo(pricing_snapshot).color} style={{ padding: '2px 8px' }}>
-                  <span style={{ marginRight: 4 }}>{getRentalTypeInfo(pricing_snapshot).icon}</span>
+                <Tag color={getRentalTypeInfo(pricing_snapshot).color} style={{ padding: '4px 12px', fontSize: '13px' }}>
+                  <span style={{ marginRight: 6 }}>{getRentalTypeInfo(pricing_snapshot).icon}</span>
                   {getRentalTypeInfo(pricing_snapshot).text}
                 </Tag>
               </div>
 
-              {/* Số giờ/ngày thuê */}
+              {/* Thời gian thuê */}
               {(() => {
                 const details = (pricing_snapshot as { details?: { days?: number; hours?: number } })?.details;
                 return (
                   <>
                     {details?.days && details.days > 0 && (
-                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <Text>Số ngày thuê:</Text>
-                        <Text type="success" strong>{details.days} ngày</Text>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Text>Thời gian:</Text>
+                        <Text strong style={{ color: '#52c41a' }}>
+                          {details.days} ngày
+                          {details.hours && details.hours > 0 && ` (${details.hours} giờ)`}
+                        </Text>
                       </div>
                     )}
                     
-                    {details?.hours && details.hours > 0 && (
-                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <Text>Số giờ thuê:</Text>
-                        <Text type="success" strong>{details.hours} giờ</Text>
+                    {details?.hours && details.hours > 0 && !details.days && (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Text>Thời gian:</Text>
+                        <Text strong style={{ color: '#52c41a' }}>{details.hours} giờ</Text>
                       </div>
                     )}
                   </>
                 );
               })()}
 
-              {/* Peak and Weekend Multipliers */}
+              {/* Phụ phí (nếu có) */}
               {(() => {
                 const details = (pricing_snapshot as { details?: { peakMultiplier?: number; weekendMultiplier?: number } })?.details;
                 const hasPeakMultiplier = details?.peakMultiplier && details.peakMultiplier > 1;
@@ -421,67 +455,106 @@ const RentalDetailScreen: React.FC<RentalDetailScreenProps> = ({
                 
                 return (hasPeakMultiplier || hasWeekendMultiplier) && (
                   <div style={{ 
-                    backgroundColor: '#fffbf0', 
-                    border: '1px solid #ffe58f', 
+                    backgroundColor: '#fff7e6', 
+                    border: '1px solid #ffd591', 
                     borderRadius: 6, 
-                    padding: 12, 
-                    marginTop: 8 
+                    padding: 12
                   }}>
-                    <Text strong style={{ color: '#d48806', fontSize: 12, display: 'block', marginBottom: 8 }}>
-                      Phụ phí áp dụng:
+                    <Text strong style={{ color: '#d48806', fontSize: 13, marginBottom: 8, display: 'block' }}>
+                      ⚡ Phụ phí áp dụng:
                     </Text>
-                    {hasPeakMultiplier && (
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                        <div style={{ display: 'flex', alignItems: 'center' }}>
-                          <span style={{ color: '#d48806', marginRight: 6 }}>⚡</span>
-                          <Text style={{ fontSize: 12, color: '#d48806' }}>Giờ cao điểm:</Text>
-                        </div>
-                        <Text style={{ fontSize: 12, fontWeight: 600, color: '#d48806' }}>
-                          x{details?.peakMultiplier}
-                        </Text>
-                      </div>
-                    )}
-                    {hasWeekendMultiplier && (
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div style={{ display: 'flex', alignItems: 'center' }}>
-                          <span style={{ color: '#d48806', marginRight: 6 }}>🎉</span>
-                          <Text style={{ fontSize: 12, color: '#d48806' }}>Cuối tuần:</Text>
-                        </div>
-                        <Text style={{ fontSize: 12, fontWeight: 600, color: '#d48806' }}>
-                          x{details?.weekendMultiplier}
-                        </Text>
-                      </div>
-                    )}
+                    <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+                      {hasPeakMultiplier && (
+                        <span style={{ fontSize: 12, color: '#d48806' }}>
+                          Giờ cao điểm: x{details?.peakMultiplier}
+                        </span>
+                      )}
+                      {hasWeekendMultiplier && (
+                        <span style={{ fontSize: 12, color: '#d48806' }}>
+                          Cuối tuần: x{details?.weekendMultiplier}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 );
               })()}
 
-              {pricing_snapshot.hourly_rate != null && (
-                <Text>
-                  <Text strong>Giá theo giờ:</Text>{' '}
-                  <Text type="success">
-                    {formatCurrency(pricing_snapshot.hourly_rate, pricing_snapshot.currency)}
-                  </Text>
-                </Text>
-              )}
+              <div style={{ borderTop: '1px dashed #f0f0f0', margin: '8px 0' }}></div>
 
-              {pricing_snapshot.daily_rate != null && (
-                <Text>
-                  <Text strong>Giá theo ngày:</Text>{' '}
-                  <Text type="success">
-                    {formatCurrency(pricing_snapshot.daily_rate, pricing_snapshot.currency)}
+              {/* Chi phí chính */}
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                  <Text>Giá thuê:</Text>
+                  <Text strong>
+                    {formatCurrency((pricing_snapshot as unknown as { base_price?: number }).base_price || 0, pricing_snapshot.currency)}
                   </Text>
-                </Text>
-              )}
+                </div>
 
-              {pricing_snapshot.deposit != null && (
-                <Text>
-                  <Text strong>Tiền đặt cọc:</Text>{' '}
-                  <Text type="warning">
-                    {formatCurrency(pricing_snapshot.deposit, pricing_snapshot.currency)}
+                {/* Bảo hiểm */}
+                {(pricing_snapshot as unknown as { insurance_price?: number }).insurance_price && 
+                 (pricing_snapshot as unknown as { insurance_price: number }).insurance_price > 0 && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                    <Text>Bảo hiểm:</Text>
+                    <Text>
+                      {formatCurrency((pricing_snapshot as unknown as { insurance_price: number }).insurance_price, pricing_snapshot.currency)}
+                    </Text>
+                  </div>
+                )}
+
+                {/* Thuế */}
+                {(pricing_snapshot as unknown as { taxes?: number }).taxes && 
+                 (pricing_snapshot as unknown as { taxes: number }).taxes > 0 && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                    <Text>Thuế & phí:</Text>
+                    <Text>
+                      {formatCurrency((pricing_snapshot as unknown as { taxes: number }).taxes, pricing_snapshot.currency)}
+                    </Text>
+                  </div>
+                )}
+
+                <div style={{ borderTop: '1px solid #f0f0f0', margin: '12px 0' }}></div>
+
+                {/* Tổng tiền */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
+                  <Text strong style={{ fontSize: 16 }}>Tổng tiền:</Text>
+                  <Text strong style={{ fontSize: 16, color: '#1890ff' }}>
+                    {formatCurrency((pricing_snapshot as unknown as { total_price?: number }).total_price || 0, pricing_snapshot.currency)}
                   </Text>
-                </Text>
-              )}
+                </div>
+
+                {/* Tiền cọc và còn lại */}
+                {pricing_snapshot.deposit != null && (
+                  <>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                      <Text style={{ color: '#8c8c8c' }}>Đã thanh toán cọc:</Text>
+                      <Text style={{ color: '#8c8c8c' }}>
+                        {formatCurrency(pricing_snapshot.deposit, pricing_snapshot.currency)}
+                      </Text>
+                    </div>
+                    
+                    {(() => {
+                      const totalPrice = (pricing_snapshot as unknown as { total_price?: number }).total_price || 0;
+                      const deposit = pricing_snapshot.deposit || 0;
+                      const remaining = totalPrice - deposit;
+                      
+                      return remaining > 0 && (
+                        <div style={{ 
+                          display: 'flex', 
+                          justifyContent: 'space-between',
+                          padding: '8px',
+                          borderRadius: 4,
+                          border: '1px solid #ffbb96'
+                        }}>
+                          <Text strong style={{ color: '#fa541c' }}>Còn lại cần trả:</Text>
+                          <Text strong style={{ color: '#fa541c', fontSize: 15 }}>
+                            {formatCurrency(remaining, pricing_snapshot.currency)}
+                          </Text>
+                        </div>
+                      );
+                    })()}
+                  </>
+                )}
+              </div>
             </Space>
           </Card>
 

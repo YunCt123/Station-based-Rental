@@ -194,6 +194,29 @@ const RentalDetailScreen: React.FC<RentalDetailScreenProps> = ({
             <Text strong>Đã nhận xe</Text>
             <br />
             <Text type="secondary">{formatDate(pickup.at)}</Text>
+            
+            {/* Thông tin nhân viên giao xe */}
+            {pickup.staff_id && (
+              <>
+                <br />
+                <Text>
+                  <Text strong>Giao xe bởi:</Text>{' '}
+                  {typeof pickup.staff_id === 'string' 
+                    ? pickup.staff_id 
+                    : (pickup.staff_id as any)?.name || (pickup.staff_id as any)?.email || 'Nhân viên'
+                  }
+                </Text>
+                {typeof pickup.staff_id === 'object' && (pickup.staff_id as any)?.phone && (
+                  <>
+                    <br />
+                    <Text type="secondary">
+                      SĐT: {(pickup.staff_id as any).phone}
+                    </Text>
+                  </>
+                )}
+              </>
+            )}
+
             {pickup.odo_km && (
               <>
                 <br />
@@ -224,6 +247,29 @@ const RentalDetailScreen: React.FC<RentalDetailScreenProps> = ({
             <Text strong>Đã trả xe</Text>
             <br />
             <Text type="secondary">{formatDate(returnInfo.at)}</Text>
+            
+            {/* Thông tin nhân viên nhận xe */}
+            {returnInfo.staff_id && (
+              <>
+                <br />
+                <Text>
+                  <Text strong>Nhận xe bởi:</Text>{' '}
+                  {typeof returnInfo.staff_id === 'string' 
+                    ? returnInfo.staff_id 
+                    : (returnInfo.staff_id as any)?.name || (returnInfo.staff_id as any)?.email || 'Nhân viên'
+                  }
+                </Text>
+                {typeof returnInfo.staff_id === 'object' && (returnInfo.staff_id as any)?.phone && (
+                  <>
+                    <br />
+                    <Text type="secondary">
+                      SĐT: {(returnInfo.staff_id as any).phone}
+                    </Text>
+                  </>
+                )}
+              </>
+            )}
+
             {returnInfo.odo_km && (
               <>
                 <br />

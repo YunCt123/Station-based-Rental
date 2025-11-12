@@ -167,7 +167,7 @@ const FinalPaymentScreen: React.FC<FinalPaymentScreenProps> = ({
       </div>
 
       {/* Payment Breakdown */}
-      <Card title={<><DollarOutlined /> Chi tiết thanh toán</>}>
+      <Card title={<>Chi tiết thanh toán</>}>
         <Space direction="vertical" size={16} style={{ width: '100%' }}>
           {/* Rental Type Information */}
           {rental.pricing_snapshot.details?.rentalType && (

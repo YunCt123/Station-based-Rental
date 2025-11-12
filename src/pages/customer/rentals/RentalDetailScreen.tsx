@@ -461,7 +461,7 @@ const RentalDetailScreen: React.FC<RentalDetailScreenProps> = ({
                     padding: 12
                   }}>
                     <Text strong style={{ color: '#d48806', fontSize: 13, marginBottom: 8, display: 'block' }}>
-                      ⚡ Phụ phí áp dụng:
+                      Phụ phí áp dụng:
                     </Text>
                     <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
                       {hasPeakMultiplier && (

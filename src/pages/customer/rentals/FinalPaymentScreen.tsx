@@ -134,7 +134,6 @@ const FinalPaymentScreen: React.FC<FinalPaymentScreenProps> = ({
         </Button>
         
         <Title level={2}>
-          <CreditCardOutlined style={{ color: '#1890ff', marginRight: 8 }} />
           Thanh toán cuối
         </Title>
         
@@ -156,10 +155,10 @@ const FinalPaymentScreen: React.FC<FinalPaymentScreenProps> = ({
                   {rental.vehicle_id.name}
                 </Title>
                 <Text>
-                  <CarOutlined /> {rental.vehicle_id.licensePlate}
+                   {rental.vehicle_id.licensePlate}
                 </Text>
                 <Text type="success" strong>
-                  ✅ Kiểm tra trả xe đã hoàn tất
+                  Kiểm tra trả xe đã hoàn tất
                 </Text>
               </Space>
             </Col>
@@ -178,7 +177,7 @@ const FinalPaymentScreen: React.FC<FinalPaymentScreenProps> = ({
               borderRadius: '8px',
               border: '1px solid #bae7ff'
             }}>
-              <Text strong>📋 Thông tin booking:</Text>
+              <Text strong>Thông tin booking:</Text>
               <div style={{ marginTop: 8 }}>
                 <Text>Loại thuê: <Text strong>
                   {rental.pricing_snapshot.details.rentalType === 'daily' ? 'Theo ngày' : 'Theo giờ'}
@@ -211,18 +210,86 @@ const FinalPaymentScreen: React.FC<FinalPaymentScreenProps> = ({
               <Text>Phí thuê xe (đã tính toán):</Text>
               <Text strong>{paymentInfo.breakdown.rentalFee.toLocaleString()} VND</Text>
             </div>
-            
-            {paymentInfo.breakdown.extraFees > 0 && (
+
+            {/* Bảo hiểm */}
+            {rental.pricing_snapshot.insurance_price && rental.pricing_snapshot.insurance_price > 0 && (
               <div style={{ 
                 display: 'flex', 
                 justifyContent: 'space-between', 
                 padding: '8px 0',
                 borderBottom: '1px solid #f0f0f0'
               }}>
-                <Text>Phí phát sinh:</Text>
-                <Text strong type="warning">
-                  {paymentInfo.breakdown.extraFees.toLocaleString()} VND
-                </Text>
+                <Text>Phí bảo hiểm:</Text>
+                <Text strong>{rental.pricing_snapshot.insurance_price.toLocaleString()} VND</Text>
+              </div>
+            )}
+
+            {/* Thuế */}
+            {rental.pricing_snapshot.taxes && rental.pricing_snapshot.taxes > 0 && (
+              <div style={{ 
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                padding: '8px 0',
+                borderBottom: '1px solid #f0f0f0'
+              }}>
+                <Text>Thuế và phí dịch vụ:</Text>
+                <Text strong>{rental.pricing_snapshot.taxes.toLocaleString()} VND</Text>
+              </div>
+            )}
+            
+            {paymentInfo.breakdown.extraFees > 0 && (
+              <div style={{ 
+                padding: '8px 0',
+                borderBottom: '1px solid #f0f0f0'
+              }}>
+                <div style={{ marginBottom: 8 }}>
+                  <Text strong type="warning">Phí phát sinh:</Text>
+                </div>
+                
+                {/* Chi tiết các loại phí */}
+                <div style={{ paddingLeft: 16 }}>
+                  {rental.charges?.cleaning_fee > 0 && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                      <Text style={{ fontSize: 14 }}>• Phí vệ sinh:</Text>
+                      <Text style={{ fontSize: 14 }}>{rental.charges.cleaning_fee.toLocaleString()} VND</Text>
+                    </div>
+                  )}
+                  
+                  {rental.charges?.damage_fee > 0 && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                      <Text style={{ fontSize: 14 }}>• Phí sửa chữa hư hỏng:</Text>
+                      <Text style={{ fontSize: 14 }}>{rental.charges.damage_fee.toLocaleString()} VND</Text>
+                    </div>
+                  )}
+                  
+                  {rental.charges?.late_fee > 0 && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                      <Text style={{ fontSize: 14 }}>• Phí trả xe muộn:</Text>
+                      <Text style={{ fontSize: 14 }}>{rental.charges.late_fee.toLocaleString()} VND</Text>
+                    </div>
+                  )}
+                  
+                  {rental.charges?.other_fees > 0 && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                      <Text style={{ fontSize: 14 }}>• Phí khác:</Text>
+                      <Text style={{ fontSize: 14 }}>{rental.charges.other_fees.toLocaleString()} VND</Text>
+                    </div>
+                  )}
+                  
+                  {/* Tổng phí phát sinh */}
+                  <div style={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    marginTop: 8, 
+                    paddingTop: 8, 
+                    borderTop: '1px dashed #f0f0f0' 
+                  }}>
+                    <Text strong>Tổng phí phát sinh:</Text>
+                    <Text strong type="warning">
+                      {paymentInfo.breakdown.extraFees.toLocaleString()} VND
+                    </Text>
+                  </div>
+                </div>
               </div>
             )}
             

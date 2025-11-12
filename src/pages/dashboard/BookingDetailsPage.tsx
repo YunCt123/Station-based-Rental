@@ -32,6 +32,9 @@ const BookingDetailsPage: React.FC = () => {
     details?: {
       days?: number;
       hours?: number;
+      rentalType?: string;
+      peakMultiplier?: number;
+      weekendMultiplier?: number;
     }
   }) => {
     if (!pricing) return {
@@ -41,7 +44,10 @@ const BookingDetailsPage: React.FC = () => {
       taxes: 0,
       deposit: 0,
       days: 0,
-      hours: 0
+      hours: 0,
+      rentalType: 'unknown',
+      peakMultiplier: 1,
+      weekendMultiplier: 1
     };
 
     return {
@@ -51,8 +57,32 @@ const BookingDetailsPage: React.FC = () => {
       taxes: pricing.taxes || 0,
       deposit: pricing.deposit || 0,
       days: pricing.details?.days || 0,
-      hours: pricing.details?.hours || 0
+      hours: pricing.details?.hours || 0,
+      rentalType: pricing.details?.rentalType || 'unknown',
+      peakMultiplier: pricing.details?.peakMultiplier || 1,
+      weekendMultiplier: pricing.details?.weekendMultiplier || 1
     };
+  };
+
+  // Function to get rental type display info
+  const getRentalTypeInfo = (rentalType: string) => {
+    switch (rentalType) {
+      case 'daily':
+        return {
+          text: 'Thuê theo ngày',
+          color: 'blue' as const
+        };
+      case 'hourly':
+        return {
+          text: 'Thuê theo giờ',
+          color: 'green' as const
+        };
+      default:
+        return {
+          text: 'Không xác định',
+          color: 'default' as const
+        };
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -173,6 +203,7 @@ const BookingDetailsPage: React.FC = () => {
   }
 
   const prices = getPricing(booking.pricing_snapshot);
+  const rentalTypeInfo = getRentalTypeInfo(prices.rentalType);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -252,7 +283,7 @@ const BookingDetailsPage: React.FC = () => {
                   <p className="font-semibold">{new Date(booking.end_at).toLocaleDateString('vi-VN')}</p>
                   <p className="text-gray-600 text-sm">{new Date(booking.end_at).toLocaleTimeString('vi-VN')}</p>
                 </div>
-                <div>
+                {/* <div>
                   <p className="text-sm text-gray-500">Thời gian thuê</p>
                   <p className="font-semibold">
                     {(() => {
@@ -286,7 +317,7 @@ const BookingDetailsPage: React.FC = () => {
                       }
                     })()}
                   </p>
-                </div>
+                </div> */}
               </div>
             </div>
           </Card>
@@ -294,6 +325,54 @@ const BookingDetailsPage: React.FC = () => {
           {/* Pricing Information */}
           <Card title="Chi tiết giá" className="shadow-sm">
             <div className="space-y-3">
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600">Hình thức thuê:</span>
+                <div className="flex items-center">
+                  <Tag color={rentalTypeInfo.color} className="px-3 py-1">
+                    <span className="mr-1">{rentalTypeInfo.icon}</span>
+                    {rentalTypeInfo.text}
+                  </Tag>
+                </div>
+              </div>
+              {/* Display duration based on rental type */}
+              {prices.rentalType === 'daily' && prices.days > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Số ngày thuê:</span>
+                  <span className="font-semibold text-blue-600">{prices.days} ngày</span>
+                </div>
+              )}
+              {prices.rentalType === 'hourly' && prices.hours > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Số giờ thuê:</span>
+                  <span className="font-semibold text-green-600">{prices.hours} giờ</span>
+                </div>
+              )}
+              
+              {/* Peak and Weekend Multipliers */}
+              {(prices.peakMultiplier > 1 || prices.weekendMultiplier > 1) && (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 space-y-2">
+                  <h4 className="text-sm font-semibold text-yellow-800 mb-2">Phụ phí áp dụng:</h4>
+                  {prices.peakMultiplier > 1 && (
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center">
+                        <span className="text-yellow-600 mr-2">⚡</span>
+                        <span className="text-sm text-yellow-700">Giờ cao điểm:</span>
+                      </div>
+                      <span className="text-sm font-semibold text-yellow-800">x{prices.peakMultiplier}</span>
+                    </div>
+                  )}
+                  {prices.weekendMultiplier > 1 && (
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center">
+                        <span className="text-yellow-600 mr-2">🎉</span>
+                        <span className="text-sm text-yellow-700">Cuối tuần:</span>
+                      </div>
+                      <span className="text-sm font-semibold text-yellow-800">x{prices.weekendMultiplier}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+              
               <div className="flex justify-between">
                 <span className="text-gray-600">Giá cơ bản:</span>
                 <span className="font-semibold">{formatVND(prices.base)}</span>

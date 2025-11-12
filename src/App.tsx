@@ -9,7 +9,7 @@ import DashboardLayout from "./layout/DashboardLayout";
 // Public pages (non-lazy)
 import LoginPage from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
-import VerifyEmail from "./pages/auth/VerifyEmail";
+// import VerifyEmail from "./pages/auth/VerifyEmail";
 import HomePage from "./pages/shared/HomePage";
 import VehiclesPage from "./pages/shared/VehiclesPage";
 import DetailsPage from "./pages/shared/DetailsPage";
@@ -238,7 +238,7 @@ function App() {
                   }
                 />
 
-                <Route
+                {/* <Route
                   path="/verify-email"
                   element={
                     <>
@@ -249,7 +249,7 @@ function App() {
                       <Footer />
                     </>
                   }
-                />
+                /> */}
 
                 {/* Booking (protected) */}
                 <Route

@@ -51,6 +51,44 @@ const formatCurrency = (amount: number, currency: string) => {
   return new Intl.NumberFormat('vi-VN', opts).format(amount);
 };
 
+/* -------------------------------------------------------------------------- */
+/*  Helper: Get rental type display info                                     */
+/* -------------------------------------------------------------------------- */
+const getRentalTypeInfo = (pricing_snapshot: { 
+  hourly_rate?: number; 
+  daily_rate?: number; 
+  details?: { 
+    rentalType?: string; 
+    peakMultiplier?: number; 
+    weekendMultiplier?: number;
+  }
+}) => {
+  const rentalType = pricing_snapshot?.details?.rentalType;
+  
+  switch (rentalType) {
+    case 'daily':
+      return {
+        text: 'Thuê theo ngày',
+        color: 'blue' as const
+      };
+    case 'hourly':
+      return {
+        text: 'Thuê theo giờ',
+        color: 'green' as const
+      };
+    default:
+      // Fallback logic nếu không có rentalType
+      if (pricing_snapshot?.hourly_rate && pricing_snapshot?.daily_rate) {
+        return { text: 'Kết hợp giờ và ngày', icon: '⏰', color: 'purple' as const };
+      } else if (pricing_snapshot?.hourly_rate) {
+        return { text: 'Theo giờ', icon: '🕐', color: 'green' as const };
+      } else if (pricing_snapshot?.daily_rate) {
+        return { text: 'Theo ngày', icon: '📅', color: 'blue' as const };
+      }
+      return { text: 'Không xác định', icon: '❓', color: 'default' as const };
+  }
+};
+
 const RentalDetailScreen: React.FC<RentalDetailScreenProps> = ({
   rental,
   payments,
@@ -227,8 +265,7 @@ const RentalDetailScreen: React.FC<RentalDetailScreenProps> = ({
   /* ---------------------------------------------------------------------- */
   /*  Tính tiền còn lại (total - deposit)                                   */
   /* ---------------------------------------------------------------------- */
-  const remainingAmount =
-    charges.total - (pricing_snapshot.deposit ?? 0);
+  // const remainingAmount = charges?.total - (pricing_snapshot.deposit ?? 0);
 
   return (
     <div style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto' }}>
@@ -341,10 +378,84 @@ const RentalDetailScreen: React.FC<RentalDetailScreenProps> = ({
           </Col>
         )}
 
-        {/* ---------- Thông tin trạm ---------- */}
+        {/* ---------- Thông tin giá ---------- */}
         <Col xs={24} lg={12}>
           <Card title={<><CreditCardOutlined /> Thông tin giá</>}>
             <Space direction="vertical" size={8} style={{ width: '100%' }}>
+              {/* Hình thức thuê */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Text strong>Hình thức thuê:</Text>
+                <Tag color={getRentalTypeInfo(pricing_snapshot).color} style={{ padding: '2px 8px' }}>
+                  <span style={{ marginRight: 4 }}>{getRentalTypeInfo(pricing_snapshot).icon}</span>
+                  {getRentalTypeInfo(pricing_snapshot).text}
+                </Tag>
+              </div>
+
+              {/* Số giờ/ngày thuê */}
+              {(() => {
+                const details = (pricing_snapshot as { details?: { days?: number; hours?: number } })?.details;
+                return (
+                  <>
+                    {details?.days && details.days > 0 && (
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <Text>Số ngày thuê:</Text>
+                        <Text type="success" strong>{details.days} ngày</Text>
+                      </div>
+                    )}
+                    
+                    {details?.hours && details.hours > 0 && (
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <Text>Số giờ thuê:</Text>
+                        <Text type="success" strong>{details.hours} giờ</Text>
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
+
+              {/* Peak and Weekend Multipliers */}
+              {(() => {
+                const details = (pricing_snapshot as { details?: { peakMultiplier?: number; weekendMultiplier?: number } })?.details;
+                const hasPeakMultiplier = details?.peakMultiplier && details.peakMultiplier > 1;
+                const hasWeekendMultiplier = details?.weekendMultiplier && details.weekendMultiplier > 1;
+                
+                return (hasPeakMultiplier || hasWeekendMultiplier) && (
+                  <div style={{ 
+                    backgroundColor: '#fffbf0', 
+                    border: '1px solid #ffe58f', 
+                    borderRadius: 6, 
+                    padding: 12, 
+                    marginTop: 8 
+                  }}>
+                    <Text strong style={{ color: '#d48806', fontSize: 12, display: 'block', marginBottom: 8 }}>
+                      Phụ phí áp dụng:
+                    </Text>
+                    {hasPeakMultiplier && (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                        <div style={{ display: 'flex', alignItems: 'center' }}>
+                          <span style={{ color: '#d48806', marginRight: 6 }}>⚡</span>
+                          <Text style={{ fontSize: 12, color: '#d48806' }}>Giờ cao điểm:</Text>
+                        </div>
+                        <Text style={{ fontSize: 12, fontWeight: 600, color: '#d48806' }}>
+                          x{details?.peakMultiplier}
+                        </Text>
+                      </div>
+                    )}
+                    {hasWeekendMultiplier && (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div style={{ display: 'flex', alignItems: 'center' }}>
+                          <span style={{ color: '#d48806', marginRight: 6 }}>🎉</span>
+                          <Text style={{ fontSize: 12, color: '#d48806' }}>Cuối tuần:</Text>
+                        </div>
+                        <Text style={{ fontSize: 12, fontWeight: 600, color: '#d48806' }}>
+                          x{details?.weekendMultiplier}
+                        </Text>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+
               {pricing_snapshot.hourly_rate != null && (
                 <Text>
                   <Text strong>Giá theo giờ:</Text>{' '}

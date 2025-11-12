@@ -9,6 +9,7 @@ import DashboardLayout from "./layout/DashboardLayout";
 // Public pages (non-lazy)
 import LoginPage from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
+import VerifyEmail from "./pages/auth/VerifyEmail";
 import HomePage from "./pages/shared/HomePage";
 import VehiclesPage from "./pages/shared/VehiclesPage";
 import DetailsPage from "./pages/shared/DetailsPage";
@@ -43,7 +44,6 @@ import {
   LazyTechnicalStatus,
   LazyIncidentReport,
   LazyDeliveryProcedures,
-  LazyVehicleInspection,
   LazyIdentityVerification,
   LazyVehicleReserved,
   LazyVehicleRented,
@@ -68,6 +68,11 @@ import RentalHistory from "./pages/dashboard/admin/RentalHistory/RentalHistory";
 import EmployeeManagement from "./pages/dashboard/admin/EmployeeManagement/EmployeeList/EmployeeManagement";
 import VehicleManagement from "./pages/dashboard/admin/VehicleManagement/VehicleManagement";
 import StationManagement from "./pages/dashboard/admin/StationManagement/StationManagement";
+
+// Customer imports
+import CustomerRentalApp from "./pages/customer/rentals/CustomerRentalApp";
+import CustomerDashboard from "./pages/customer/CustomerDashboard";
+import RentalPaymentResultPage from "./pages/customer/rentals/RentalPaymentResultPage";
 
 function App() {
   const [user, setUser] = useState<User | null>(() => {
@@ -104,7 +109,6 @@ function App() {
       }
     };
     checkAuthStatus();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
@@ -234,6 +238,19 @@ function App() {
                   }
                 />
 
+                <Route
+                  path="/verify-email"
+                  element={
+                    <>
+                      <Header user={user} onLogout={handleLogout} />
+                      <main className="min-h-screen">
+                        <VerifyEmail />
+                      </main>
+                      <Footer />
+                    </>
+                  }
+                />
+
                 {/* Booking (protected) */}
                 <Route
                   path="/booking/:vehicleId?"
@@ -299,6 +316,33 @@ function App() {
                     </ProtectedRoute>
                   }
                 />
+
+                {/* Customer Rentals (protected) */}
+                <Route
+                  path="/my-rentals"
+                  element={
+                    <ProtectedRoute user={user} requireAuth={true}>
+                      <Header user={user} onLogout={handleLogout} />
+                      <main className="min-h-screen">
+                        <CustomerRentalApp />
+                      </main>
+                      <Footer />
+                    </ProtectedRoute>
+                  }
+                />
+
+                <Route
+                  path="/rental/:id/payment-result"
+                  element={
+                    <ProtectedRoute user={user} requireAuth={true}>
+                      <Header user={user} onLogout={handleLogout} />
+                      <main className="min-h-screen">
+                        <RentalPaymentResultPage />
+                      </main>
+                      <Footer />
+                    </ProtectedRoute>
+                  }
+                />
                 
                 {/* Booking details (protected) */}
                 <Route
@@ -314,9 +358,18 @@ function App() {
                   }
                 />
 
-                {/* ===================== ROLE SWITCHER (protected) ===================== */}
+                {/* ===================== ROLE SWITCHER & CUSTOMER DASHBOARD (protected) ===================== */}
                 <Route
                   path="/dashboard"
+                  element={
+                    <ProtectedRoute user={user} requireAuth={true}>
+                      <CustomerDashboard />
+                    </ProtectedRoute>
+                  }
+                />
+
+                <Route
+                  path="/role-switcher"
                   element={
                     <ProtectedRoute user={user} requireAuth={true}>
                       <LazyRoleSwitcher />
@@ -514,6 +567,30 @@ function App() {
                   }
                 />
 
+                {/* Vehicle Checkin Route */}
+                <Route
+                  path="/dashboard/staff/checkin/:rentalId"
+                  element={
+                    <ProtectedRoute user={user} requireAuth={true} allowedRoles={["staff", "admin"]}>
+                      <DashboardLayout>
+                           < ></>
+                      </DashboardLayout>
+                    </ProtectedRoute>
+                  }
+                />
+
+                {/* Vehicle Return Route */}
+                <Route
+                  path="/dashboard/staff/return/:rentalId"
+                  element={
+                    <ProtectedRoute user={user} requireAuth={true} allowedRoles={["staff", "admin"]}>
+                      <DashboardLayout>
+                         < ></>
+                      </DashboardLayout>
+                    </ProtectedRoute>
+                  }
+                />
+
                 {/* Staff Verification */}
                 <Route
                   path="/staff/customer-verification"
@@ -542,7 +619,7 @@ function App() {
                   element={
                     <ProtectedRoute user={user} requireAuth={true} allowedRoles={["staff", "admin"]}>
                       <DashboardLayout>
-                        <LazyVehicleInspection />
+                        < ></>
                       </DashboardLayout>
                     </ProtectedRoute>
                   }

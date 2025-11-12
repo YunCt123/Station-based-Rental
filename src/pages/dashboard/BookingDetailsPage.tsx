@@ -315,6 +315,10 @@ const BookingDetailsPage: React.FC = () => {
                   <span className="text-gray-500">Tiền cọc yêu cầu:</span>
                   <span className="text-orange-600 font-medium">{formatVND(prices.deposit)}</span>
                 </div>
+                <div className="flex justify-between text-sm mt-2 pt-2 border-t border-gray-100">
+                  <span className="text-gray-700 font-medium">Số tiền còn lại phải trả:</span>
+                  <span className="text-green-600 font-semibold">{formatVND(prices.total - prices.deposit)}</span>
+                </div>
               </div>
             </div>
           </Card>

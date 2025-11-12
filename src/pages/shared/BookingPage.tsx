@@ -7,8 +7,8 @@ import {
   useLocation,
   Link,
 } from "react-router-dom";
-import { Form, message, Spin, Card, Button } from "antd";
-import { UserOutlined, LoginOutlined, SafetyCertificateOutlined } from "@ant-design/icons";
+import { Form, message, Spin, Card, Button, Modal, Alert } from "antd";
+import { UserOutlined, LoginOutlined, SafetyCertificateOutlined, ExclamationCircleOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { bookingService, type PriceBreakdown } from "../../services/bookingService";
 import { vehicleService } from "../../services/vehicleService";
@@ -16,6 +16,7 @@ import { userService } from "../../services/userService";
 import type { Vehicle } from "../../types/vehicle";
 import { getCurrentUser, isUserVerified, getVerificationStatusMessage } from "../../utils/auth";
 import { useAutoRefreshUser } from "../../hooks/useAutoRefreshUser";
+import { useActiveRental } from "../../hooks/customer/useActiveRental";
 
 // Components
 import BookingSteps from "../../components/booking/BookingSteps";
@@ -27,6 +28,26 @@ import VehicleSummary from "../../components/booking/VehicleSummary";
 // interface DocumentUploadStatus {
 //   status: "not_started" | "uploading" | "success" | "error";
 // }
+
+// Helper function to translate rental status to Vietnamese
+const translateRentalStatus = (status: string): string => {
+  switch (status) {
+    case 'CONFIRMED':
+      return 'ĐANG CHỜ LẤY XE';
+    case 'ONGOING':
+      return 'ĐANG SỬ DỤNG XE';
+    case 'RETURN_PENDING':
+      return 'CHỜ THANH TOÁN CUỐI';
+    case 'COMPLETED':
+      return 'HOÀN THÀNH';
+    case 'CANCELLED':
+      return 'ĐÃ HỦY';
+    case 'REJECTED':
+      return 'BỊ TỪ CHỐI';
+    default:
+      return status; // Fallback to original status
+  }
+};
 
 const BookingPage: React.FC = () => {
   const { vehicleId } = useParams<{ vehicleId: string }>();
@@ -44,6 +65,10 @@ const BookingPage: React.FC = () => {
   const [vehicle, setVehicle] = useState<Vehicle | null>(null);
   const [loadingVehicle, setLoadingVehicle] = useState(true);
   const [user, setUser] = useState(() => getCurrentUser());
+  const [showActiveRentalWarning, setShowActiveRentalWarning] = useState(false);
+
+  // Active rental check
+  const { activeRental, checkActive } = useActiveRental();
 
   // Auto-refresh user data when component mounts
   useAutoRefreshUser(setUser);
@@ -223,6 +248,33 @@ const BookingPage: React.FC = () => {
       navigate("/settings");
       return;
     }
+
+    // 🚫 CHECK ACTIVE RENTAL BEFORE BOOKING (One Active Rental Per User Rule)
+    console.log('🔍 [BookingPage] Checking for active rental before creating booking...');
+    try {
+      const activeCheck = await checkActive();
+      
+      if (activeCheck.hasActiveRental && activeCheck.activeRental) {
+        console.warn('🚫 [BookingPage] User has active rental, blocking new booking');
+        console.log('🔍 [BookingPage] Active rental structure:', JSON.stringify(activeCheck.activeRental, null, 2));
+        console.log('🔍 [BookingPage] Vehicle data:', activeCheck.activeRental.vehicle_id);
+        console.log('🔍 [BookingPage] Booking data:', activeCheck.activeRental.booking_id);
+        
+        message.error({
+          content: activeCheck.statusMessage || 'Bạn đã có đơn thuê xe khác đang hoạt động',
+          duration: 8
+        });
+        
+        // Show rental info and redirect option
+        setShowActiveRentalWarning(true);
+        return;
+      }
+      
+      console.log('✅ [BookingPage] Active rental check passed, proceeding with booking creation');
+    } catch (error) {
+      console.error('❌ [BookingPage] Error checking active rental:', error);
+      // Continue with booking creation even if check fails
+    }
     
     if (!vehicleId) {
       message.error("Yêu cầu ID xe để đặt");
@@ -261,6 +313,21 @@ const BookingPage: React.FC = () => {
     } catch (error: unknown) {
       console.error("Lỗi tạo đặt xe:", error);
       const e = error as { response?: { status?: number }; message?: string };
+      
+      // 🚫 Handle 409 Conflict (User has active rental) - Fallback if frontend check missed it
+      if (e?.response?.status === 409) {
+        console.warn('🚫 [BookingPage] 409 Conflict from backend - User has active rental');
+        message.error({
+          content: 'Bạn đã có đơn thuê xe khác đang hoạt động. Không thể tạo đơn thuê mới.',
+          duration: 8
+        });
+        
+        // Refresh active rental data and show warning modal
+        await checkActive();
+        setShowActiveRentalWarning(true);
+        return;
+      }
+      
       if (
         e?.response?.status === 401 ||
         (e?.message &&
@@ -505,6 +572,97 @@ const BookingPage: React.FC = () => {
           )}
         </div>
       )}
+      
+      {/* 🚫 Active Rental Warning Modal */}
+      <Modal
+        title={
+          <div className="flex items-center gap-2">
+            <ExclamationCircleOutlined className="text-orange-500" />
+            <span>Bạn đã có đơn thuê xe khác</span>
+          </div>
+        }
+        open={showActiveRentalWarning}
+        onCancel={() => setShowActiveRentalWarning(false)}
+        footer={[
+          <Button key="cancel" onClick={() => setShowActiveRentalWarning(false)}>
+            Tiếp tục ở đây
+          </Button>,
+          <Button 
+            key="viewActive" 
+            type="primary" 
+            onClick={() => {
+              setShowActiveRentalWarning(false);
+              navigate('/my-rentals');
+            }}
+          >
+            Xem đơn thuê hiện tại
+          </Button>
+        ]}
+        width={600}
+      >
+        <div className="space-y-4">
+          <Alert
+            message="Mỗi khách hàng chỉ được phép có một đơn thuê xe đang hoạt động"
+            description={
+              activeRental ? (
+                <div className="mt-2">
+                  <p><strong>Đơn thuê hiện tại:</strong> {activeRental._id}</p>
+                  <p><strong>Trạng thái:</strong> {translateRentalStatus(activeRental.status)}</p>
+                  {/* <p><strong>Xe:</strong> {(() => {
+                    const vehicle = activeRental.vehicle_id;
+                    // Check if vehicle_id is just a string ID (not populated)
+                    if (typeof vehicle === 'string') {
+                      return `ID: ${vehicle}`;
+                    }
+                    if (!vehicle || typeof vehicle !== 'object') return 'Không có thông tin xe';
+                    const brand = vehicle.brand || vehicle.name || '';
+                    const model = vehicle.model || '';
+                    return brand && model ? `${brand} ${model}` : brand || model || 'Xe không xác định';
+                  })()}</p> */}
+                  <p><strong>Booking ID:</strong> {(() => {
+                    const booking = activeRental.booking_id;
+                    // Check if booking_id is just a string ID (not populated)
+                    if (typeof booking === 'string') {
+                      return booking;
+                    }
+                    return booking?._id || 'Không xác định';
+                  })()}</p>
+                  <p><strong>Ngày thuê:</strong> {(() => {
+                    const booking = activeRental.booking_id;
+                    // If booking_id is not populated, we can't show dates
+                    if (typeof booking === 'string') {
+                      return 'Thông tin ngày không có sẵn (cần xem chi tiết)';
+                    }
+                    if (!booking?.start_at || !booking?.end_at) return 'Không xác định';
+                    try {
+                      const start = new Date(booking.start_at).toLocaleString('vi-VN');
+                      const end = new Date(booking.end_at).toLocaleString('vi-VN');
+                      return `${start} → ${end}`;
+                    } catch {
+                      return 'Ngày không hợp lệ';
+                    }
+                  })()}</p>
+                  
+                  
+                </div>
+              ) : (
+                <p>Vui lòng hoàn tất hoặc hủy đơn thuê hiện tại trước khi tạo đơn mới.</p>
+              )
+            }
+            type="warning"
+            showIcon
+          />
+          
+          <div className="text-sm text-gray-600">
+            <p><strong>Gợi ý:</strong></p>
+            <ul className="list-disc list-inside ml-4 mt-2 space-y-1">
+              <li>Hoàn tất đơn thuê hiện tại bằng cách trả xe</li>
+              <li>Hoặc liên hệ hỗ trợ nếu cần hủy đơn thuê</li>
+              <li>Sau đó quay lại để thuê xe mới</li>
+            </ul>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };

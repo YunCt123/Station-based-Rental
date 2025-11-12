@@ -150,7 +150,7 @@ const Navbar = ({ user, onLogout }: NavbarProps) => {
                   <DropdownMenuItem asChild>
                     <Link to="/bookings" className="flex items-center">
                       <History className="mr-2 h-4 w-4" />
-                      Lịch sử đặt xe
+                      Lịch sử thanh toán
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>

@@ -10,6 +10,9 @@ export interface RentalStatus {
   COMPLETED: 'COMPLETED';
 }
 
+// Active rental statuses (from BE docs)
+export const ACTIVE_RENTAL_STATUSES = ['CONFIRMED', 'ONGOING', 'RETURN_PENDING'] as const;
+
 export interface Vehicle {
   _id: string;
   name: string;
@@ -310,4 +313,82 @@ export const customerService = {
     );
   }
 }
+
+};
+
+// ==============================================================================
+// ACTIVE RENTAL MANAGEMENT (One Active Rental Per User)  
+// ==============================================================================
+
+/**
+ * Get user's active rental (CONFIRMED, ONGOING, RETURN_PENDING)
+ * Based on BE endpoint: GET /api/v1/rentals/active
+ */
+export const getUserActiveRental = async (): Promise<Rental | null> => {
+  try {
+    console.log('🔍 [CustomerService] Checking user active rental...');
+    
+    const response = await api.get('/rentals/active');
+    
+    console.log('✅ [CustomerService] Active rental response:', response.data);
+    
+    if (response.data.success && response.data.data) {
+      return response.data.data as Rental;
+    }
+    
+    // No active rental
+    return null;
+  } catch (error: any) {
+    console.error('💥 [CustomerService] Get active rental error:', error);
+    
+    // If 404 or no data, it means no active rental
+    if (error.response?.status === 404) {
+      return null;
+    }
+    
+    throw new Error(
+      error.response?.data?.message ||
+      error.message ||
+      'Không thể kiểm tra trạng thái thuê xe'
+    );
+  }
+};
+
+/**
+ * Check if user has any active rental
+ * Returns the active rental or null
+ */
+export const checkUserActiveRental = async (): Promise<{
+  hasActiveRental: boolean;
+  activeRental: Rental | null;
+  statusMessage?: string;
+}> => {
+  try {
+    const activeRental = await getUserActiveRental();
+    
+    if (!activeRental) {
+      return {
+        hasActiveRental: false,
+        activeRental: null
+      };
+    }
+    
+    // Generate user-friendly status message based on BE docs
+    const statusMessages = {
+      'CONFIRMED': 'đã được xác nhận và chờ nhận xe',
+      'ONGOING': 'đang trong quá trình thuê xe', 
+      'RETURN_PENDING': 'đã trả xe và chờ thanh toán'
+    };
+    
+    const statusMessage = statusMessages[activeRental.status as keyof typeof statusMessages] || 'đang hoạt động';
+    
+    return {
+      hasActiveRental: true,
+      activeRental,
+      statusMessage: `Bạn đã có một đơn thuê xe ${statusMessage}. Vui lòng hoàn thành đơn thuê hiện tại trước khi tạo đơn mới.`
+    };
+  } catch (error: any) {
+    console.error('💥 [CustomerService] Check active rental error:', error);
+    throw error;
+  }
 };

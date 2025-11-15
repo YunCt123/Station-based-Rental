@@ -378,6 +378,20 @@ export const rentalService = {
       console.error("❌ [rentalService] Failed to get station handovers:", error);
       throw new Error("Failed to load pending handovers");
     }
+  },
+
+  // Get all rentals (admin)
+  async getAllRentals(): Promise<StationRental[]> {
+    try {
+      const response = await api.get<ApiResponse<StationRental[]>>('/rentals/all');
+      if (response.data.success && response.data.data) {
+        return response.data.data;
+      }
+      return [];
+    } catch (error) {
+      console.error("❌ [rentalService] Failed to get all rentals:", error);
+      throw new Error("Failed to load rentals");
+    }
   }
 };
 

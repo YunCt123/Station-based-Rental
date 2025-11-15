@@ -1067,6 +1067,61 @@ export class BookingService {
     console.log('✅ [Frontend] Fallback calculation result:', breakdown);
     return breakdown;
   }
+
+  // ✅ NEW: Get all bookings for staff/admin
+  async getAllBookings(params?: {
+    status?: 'HELD' | 'CONFIRMED' | 'CANCELLED' | 'EXPIRED';
+    limit?: number;
+    page?: number;
+    startDate?: string;
+    endDate?: string;
+    stationId?: string;
+  }): Promise<Booking[]> {
+    try {
+      console.log('[BookingService] Getting all bookings for staff:', params);
+      
+      const queryParams = new URLSearchParams();
+      if (params?.status) queryParams.append('status', params.status);
+      if (params?.limit) queryParams.append('limit', params.limit.toString());
+      if (params?.page) queryParams.append('page', params.page.toString());
+      if (params?.startDate) queryParams.append('startDate', params.startDate);
+      if (params?.endDate) queryParams.append('endDate', params.endDate);
+      if (params?.stationId) queryParams.append('stationId', params.stationId);
+      
+      // ✅ Request populated data for staff view
+      queryParams.append('populate', 'user_id,vehicle_id,station_id');
+      
+      const url = `/bookings/all${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
+      console.log('[BookingService] API URL:', url);
+      
+      const response = await api.get<ApiResponse<Booking[]>>(url);
+      
+      if (response.data.success && response.data.data) {
+        console.log('[BookingService] All bookings retrieved:', {
+          count: response.data.data.length,
+          sample: response.data.data.slice(0, 2).map((b: any) => ({
+            id: b._id,
+            status: b.status,
+            user: b.user_id?.name || 'Unknown User',
+            vehicle: b.vehicle_id?.name || 'Unknown Vehicle',
+            deposit: b.financial_summary?.deposit_amount || 0,
+            paid: b.financial_summary?.deposit_paid || 0
+          }))
+        });
+        return response.data.data;
+      }
+      
+      return [];
+    } catch (error: any) {
+      console.error('[BookingService] Get all bookings error:', error);
+      console.error('[BookingService] Error details:', {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        message: error.response?.data?.message
+      });
+      throw new Error(error.response?.data?.message || error.message || 'Failed to get all bookings');
+    }
+  }
 }
 
 // Export singleton instance

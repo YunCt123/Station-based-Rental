@@ -13,6 +13,8 @@ import {
   DevicePhoneMobileIcon,
   ArrowPathIcon,
   ShieldCheckIcon,
+  MapPinIcon,
+  CalendarDaysIcon,
   ExclamationTriangleIcon
 } from '@heroicons/react/24/outline';
 import { bookingService } from '@/services/bookingService';
@@ -41,7 +43,6 @@ interface DepositRecord {
   };
   status: 'HELD' | 'CONFIRMED' | 'CANCELLED' | 'EXPIRED';
   
-  // ✅ REAL BE STRUCTURE: pricing instead of financial_summary
   pricing: {
     deposit: number;
     total_price: number;
@@ -62,7 +63,7 @@ interface DepositRecord {
     deposit_required: boolean;
   };
   
-  // ✅ Additional BE fields from log
+
   vehicle_snapshot?: {
     name: string;
     brand: string;
@@ -82,7 +83,6 @@ interface DepositRecord {
   createdAt: string;
   updatedAt?: string;
   
-  // Computed fields for UI (calculated from pricing)
   depositStatus: 'pending' | 'collected' | 'refunded' | 'partial-refund';
   paidAmount: number;
   refundedAmount: number;
@@ -100,12 +100,12 @@ const DepositPayment: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDeposit, setSelectedDeposit] = useState<DepositRecord | null>(null);
 
-  // API states
+
   const [bookings, setBookings] = useState<DepositRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Modal states
+
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>('');
   const [actionType, setActionType] = useState<ActionType>('collect');
   const [amount, setAmount] = useState<string>('');
@@ -115,7 +115,7 @@ const DepositPayment: React.FC = () => {
   const [deductionReason, setDeductionReason] = useState<string>('');
   const [note, setNote] = useState('');
 
-  // Fetch bookings data from API
+
   useEffect(() => {
     const fetchBookings = async () => {
       try {
@@ -125,15 +125,15 @@ const DepositPayment: React.FC = () => {
         console.log('� [DepositPayment] Starting API call...');
         console.log('�📡 Calling API via bookingService.getAllBookings()');
         
-        // Use bookingService instead of fetch
+
         const apiResponse = await bookingService.getAllBookings({
-          limit: 100 // Get more records for staff view
+          limit: 100 
         });
         
         console.log('📡 [DepositPayment] Full API Response:', apiResponse);
         
-        // ✅ FIX: Extract bookings array from response structure
-        const bookingsArray = apiResponse?.data?.bookings || apiResponse?.bookings || apiResponse || [];
+
+        const bookingsArray = Array.isArray(apiResponse) ? apiResponse : (apiResponse?.data || []);
         console.log('📦 [DepositPayment] Extracted bookings array:', bookingsArray.length, 'items');
         console.log('📦 [DepositPayment] First booking sample:', bookingsArray[0]);
 
@@ -145,7 +145,7 @@ const DepositPayment: React.FC = () => {
           const depositAmount = booking.financial_summary?.deposit_amount || booking.pricing_snapshot?.deposit || 0;
           const totalPrice = booking.financial_summary?.total_amount || booking.pricing_snapshot?.total_price || 0;
 
-          // ✅ Enhanced data extraction matching BE response structure  
+          // ✅ Enhanced data extraction Dematching BE response structure  
           const transformed: DepositRecord = {
             _id: booking._id || '',
             bookingId: booking._id || '',
@@ -170,7 +170,6 @@ const DepositPayment: React.FC = () => {
             },
             status: booking.status || 'HELD',
             
-            // ✅ Map pricing using BE structure: pricing_snapshot + financial_summary
             pricing: {
               deposit: depositAmount,
               total_price: totalPrice,
@@ -497,8 +496,8 @@ const DepositPayment: React.FC = () => {
       <div className="bg-white rounded-lg shadow-sm p-6">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Đặt Cọc & Hoàn Cọc</h1>
-            <p className="text-gray-600 mt-1">Quản lý thu và hoàn tiền đặt cọc cho khách hàng</p>
+            <h1 className="text-2xl font-bold text-gray-900">Đặt Cọc</h1>
+            <p className="text-gray-600 mt-1">Quản lý thu tiền đặt cọc cho khách hàng</p>
           </div>
           <div className="flex items-center gap-2">
             <ShieldCheckIcon className="w-8 h-8 text-blue-600" />
@@ -551,11 +550,6 @@ const DepositPayment: React.FC = () => {
             {/* Data Display */}
             {!loading && !error && (
               <div className="space-y-3">
-                {/* ✅ DEBUG: Show data status */}
-                <div className="text-xs text-gray-500 mb-2">
-                  DEBUG: Total bookings: {bookings.length} | Filtered: {filteredDeposits.length}
-                </div>
-                
                 {filteredDeposits.length === 0 ? (
                   <div className="text-center py-12">
                     <ShieldCheckIcon className="w-16 h-16 text-gray-300 mx-auto mb-4" />
@@ -589,7 +583,7 @@ const DepositPayment: React.FC = () => {
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-2">
                             <span className="font-semibold text-gray-900">
-                              {deposit.bookingId}
+                              Mã booking: {deposit.bookingId}
                             </span>
                             <span
                               className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadge(
@@ -610,18 +604,71 @@ const DepositPayment: React.FC = () => {
                               <span>{deposit.vehicle_id?.name || 'Unknown Vehicle'}</span>
                             </div>
                           </div>
+
+                          {/* ✅ NEW: Station and rental period info */}
+                          <div className="mt-3 space-y-2">
+                            <div className="flex items-start gap-2 text-sm text-gray-600">
+                              <MapPinIcon className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                              <div>
+                                <div className="font-medium">{deposit.station_id?.name || 'Unknown Station'}</div>
+                                <div className="text-xs text-gray-500">{deposit.station_id?.address || 'Unknown Location'}</div>
+                              </div>
+                            </div>
+                            
+                            <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
+                              <div className="flex items-center gap-1">
+                                <CalendarDaysIcon className="w-3.5 h-3.5" />
+                                <div>
+                                  <div className="text-gray-500">Ngày bắt đầu:</div>
+                                  <div className="font-medium">
+                                    {new Date(deposit.start_at).toLocaleDateString('vi-VN', {
+                                      day: '2-digit',
+                                      month: '2-digit', 
+                                      year: 'numeric'
+                                    })}
+                                  </div>
+                                  <div className="text-gray-400">
+                                    {new Date(deposit.start_at).toLocaleTimeString('vi-VN', {
+                                      hour: '2-digit',
+                                      minute: '2-digit'
+                                    })}
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              <div className="flex items-center gap-1">
+                                <CalendarDaysIcon className="w-3.5 h-3.5" />
+                                <div>
+                                  <div className="text-gray-500">Ngày kết thúc:</div>
+                                  <div className="font-medium">
+                                    {new Date(deposit.end_at).toLocaleDateString('vi-VN', {
+                                      day: '2-digit',
+                                      month: '2-digit',
+                                      year: 'numeric'
+                                    })}
+                                  </div>
+                                  <div className="text-gray-400">
+                                    {new Date(deposit.end_at).toLocaleTimeString('vi-VN', {
+                                      hour: '2-digit',
+                                      minute: '2-digit'
+                                    })}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
                         </div>
 
                         <div className="text-right ml-4">
                           <div className="text-xs text-gray-500 mb-1">Tiền cọc</div>
                           <div className="text-xl font-bold text-blue-600">
-                            {((deposit.pricing?.deposit ?? 0) / 1000).toFixed(0)}K VND
+                            {((deposit.pricing?.deposit ?? 0) / 1000).toFixed(3)}đ
                           </div>
                           {deposit.remainingDeposit > 0 &&
                             deposit.depositStatus !== 'pending' && (
                               <div className="text-xs text-gray-600 mt-1">
                                 Còn lại:{' '}
-                                {(deposit.remainingDeposit / 1000).toFixed(0)}K VND
+                                {(deposit.remainingDeposit / 1000).toFixed(3)}đ
                               </div>
                             )}
                         </div>
@@ -654,13 +701,87 @@ const DepositPayment: React.FC = () => {
                       <span className="text-gray-600">Khách hàng:</span>
                       <span className="font-medium">{selectedDeposit.user_id?.name || 'N/A'}</span>
                     </div>
+                     <div className="flex justify-between">
+                      <span className="text-gray-600">Email:</span>
+                      <span className="font-medium">{selectedDeposit.user_id?.email || 'N/A'}</span>
+                    </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Mã booking:</span>
-                      <span className="font-medium">{selectedDeposit.bookingId || 'N/A'}</span>
+                      <span className="text-gray-600">SĐT:</span>
+                      <span className="font-medium">{selectedDeposit.user_id?.phoneNumber || 'N/A'}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Xe:</span>
                       <span className="font-medium">{selectedDeposit.vehicle_id?.name || 'N/A'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Biển số:</span>
+                      <span className="font-medium">{selectedDeposit.vehicle_id?.licensePlate || 'N/A'}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* ✅ NEW: Station and rental period info */}
+                <div className="p-3 bg-green-50 rounded-lg border border-green-200">
+                  <h3 className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
+                    <MapPinIcon className="w-4 h-4" />
+                    Trạm & Lịch trình
+                  </h3>
+                  <div className="space-y-2 text-sm">
+                    <div>
+                      <div className="text-gray-600 text-xs mb-1">Trạm lấy xe:</div>
+                      <div className="font-medium">{selectedDeposit.station_id?.name || 'N/A'}</div>
+                      <div className="text-gray-500 text-xs">{selectedDeposit.station_id?.address || 'Chưa có địa chỉ'}</div>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 gap-2 pt-2 border-t border-green-200">
+                      <div>
+                        <div className="text-gray-600 text-xs mb-1 flex items-center gap-1">
+                          <CalendarDaysIcon className="w-3 h-3" />
+                          Thời gian lấy xe:
+                        </div>
+                        <div className="font-medium">
+                          {new Date(selectedDeposit.start_at).toLocaleDateString('vi-VN', {
+                            weekday: 'short',
+                            day: '2-digit',
+                            month: '2-digit', 
+                            year: 'numeric'
+                          })}
+                        </div>
+                        <div className="text-blue-600 font-medium">
+                          {new Date(selectedDeposit.start_at).toLocaleTimeString('vi-VN', {
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <div className="text-gray-600 text-xs mb-1 flex items-center gap-1">
+                          <CalendarDaysIcon className="w-3 h-3" />
+                          Thời gian trả xe:
+                        </div>
+                        <div className="font-medium">
+                          {new Date(selectedDeposit.end_at).toLocaleDateString('vi-VN', {
+                            weekday: 'short',
+                            day: '2-digit',
+                            month: '2-digit',
+                            year: 'numeric'
+                          })}
+                        </div>
+                        <div className="text-red-600 font-medium">
+                          {new Date(selectedDeposit.end_at).toLocaleTimeString('vi-VN', {
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="pt-2 border-t border-green-200">
+                      <div className="text-gray-600 text-xs">Thời gian thuê:</div>
+                      <div className="font-medium text-purple-600">
+                        {Math.round((new Date(selectedDeposit.end_at).getTime() - new Date(selectedDeposit.start_at).getTime()) / (1000 * 60 * 60 * 24))} ngày
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -672,26 +793,26 @@ const DepositPayment: React.FC = () => {
                     <div className="flex justify-between">
                       <span className="text-gray-600">Số tiền cọc:</span>
                       <span className="font-bold text-blue-600">
-                        {((selectedDeposit.pricing?.deposit ?? 0) / 1000).toFixed(0)}K VND
+                        {((selectedDeposit.pricing?.deposit ?? 0) / 1000).toFixed(3)}đ
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Đã thu:</span>
                       <span className="font-medium text-green-600">
-                        {((selectedDeposit.paidAmount ?? 0) / 1000).toFixed(0)}K VND
+                         {((selectedDeposit.pricing?.deposit ?? 0) / 1000).toFixed(3)}đ
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Đã hoàn:</span>
                       <span className="font-medium text-orange-600">
-                        {((selectedDeposit.refundedAmount ?? 0) / 1000).toFixed(0)}K VND
+                        {((selectedDeposit.refundedAmount ?? 0) / 1000).toFixed(3)}đ
                       </span>
                     </div>
                     <div className="border-t border-blue-300 pt-1 mt-1">
                       <div className="flex justify-between">
                         <span className="text-gray-900 font-medium">Còn lại:</span>
                         <span className="font-bold text-gray-900">
-                          {(selectedDeposit.remainingDeposit / 1000).toFixed(0)}K VND
+                          {(selectedDeposit.remainingDeposit / 1000).toFixed(3)}đ
                         </span>
                       </div>
                     </div>
@@ -769,7 +890,7 @@ const DepositPayment: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-600">Tiền cọc:</span>
                   <span className="text-2xl font-bold text-blue-600">
-                    {((selectedDeposit.pricing?.deposit ?? 0) / 1000).toFixed(0)}K VND
+                    {((selectedDeposit.pricing?.deposit ?? 0) / 1000).toFixed(3)}đ
                   </span>
                 </div>
               </div>

@@ -198,11 +198,56 @@ const DepositPayment: React.FC = () => {
             createdAt: booking.createdAt || '',
             updatedAt: booking.updatedAt,
             
-            // ✅ Computed fields based on financial_summary + payment status
-            depositStatus: booking.payment?.status === 'SUCCESS' ? 'collected' : 'pending',
-            paidAmount: booking.financial_summary?.deposit_paid || 0,
-            refundedAmount: 0,
-            remainingDeposit: booking.financial_summary?.deposit_remaining || depositAmount
+            // ✅ FIXED: Deposit logic based on payment status (ignore potentially wrong financial_summary)
+            depositStatus: (() => {
+              const paymentStatus = booking.payment?.status;
+              const bookingStatus = booking.status;
+              
+              // If payment status is SUCCESS, deposit is definitely collected
+              if (paymentStatus === 'SUCCESS') {
+                return bookingStatus === 'CANCELLED' ? 'refunded' : 'collected';
+              }
+              
+              // If payment is pending/failed, deposit not collected yet
+              if (paymentStatus === 'PENDING' || paymentStatus === 'FAILED') {
+                return 'pending';
+              }
+              
+              // Fallback based on booking status
+              if (bookingStatus === 'CONFIRMED') return 'collected';
+              if (bookingStatus === 'CANCELLED') return 'refunded'; 
+              return 'pending';
+            })(),
+            
+            // ✅ FIXED: Calculate amounts based on correct logic
+            paidAmount: (() => {
+              const paymentStatus = booking.payment?.status;
+              return paymentStatus === 'SUCCESS' ? depositAmount : 0;
+            })(),
+            
+            refundedAmount: (() => {
+              const paymentStatus = booking.payment?.status;
+              const bookingStatus = booking.status;
+              return (paymentStatus === 'SUCCESS' && bookingStatus === 'CANCELLED') ? depositAmount : 0;
+            })(),
+            
+            remainingDeposit: (() => {
+              const paymentStatus = booking.payment?.status;
+              const bookingStatus = booking.status;
+              
+              // If payment successful and not cancelled, no remaining deposit
+              if (paymentStatus === 'SUCCESS' && bookingStatus !== 'CANCELLED') {
+                return 0;
+              }
+              
+              // If payment successful and cancelled, depends on refund policy
+              if (paymentStatus === 'SUCCESS' && bookingStatus === 'CANCELLED') {
+                return 0; // Assume full refund
+              }
+              
+              // Otherwise, full deposit remaining
+              return depositAmount;
+            })()
           };
 
           return transformed;
@@ -305,30 +350,31 @@ const DepositPayment: React.FC = () => {
         };
 
         const fallbackBookings: DepositRecord[] = mockApiResponse.data.map((booking) => {
-          let depositStatus: DepositRecord['depositStatus'] = 'pending';
-
-          // ✅ FIX: Use pricing instead of financial_summary
+          // ✅ FIXED: Use same logic as real API response
           const { pricing, payment } = booking;
           const depositAmount = pricing.deposit;
-          const isPaid = payment.status === 'SUCCESS';
-          const paid = isPaid ? depositAmount : 0;
-          const remaining = isPaid ? 0 : depositAmount;
+          const paymentStatus = payment.status;
+          const bookingStatus = booking.status;
 
-          if (remaining === 0 && paid > 0) {
-            depositStatus = 'collected';
-          } else if ((booking.status as string) === 'CANCELLED') {
-            depositStatus = 'refunded';
-          } else if (paid > 0 && remaining > 0) {
-            depositStatus = 'partial-refund';
-          }
+          // Calculate status based on payment success
+          const depositStatus: DepositRecord['depositStatus'] = (() => {
+            if (paymentStatus === 'SUCCESS') {
+              return bookingStatus === 'CANCELLED' ? 'refunded' : 'collected';
+            }
+            return 'pending';
+          })();
+
+          const paidAmount = paymentStatus === 'SUCCESS' ? depositAmount : 0;
+          const refundedAmount = (paymentStatus === 'SUCCESS' && bookingStatus === 'CANCELLED') ? depositAmount : 0;
+          const remainingDeposit = paymentStatus === 'SUCCESS' ? 0 : depositAmount;
 
           return {
             ...booking,
             bookingId: booking._id,
             depositStatus,
-            paidAmount: paid,
-            refundedAmount: (booking.status as string) === 'CANCELLED' ? paid : 0,
-            remainingDeposit: remaining
+            paidAmount,
+            refundedAmount,
+            remainingDeposit
           } as DepositRecord;
         });
         
@@ -659,18 +705,32 @@ const DepositPayment: React.FC = () => {
                           </div>
                         </div>
 
-                        <div className="text-right ml-4">
-                          <div className="text-xs text-gray-500 mb-1">Tiền cọc</div>
-                          <div className="text-xl font-bold text-blue-600">
-                            {((deposit.pricing?.deposit ?? 0) / 1000).toFixed(3)}đ
+                        <div className="text-right ml-4 space-y-2">
+                          {/* Deposit Amount */}
+                          <div>
+                            <div className="text-xs text-gray-500 mb-1">Tiền cọc</div>
+                            <div className="text-xl font-bold text-blue-600">
+                              {(deposit.pricing?.deposit ?? 0).toLocaleString('vi-VN')}đ
+                            </div>
+                            {deposit.remainingDeposit > 0 &&
+                              deposit.depositStatus !== 'pending' && (
+                                <div className="text-xs text-gray-600 mt-1">
+                                  Còn lại:{' '}
+                                  {(deposit.remainingDeposit).toLocaleString('vi-VN')}đ
+                                </div>
+                              )}
                           </div>
-                          {deposit.remainingDeposit > 0 &&
-                            deposit.depositStatus !== 'pending' && (
-                              <div className="text-xs text-gray-600 mt-1">
-                                Còn lại:{' '}
-                                {(deposit.remainingDeposit / 1000).toFixed(3)}đ
-                              </div>
-                            )}
+                          
+                          {/* ✅ NEW: Total Booking Amount */}
+                          <div className="pt-2 border-t border-gray-200">
+                            <div className="text-xs text-gray-500 mb-1">Tổng tiền thuê</div>
+                            <div className="text-lg font-semibold text-green-600">
+                              {((deposit.pricing?.total_price ?? 0)).toLocaleString('vi-VN')}đ
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              (Bao gồm cọc + phí dịch vụ)
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -701,7 +761,7 @@ const DepositPayment: React.FC = () => {
                       <span className="text-gray-600">Khách hàng:</span>
                       <span className="font-medium">{selectedDeposit.user_id?.name || 'N/A'}</span>
                     </div>
-                     <div className="flex justify-between">
+                    <div className="flex justify-between">
                       <span className="text-gray-600">Email:</span>
                       <span className="font-medium">{selectedDeposit.user_id?.email || 'N/A'}</span>
                     </div>
@@ -793,27 +853,74 @@ const DepositPayment: React.FC = () => {
                     <div className="flex justify-between">
                       <span className="text-gray-600">Số tiền cọc:</span>
                       <span className="font-bold text-blue-600">
-                        {((selectedDeposit.pricing?.deposit ?? 0) / 1000).toFixed(3)}đ
+                        {(selectedDeposit.pricing?.deposit ?? 0).toLocaleString('vi-VN')}đ
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Đã thu:</span>
                       <span className="font-medium text-green-600">
-                         {((selectedDeposit.pricing?.deposit ?? 0) / 1000).toFixed(3)}đ
+                        {(selectedDeposit.paidAmount ?? 0).toLocaleString('vi-VN')}đ
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Đã hoàn:</span>
                       <span className="font-medium text-orange-600">
-                        {((selectedDeposit.refundedAmount ?? 0) / 1000).toFixed(3)}đ
+                        {(selectedDeposit.refundedAmount ?? 0).toLocaleString('vi-VN')}đ
                       </span>
                     </div>
                     <div className="border-t border-blue-300 pt-1 mt-1">
                       <div className="flex justify-between">
                         <span className="text-gray-900 font-medium">Còn lại:</span>
                         <span className="font-bold text-gray-900">
-                          {(selectedDeposit.remainingDeposit / 1000).toFixed(3)}đ
+                          {(selectedDeposit.remainingDeposit ?? 0).toLocaleString('vi-VN')}đ
                         </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* ✅ NEW: Total Booking Amount */}
+                <div className="p-3 bg-green-50 rounded-lg border border-green-200">
+                  <h3 className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                    <CurrencyDollarIcon className="w-4 h-4" />
+                    Tổng giá trị booking
+                  </h3>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Tổng tiền thuê:</span>
+                      <span className="font-bold text-green-600 text-lg">
+                        {(selectedDeposit.pricing?.total_price ?? 0).toLocaleString('vi-VN')}đ
+                      </span>
+                    </div>
+                    
+                    <div className="pt-2 border-t border-green-200 space-y-1 text-xs text-gray-600">
+                      <div className="flex justify-between">
+                        <span>Chi phí thuê cơ bản:</span>
+                        <span>{(selectedDeposit.pricing?.base_price ?? 0).toLocaleString('vi-VN')}đ</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Phí bảo hiểm:</span>
+                        <span>{(selectedDeposit.pricing?.insurance_price ?? 0).toLocaleString('vi-VN')}đ</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Thuế & phí:</span>
+                        <span>{(selectedDeposit.pricing?.taxes ?? 0).toLocaleString('vi-VN')}đ</span>
+                      </div>
+                      <div className="flex justify-between font-medium text-gray-700">
+                        <span>Tiền cọc:</span>
+                        <span>{(selectedDeposit.pricing?.deposit ?? 0).toLocaleString('vi-VN')}đ</span>
+                      </div>
+                    </div>
+                    
+                    <div className="pt-2 border-t border-green-300">
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Khách cần trả khi trả xe:</span>
+                        <span className="font-bold text-purple-600">
+                          {((selectedDeposit.pricing?.total_price ?? 0) - (selectedDeposit.pricing?.deposit ?? 0)).toLocaleString('vi-VN')}đ
+                        </span>
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        (Tổng tiền - Tiền cọc đã thu)
                       </div>
                     </div>
                   </div>

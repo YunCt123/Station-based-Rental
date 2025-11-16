@@ -34,14 +34,23 @@ const IssueHistoryScreen: React.FC<IssueHistoryScreenProps> = ({ onBack, onViewD
 
       // ✅ Use customerIssueService instead of fetch
       const params = {
-        ...(statusFilter !== 'all' && { status: statusFilter.toUpperCase() }),
+        status: statusFilter !== 'all' ? statusFilter.toUpperCase() : undefined,
         limit: 50
       };
 
+      console.log('🚀 [IssueHistoryScreen] Starting to fetch customer issues with params:', params);
       const result = await customerIssueService.getCustomerIssues(params);
-      console.log('📊 Customer issues response:', result);
+      console.log('📊 Customer issues service response:', result);
+      console.log('📦 Response data type:', typeof result.data, 'isArray:', Array.isArray(result.data));
+      console.log('📄 Response data content:', result.data);
 
-      setIssues(result.data || []);
+      if (result.success && Array.isArray(result.data)) {
+        console.log('✅ Setting issues array with', result.data.length, 'items');
+        setIssues(result.data);
+      } else {
+        console.warn('⚠️ Unexpected response format:', result);
+        setIssues([]); // Default to empty array
+      }
 
     } catch (err) {
       console.error('❌ Error fetching customer issues:', err);
@@ -108,7 +117,7 @@ const IssueHistoryScreen: React.FC<IssueHistoryScreenProps> = ({ onBack, onViewD
     }
   };
 
-  const filteredIssues = issues.filter(issue => {
+  const filteredIssues = Array.isArray(issues) ? issues.filter(issue => {
     const matchesSearch = 
       issue.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       issue.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -116,6 +125,16 @@ const IssueHistoryScreen: React.FC<IssueHistoryScreenProps> = ({ onBack, onViewD
       (issue.vehicle_id?.name || '').toLowerCase().includes(searchQuery.toLowerCase());
     
     return matchesSearch;
+  }) : [];
+
+  // Debug log render state
+  console.log('🎨 [IssueHistoryScreen] Render state:', {
+    loading,
+    error,
+    issuesLength: issues.length,
+    filteredIssuesLength: filteredIssues.length,
+    statusFilter,
+    searchQuery
   });
 
   return (
@@ -175,7 +194,7 @@ const IssueHistoryScreen: React.FC<IssueHistoryScreenProps> = ({ onBack, onViewD
             <DocumentTextIcon className="w-8 h-8 text-gray-500 mr-3" />
             <div>
               <p className="text-sm text-gray-600">Tổng số</p>
-              <p className="text-2xl font-bold text-gray-900">{issues.length}</p>
+              <p className="text-2xl font-bold text-gray-900">{Array.isArray(issues) ? issues.length : 0}</p>
             </div>
           </div>
         </div>
@@ -186,7 +205,7 @@ const IssueHistoryScreen: React.FC<IssueHistoryScreenProps> = ({ onBack, onViewD
             <div>
               <p className="text-sm text-gray-600">Đã báo cáo</p>
               <p className="text-2xl font-bold text-red-600">
-                {issues.filter(issue => issue.status === 'OPEN').length}
+                {Array.isArray(issues) ? issues.filter(issue => issue.status === 'OPEN').length : 0}
               </p>
             </div>
           </div>
@@ -198,7 +217,7 @@ const IssueHistoryScreen: React.FC<IssueHistoryScreenProps> = ({ onBack, onViewD
             <div>
               <p className="text-sm text-gray-600">Đang xử lý</p>
               <p className="text-2xl font-bold text-yellow-600">
-                {issues.filter(issue => issue.status === 'IN_PROGRESS').length}
+                {Array.isArray(issues) ? issues.filter(issue => issue.status === 'IN_PROGRESS').length : 0}
               </p>
             </div>
           </div>
@@ -210,7 +229,7 @@ const IssueHistoryScreen: React.FC<IssueHistoryScreenProps> = ({ onBack, onViewD
             <div>
               <p className="text-sm text-gray-600">Đã giải quyết</p>
               <p className="text-2xl font-bold text-green-600">
-                {issues.filter(issue => issue.status === 'RESOLVED').length}
+                {Array.isArray(issues) ? issues.filter(issue => issue.status === 'RESOLVED').length : 0}
               </p>
             </div>
           </div>
@@ -245,7 +264,7 @@ const IssueHistoryScreen: React.FC<IssueHistoryScreenProps> = ({ onBack, onViewD
           <div className="text-center py-12">
             <DocumentTextIcon className="w-16 h-16 text-gray-300 mx-auto mb-4" />
             <p className="text-gray-500">
-              {issues.length === 0 
+              {!Array.isArray(issues) || issues.length === 0 
                 ? 'Bạn chưa có báo cáo sự cố nào.' 
                 : 'Không tìm thấy báo cáo phù hợp với tìm kiếm.'}
             </p>

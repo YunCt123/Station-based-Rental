@@ -171,15 +171,20 @@ class CustomerIssueService {
       const response = await api.get(endpoint);
       console.log('✅ [CustomerIssueService] Raw API response:', response);
 
-      // ✅ Extract data safely - API might return { success: true, data: [...] } or directly [...]
+      // ✅ Extract data safely - axios returns full response object with res.data
       let issuesData: IssueListItem[] = [];
       
-      if (Array.isArray(response)) {
-        issuesData = response;
-      } else if (response?.data && Array.isArray(response.data)) {
+      // Extract from response.data (which contains { success: true, data: [...] })
+      if (response?.data?.success && Array.isArray(response.data.data)) {
+        issuesData = response.data.data;
+      } else if (Array.isArray(response?.data?.data)) {
+        issuesData = response.data.data;
+      } else if (Array.isArray(response?.data)) {
+        // Fallback if API returns array directly
         issuesData = response.data;
-      } else if (response?.success && response?.data && Array.isArray(response.data)) {
-        issuesData = response.data;
+      } else {
+        console.warn('⚠️ [CustomerIssueService] Unexpected response format:', response);
+        issuesData = [];
       }
 
       console.log('📦 [CustomerIssueService] Extracted issues array:', issuesData.length, 'items');
@@ -187,7 +192,7 @@ class CustomerIssueService {
       return {
         success: true,
         data: issuesData,
-        pagination: response.pagination || response?.pagination
+        pagination: response?.data?.pagination || null
       };
 
     } catch (error) {
@@ -210,10 +215,25 @@ class CustomerIssueService {
       const response = await api.get(`/issues/${issueId}/detail`);
       console.log('✅ [CustomerIssueService] Issue detail response:', response);
 
+      // Extract issue detail data - axios returns full response object
+      let issueDetailData: IssueDetailData | null = null;
+      
+      if (response?.data?.success && response.data.data) {
+        issueDetailData = response.data.data;
+      } else if (response?.data?.data) {
+        issueDetailData = response.data.data;
+      } else if (response?.data) {
+        issueDetailData = response.data as IssueDetailData;
+      }
+
+      if (!issueDetailData) {
+        throw new Error('Không có dữ liệu chi tiết báo cáo sự cố');
+      }
+
       return {
         success: true,
         message: 'Issue detail retrieved successfully',
-        data: response.data
+        data: issueDetailData
       };
 
     } catch (error) {

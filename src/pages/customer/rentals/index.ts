@@ -3,6 +3,9 @@ export { default as MyRentalsScreen } from './MyRentalsScreen';
 export { default as RentalDetailScreen } from './RentalDetailScreen';
 export { default as FinalPaymentScreen } from './FinalPaymentScreen';
 export { default as CustomerRentalApp } from './CustomerRentalApp';
+export { default as IssueHistoryScreen } from './IssueHistoryScreen';
+export { default as IssueDetailScreen } from './IssueDetailScreen';
+export { default as RentalPaymentResultPage } from './RentalPaymentResultPage';
 
 // Components
 export { default as RentalCard } from '../../../components/customer/RentalCard';

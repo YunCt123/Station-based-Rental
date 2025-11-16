@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { Row, Col, Typography, Spin, Alert, Empty, Tabs, Space, Badge } from 'antd';
+import { Row, Col, Typography, Spin, Alert, Empty, Tabs, Space, Badge, Button } from 'antd';
 import { 
   CarOutlined, 
   ClockCircleOutlined, 
   CreditCardOutlined,
   HistoryOutlined,
-  CloseCircleOutlined
+  CloseCircleOutlined,
+  FileTextOutlined
 } from '@ant-design/icons';
 import { useMyRentals } from '../../../hooks/customer/useRentals';
 import RentalCard from '../../../components/customer/RentalCard';
@@ -17,11 +18,13 @@ const { TabPane } = Tabs;
 interface MyRentalsScreenProps {
   onRentalSelect: (rentalId: string) => void;
   onPaymentSelect: (rental: Rental) => void;
+  onIssueHistorySelect: () => void;
 }
 
 const MyRentalsScreen: React.FC<MyRentalsScreenProps> = ({ 
   onRentalSelect, 
-  onPaymentSelect 
+  onPaymentSelect,
+  onIssueHistorySelect 
 }) => {
   const { rentals, loading, error, refetch } = useMyRentals();
   const [activeTab, setActiveTab] = useState('active');
@@ -102,13 +105,23 @@ const MyRentalsScreen: React.FC<MyRentalsScreenProps> = ({
 
   return (
     <div style={{ padding: '24px' }}>
-      <div style={{ marginBottom: 24 }}>
-        <Title level={2}>
-          Lịch sử thuê xe
-        </Title>
-        <Paragraph type="secondary">
-          Quản lý và theo dõi trạng thái các xe đã thuê
-        </Paragraph>
+      <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
+        <div>
+          <Title level={2}>
+            Lịch sử thuê xe
+          </Title>
+          <Paragraph type="secondary">
+            Quản lý và theo dõi trạng thái các xe đã thuê
+          </Paragraph>
+        </div>
+        <Button 
+          type="default"
+          icon={<FileTextOutlined />}
+          onClick={onIssueHistorySelect}
+          size="large"
+        >
+          Lịch sử báo cáo
+        </Button>
       </div>
 
       <Tabs 

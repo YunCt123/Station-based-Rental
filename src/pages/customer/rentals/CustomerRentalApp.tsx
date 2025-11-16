@@ -3,17 +3,20 @@ import { Layout } from 'antd';
 import MyRentalsScreen from './MyRentalsScreen';
 import RentalDetailScreen from './RentalDetailScreen'; 
 import FinalPaymentScreen from './FinalPaymentScreen';
+import IssueHistoryScreen from './IssueHistoryScreen';
+import IssueDetailScreen from './IssueDetailScreen';
 import { useRentalDetail } from '../../../hooks/customer/useRentals';
 import type { Rental } from '../../../services/customerService';
 
 const { Content } = Layout;
 
-type Screen = 'rentals' | 'detail' | 'payment';
+type Screen = 'rentals' | 'detail' | 'payment' | 'issue-history' | 'issue-detail';
 
 const CustomerRentalApp: React.FC = () => {
   const [currentScreen, setCurrentScreen] = useState<Screen>('rentals');
   const [selectedRentalId, setSelectedRentalId] = useState<string | null>(null);
   const [selectedRental, setSelectedRental] = useState<Rental | null>(null);
+  const [selectedIssueId, setSelectedIssueId] = useState<string | null>(null);
 
   const { rental, payments, loading } = useRentalDetail(selectedRentalId);
 
@@ -27,10 +30,25 @@ const CustomerRentalApp: React.FC = () => {
     setCurrentScreen('payment');
   };
 
+  const navigateToIssueHistory = () => {
+    setCurrentScreen('issue-history');
+  };
+
+  const navigateToIssueDetail = (issueId: string) => {
+    setSelectedIssueId(issueId);
+    setCurrentScreen('issue-detail');
+  };
+
   const navigateBack = () => {
     setCurrentScreen('rentals');
     setSelectedRentalId(null);
     setSelectedRental(null);
+    setSelectedIssueId(null);
+  };
+
+  const navigateBackToIssueHistory = () => {
+    setCurrentScreen('issue-history');
+    setSelectedIssueId(null);
   };
 
   const handlePaymentSuccess = () => {
@@ -45,6 +63,7 @@ const CustomerRentalApp: React.FC = () => {
           <MyRentalsScreen 
             onRentalSelect={navigateToRentalDetail}
             onPaymentSelect={navigateToPayment}
+            onIssueHistorySelect={navigateToIssueHistory}
           />
         )}
 
@@ -73,6 +92,20 @@ const CustomerRentalApp: React.FC = () => {
             rental={selectedRental}
             onSuccess={handlePaymentSuccess}
             onBack={navigateBack}
+          />
+        )}
+
+        {currentScreen === 'issue-history' && (
+          <IssueHistoryScreen
+            onBack={navigateBack}
+            onViewDetail={navigateToIssueDetail}
+          />
+        )}
+
+        {currentScreen === 'issue-detail' && selectedIssueId && (
+          <IssueDetailScreen
+            issueId={selectedIssueId}
+            onBack={navigateBackToIssueHistory}
           />
         )}
       </Content>

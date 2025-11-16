@@ -305,7 +305,7 @@ const IssueDetailScreen: React.FC<IssueDetailScreenProps> = ({ issueId, onBack }
         {/* Right Column */}
         <div className="space-y-6">
           {/* Rental Info */}
-          {issue.rental_id && (
+          {/* {issue.rental_id && (
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
                 <CalendarIcon className="w-5 h-5" />
@@ -338,7 +338,7 @@ const IssueDetailScreen: React.FC<IssueDetailScreenProps> = ({ issueId, onBack }
                 </div>
               </div>
             </div>
-          )}
+          )} */}
 
           {/* Assigned Staff */}
           {issue.assigned_to && (
@@ -366,14 +366,14 @@ const IssueDetailScreen: React.FC<IssueDetailScreenProps> = ({ issueId, onBack }
               <div className="space-y-4">
                 {/* Solution Description */}
                 <div>
-                  <h4 className="font-medium text-gray-900 mb-2">💡 Mô Tả Giải Pháp</h4>
+                  <h4 className="font-medium text-gray-900 mb-2">Mô Tả Giải Pháp</h4>
                   <p className="text-gray-700 leading-relaxed">{issue.resolution.solution_description}</p>
                 </div>
 
                 {/* Resolution Actions */}
                 {issue.resolution.resolution_actions.length > 0 && (
                   <div>
-                    <h4 className="font-medium text-gray-900 mb-2">✅ Các Hành Động Đã Thực Hiện</h4>
+                    <h4 className="font-medium text-gray-900 mb-2">Các Hành Động Đã Thực Hiện</h4>
                     <ul className="list-disc list-inside space-y-1 text-gray-700">
                       {issue.resolution.resolution_actions.map((action, index) => (
                         <li key={index}>{action}</li>
@@ -385,7 +385,7 @@ const IssueDetailScreen: React.FC<IssueDetailScreenProps> = ({ issueId, onBack }
                 {/* Resolution Notes */}
                 {issue.resolution.resolution_notes && (
                   <div>
-                    <h4 className="font-medium text-gray-900 mb-2">📋 Ghi Chú Từ Nhân Viên</h4>
+                    <h4 className="font-medium text-gray-900 mb-2">Ghi Chú Từ Nhân Viên</h4>
                     <p className="text-gray-700 leading-relaxed">{issue.resolution.resolution_notes}</p>
                   </div>
                 )}
@@ -393,7 +393,7 @@ const IssueDetailScreen: React.FC<IssueDetailScreenProps> = ({ issueId, onBack }
                 {/* Resolution Photos */}
                 {issue.resolution.resolution_photos && issue.resolution.resolution_photos.length > 0 && (
                   <div>
-                    <h4 className="font-medium text-gray-900 mb-2">📷 Ảnh Minh Chứng Đã Sửa</h4>
+                    <h4 className="font-medium text-gray-900 mb-2">Ảnh Minh Chứng Đã Sửa</h4>
                     <div className="grid grid-cols-2 gap-3">
                       {issue.resolution.resolution_photos.map((photo, index) => (
                         <div key={index} className="relative group">
@@ -412,8 +412,8 @@ const IssueDetailScreen: React.FC<IssueDetailScreenProps> = ({ issueId, onBack }
                 {/* Resolution Details */}
                 <div className="border-t border-green-300 pt-4 space-y-2 text-sm">
                   <div className="grid grid-cols-2 gap-4">
-                    <div><strong>Nhân viên giải quyết:</strong> {issue.resolution.resolved_by?.name}</div>
-                    <div><strong>Thời gian hoàn thành:</strong> {new Date(issue.resolution.resolved_at).toLocaleString('vi-VN')}</div>
+                    {/* <div><strong>Nhân viên giải quyết:</strong> {issue.resolution.resolved_by?.name}</div> */}
+                    <div><strong>Thời gian hoàn thành:</strong> {new Date(issue.updatedAt).toLocaleString('vi-VN')}</div>
                   </div>
                   
                   {issue.resolution.actual_cost > 0 && (

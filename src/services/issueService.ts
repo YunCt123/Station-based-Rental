@@ -2,6 +2,21 @@
 import api from './api';
 
 export type IssueStatus = 'OPEN' | 'IN_PROGRESS' | 'RESOLVED';
+export type CustomerSatisfaction = 'SATISFIED' | 'NEUTRAL' | 'UNSATISFIED' | 'NOT_RATED';
+export type Priority = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+
+export interface IssueResolution {
+  solution_description: string;
+  resolution_actions: string[];
+  resolved_by?: string;
+  resolved_at?: Date;
+  resolution_notes?: string;
+  resolution_photos?: string[];
+  customer_satisfaction: CustomerSatisfaction;
+  follow_up_required: boolean;
+  estimated_cost?: number;
+  actual_cost?: number;
+}
 
 export interface Issue {
   _id: string;
@@ -13,6 +28,9 @@ export interface Issue {
   description?: string;
   photos: string[];
   status: IssueStatus;
+  priority?: Priority;
+  assigned_to?: string;
+  resolution?: IssueResolution;
   createdAt: string;
   updatedAt: string;
   // Populated fields
@@ -33,6 +51,11 @@ export interface Issue {
     _id: string;
     name: string;
     address: string;
+  };
+  assigned_staff?: {
+    _id: string;
+    name: string;
+    email: string;
   };
 }
 
@@ -59,6 +82,39 @@ export interface GetIssuesParams {
   status?: IssueStatus | string;
   limit?: number;
   page?: number;
+}
+
+// ========== NEW RESOLUTION INTERFACES ==========
+export interface AddResolutionRequest {
+  solution_description: string;
+  resolution_actions?: string[];
+  resolution_notes?: string;
+  resolution_photos?: string[];
+  estimated_cost?: number;
+  actual_cost?: number;
+  mark_as_resolved?: boolean;
+  customer_satisfaction?: CustomerSatisfaction;
+  follow_up_required?: boolean;
+}
+
+export interface UpdateResolutionRequest {
+  solution_description?: string;
+  resolution_actions?: string[];
+  resolution_notes?: string;
+  resolution_photos?: string[];
+  estimated_cost?: number;
+  actual_cost?: number;
+}
+
+export interface AssignIssueRequest {
+  assigned_to: string;
+  priority?: Priority;
+}
+
+export interface ResolveIssueRequest {
+  resolution_notes?: string;
+  customer_satisfaction?: CustomerSatisfaction;
+  follow_up_required?: boolean;
 }
 
 /* ---------------- Customer APIs ---------------- */
@@ -213,6 +269,110 @@ export const getNextStatus = (currentStatus: string): string | null => {
   }
 };
 
+// ========== NEW RESOLUTION MANAGEMENT APIs ==========
+
+// 1. Add resolution to issue
+export const addIssueResolution = async (
+  issueId: string, 
+  resolutionData: AddResolutionRequest
+): Promise<Issue> => {
+  try {
+    const res = await api.post(`/issues/${issueId}/resolution`, resolutionData);
+    return res.data?.data ?? res.data;
+  } catch (err: any) {
+    const msg = err?.response?.data?.message ?? err?.message ?? 'Failed to add resolution';
+    throw new Error(msg);
+  }
+};
+
+// 2. Update resolution
+export const updateIssueResolution = async (
+  issueId: string,
+  resolutionData: UpdateResolutionRequest
+): Promise<Issue> => {
+  try {
+    const res = await api.patch(`/issues/${issueId}/resolution`, resolutionData);
+    return res.data?.data ?? res.data;
+  } catch (err: any) {
+    const msg = err?.response?.data?.message ?? err?.message ?? 'Failed to update resolution';
+    throw new Error(msg);
+  }
+};
+
+// 3. Assign issue to staff
+export const assignIssue = async (
+  issueId: string,
+  assignData: AssignIssueRequest
+): Promise<Issue> => {
+  try {
+    const res = await api.patch(`/issues/${issueId}/assign`, assignData);
+    return res.data?.data ?? res.data;
+  } catch (err: any) {
+    const msg = err?.response?.data?.message ?? err?.message ?? 'Failed to assign issue';
+    throw new Error(msg);
+  }
+};
+
+// 4. Resolve issue
+export const resolveIssue = async (
+  issueId: string,
+  resolveData?: ResolveIssueRequest
+): Promise<Issue> => {
+  try {
+    const res = await api.patch(`/issues/${issueId}/resolve`, resolveData || {});
+    return res.data?.data ?? res.data;
+  } catch (err: any) {
+    const msg = err?.response?.data?.message ?? err?.message ?? 'Failed to resolve issue';
+    throw new Error(msg);
+  }
+};
+
+// Helper functions for UI
+export const getPriorityColor = (priority?: Priority): string => {
+  switch (priority) {
+    case 'LOW':
+      return 'bg-gray-100 text-gray-800';
+    case 'MEDIUM':
+      return 'bg-yellow-100 text-yellow-800';
+    case 'HIGH':
+      return 'bg-orange-100 text-orange-800';
+    case 'CRITICAL':
+      return 'bg-red-100 text-red-800';
+    default:
+      return 'bg-gray-100 text-gray-800';
+  }
+};
+
+export const getPriorityText = (priority?: Priority): string => {
+  switch (priority) {
+    case 'LOW': return 'Thấp';
+    case 'MEDIUM': return 'Trung bình';
+    case 'HIGH': return 'Cao';
+    case 'CRITICAL': return 'Khẩn cấp';
+    default: return 'Không xác định';
+  }
+};
+
+export const getSatisfactionText = (satisfaction: CustomerSatisfaction): string => {
+  switch (satisfaction) {
+    case 'SATISFIED': return 'Hài lòng';
+    case 'NEUTRAL': return 'Bình thường';
+    case 'UNSATISFIED': return 'Không hài lòng';
+    case 'NOT_RATED': return 'Chưa đánh giá';
+    default: return 'Không xác định';
+  }
+};
+
+export const getSatisfactionColor = (satisfaction: CustomerSatisfaction): string => {
+  switch (satisfaction) {
+    case 'SATISFIED': return 'bg-green-100 text-green-800';
+    case 'NEUTRAL': return 'bg-yellow-100 text-yellow-800';
+    case 'UNSATISFIED': return 'bg-red-100 text-red-800';
+    case 'NOT_RATED': return 'bg-gray-100 text-gray-800';
+    default: return 'bg-gray-100 text-gray-800';
+  }
+};
+
 export default {
   // Customer APIs
   reportRentalIssue,
@@ -225,8 +385,18 @@ export default {
   getStaffRentalIssues,
   updateIssue,
 
-  // Helpers
+  // Resolution Management APIs (NEW)
+  addIssueResolution,
+  updateIssueResolution,
+  assignIssue,
+  resolveIssue,
+
+  // Helper functions
   getIssueStatusText,
   getIssueStatusColor,
   getNextStatus,
+  getPriorityColor,
+  getPriorityText,
+  getSatisfactionText,
+  getSatisfactionColor,
 };

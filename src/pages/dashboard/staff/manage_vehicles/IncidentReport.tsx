@@ -13,7 +13,21 @@ import {
 } from '@heroicons/react/24/solid';
 import { AddIncidentModal } from '@/components/dashboard/staff/manage_vehicles/AddIncidentModal';
 import { IncidentDetailsModal } from '@/components/dashboard/staff/manage_vehicles/IncidentDetailsModal';
-import { createIssue, updateIssue, getAllIssues } from '@/services/issueService';
+import { IssueResolutionModal } from '@/components/dashboard/staff/manage_vehicles/IssueResolutionModal';
+import { 
+  createIssue, 
+  updateIssue, 
+  getAllIssues,
+  addIssueResolution,
+  assignIssue,
+  resolveIssue,
+  getPriorityColor,
+  getPriorityText,
+  type Issue,
+  type Priority,
+  type AddResolutionRequest,
+  type AssignIssueRequest
+} from '@/services/issueService';
 import { toast } from 'sonner';
 
 interface APIIssueData {
@@ -37,10 +51,29 @@ interface APIIssueData {
     name?: string;
     address?: string;
   };
+  assigned_to?: string;
+  assigned_staff?: {
+    _id?: string;
+    name?: string;
+    email?: string;
+  };
   title?: string;
   description?: string;
   status: 'OPEN' | 'IN_PROGRESS' | 'RESOLVED';
+  priority?: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
   photos?: string[];
+  resolution?: {
+    solution_description?: string;
+    resolution_actions?: string[];
+    resolved_by?: string;
+    resolved_at?: string;
+    resolution_notes?: string;
+    resolution_photos?: string[];
+    customer_satisfaction?: 'SATISFIED' | 'NEUTRAL' | 'UNSATISFIED' | 'NOT_RATED';
+    follow_up_required?: boolean;
+    estimated_cost?: number;
+    actual_cost?: number;
+  };
   createdAt: string;
 }
 
@@ -54,8 +87,23 @@ interface Incident {
   title: string;
   description: string;
   status: 'OPEN' | 'IN_PROGRESS' | 'RESOLVED';
+  priority?: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+  assignedTo?: string;
+  assignedStaff?: string;
   images: string[];
   stationName?: string;
+  resolution?: {
+    solutionDescription?: string;
+    resolutionActions?: string[];
+    resolvedBy?: string;
+    resolvedAt?: string;
+    resolutionNotes?: string;
+    resolutionPhotos?: string[];
+    customerSatisfaction?: string;
+    followUpRequired?: boolean;
+    estimatedCost?: number;
+    actualCost?: number;
+  };
 }
 
 const IncidentReport: React.FC = () => {
@@ -63,6 +111,8 @@ const IncidentReport: React.FC = () => {
   const [showReportForm, setShowReportForm] = useState(false);
   const [selectedIncident, setSelectedIncident] = useState<Incident | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [showResolutionModal, setShowResolutionModal] = useState(false);
+  const [resolutionIncident, setResolutionIncident] = useState<Incident | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [loading, setLoading] = useState(false);
@@ -89,8 +139,23 @@ const IncidentReport: React.FC = () => {
           title: String(issueData.title || 'No title'),
           description: String(issueData.description || ''),
           status: issueData.status,
+          priority: issueData.priority,
+          assignedTo: issueData.assigned_to,
+          assignedStaff: issueData.assigned_staff?.name,
           images: Array.isArray(issueData.photos) ? issueData.photos : [],
-          stationName: String(issueData.station_id?.name || '')
+          stationName: String(issueData.station_id?.name || ''),
+          resolution: issueData.resolution ? {
+            solutionDescription: issueData.resolution.solution_description,
+            resolutionActions: issueData.resolution.resolution_actions,
+            resolvedBy: issueData.resolution.resolved_by,
+            resolvedAt: issueData.resolution.resolved_at,
+            resolutionNotes: issueData.resolution.resolution_notes,
+            resolutionPhotos: issueData.resolution.resolution_photos,
+            customerSatisfaction: issueData.resolution.customer_satisfaction,
+            followUpRequired: issueData.resolution.follow_up_required,
+            estimatedCost: issueData.resolution.estimated_cost,
+            actualCost: issueData.resolution.actual_cost,
+          } : undefined
         };
       });
       setIncidents(mappedIncidents);
@@ -220,6 +285,71 @@ const IncidentReport: React.FC = () => {
     }
   };
 
+  // ========== NEW RESOLUTION MANAGEMENT FUNCTIONS ==========
+
+  const handleAssignIssue = async (incidentId: string, staffId: string, priority?: Priority) => {
+    try {
+      setLoading(true);
+      const assignData: AssignIssueRequest = {
+        assigned_to: staffId,
+        ...(priority && { priority })
+      };
+      
+      await assignIssue(incidentId, assignData);
+      toast.success('Phân công sự cố thành công!');
+      
+      // Refresh issues list
+      await fetchIssues();
+    } catch (error: unknown) {
+      console.error('Error assigning issue:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Không thể phân công sự cố';
+      toast.error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddResolution = async (incidentId: string, resolutionData: AddResolutionRequest) => {
+    try {
+      setLoading(true);
+      await addIssueResolution(incidentId, resolutionData);
+      toast.success('Thêm phương án giải quyết thành công!');
+      
+      // Close modal and refresh
+      setShowResolutionModal(false);
+      setResolutionIncident(null);
+      await fetchIssues();
+    } catch (error: unknown) {
+      console.error('Error adding resolution:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Không thể thêm phương án giải quyết';
+      toast.error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleOpenResolutionModal = (incident: Incident) => {
+    setResolutionIncident(incident);
+    setShowResolutionModal(true);
+  };
+
+  const handleResolveIssue = async (incidentId: string, resolveData?: { resolution_notes?: string; customer_satisfaction?: string; follow_up_required?: boolean }) => {
+    try {
+      setLoading(true);
+      await resolveIssue(incidentId, resolveData);
+      toast.success('Đánh dấu sự cố đã giải quyết thành công!');
+      
+      // Refresh issues list
+      await fetchIssues();
+    } catch (error: unknown) {
+      console.error('Error resolving issue:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Không thể đánh dấu sự cố đã giải quyết';
+      toast.error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="p-6 max-w-7xl mx-auto">
       {/* Header */}
@@ -335,6 +465,7 @@ const IncidentReport: React.FC = () => {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Loại xe / Model</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tiêu đề sự cố</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trạng thái</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Độ ưu tiên</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Người báo cáo</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Thời gian</th>
                     <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Thao tác</th>
@@ -366,6 +497,17 @@ const IncidentReport: React.FC = () => {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
+                        {incident.priority ? (
+                          <span className={`px-2 py-1 text-xs font-medium rounded ${getPriorityColor(incident.priority)}`}>
+                            {getPriorityText(incident.priority)}
+                          </span>
+                        ) : (
+                          <span className="px-2 py-1 text-xs font-medium rounded bg-gray-100 text-gray-800">
+                            Chưa xác định
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">{String(incident.reportedBy)}</div>
                         <div className="text-sm text-gray-500">{String(incident.stationName || 'N/A')}</div>
                       </td>
@@ -373,7 +515,8 @@ const IncidentReport: React.FC = () => {
                         {String(incident.reportedAt)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
-                        <div className="flex justify-center gap-2">
+                        <div className="flex justify-center gap-2 flex-wrap">
+                          {/* Start Processing */}
                           {incident.status === 'OPEN' && (
                             <button
                               onClick={(e) => {
@@ -385,6 +528,21 @@ const IncidentReport: React.FC = () => {
                               Bắt đầu xử lý
                             </button>
                           )}
+
+                          {/* Add Resolution - Available for OPEN and IN_PROGRESS */}
+                          {(incident.status === 'OPEN' || incident.status === 'IN_PROGRESS') && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleOpenResolutionModal(incident);
+                              }}
+                              className="px-3 py-1.5 text-xs bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors"
+                            >
+                              Thêm giải pháp
+                            </button>
+                          )}
+
+                          {/* Mark Complete */}
                           {incident.status === 'IN_PROGRESS' && (
                             <button
                               onClick={(e) => {
@@ -396,6 +554,8 @@ const IncidentReport: React.FC = () => {
                               Hoàn thành
                             </button>
                           )}
+
+                          {/* View Details */}
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
@@ -440,6 +600,29 @@ const IncidentReport: React.FC = () => {
             setSelectedIncident(null);
           }}
           onUpdateStatus={updateIncidentStatus}
+        />
+      )}
+
+      {/* Issue Resolution Modal */}
+      {resolutionIncident && (
+        <IssueResolutionModal
+          isOpen={showResolutionModal}
+          onClose={() => {
+            setShowResolutionModal(false);
+            setResolutionIncident(null);
+          }}
+          onSubmit={(resolutionData) => handleAddResolution(resolutionIncident.id, resolutionData)}
+          issue={{
+            id: resolutionIncident.id,
+            title: resolutionIncident.title,
+            description: resolutionIncident.description,
+            vehicleModel: resolutionIncident.vehicleModel,
+            licensePlate: resolutionIncident.licensePlate,
+            reportedBy: resolutionIncident.reportedBy,
+            priority: resolutionIncident.priority,
+            status: resolutionIncident.status
+          }}
+          loading={loading}
         />
       )}
     </div>

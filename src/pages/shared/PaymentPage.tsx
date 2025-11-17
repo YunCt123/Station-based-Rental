@@ -12,6 +12,106 @@ import type { Booking, Payment } from "../../services/bookingService";
 const { Title, Text, Paragraph } = Typography;
 const { Step } = Steps;
 
+// ✅ Helper function to calculate pricing correctly (calls API like BookingPage)
+const calculatePricing = async (booking: Booking) => {
+  // If backend already calculated pricing, use it
+  if (booking.pricing_snapshot?.basePrice && booking.pricing_snapshot?.totalPrice) {
+    return {
+      hours: Math.ceil((new Date(booking.end_at).getTime() - new Date(booking.start_at).getTime()) / (1000 * 60 * 60)),
+      rentalType: (new Date(booking.end_at).getTime() - new Date(booking.start_at).getTime()) / (1000 * 60 * 60) >= 24 ? 'daily' : 'hourly',
+      basePrice: booking.pricing_snapshot.basePrice,
+      taxes: booking.pricing_snapshot.taxes || booking.pricing_snapshot.basePrice * 0.1,
+      insurance: booking.pricing_snapshot.insurancePrice || 0,
+      totalPrice: booking.pricing_snapshot.totalPrice,
+      deposit: booking.pricing_snapshot.deposit || booking.pricing_snapshot.totalPrice * 0.2
+    };
+  }
+
+  // Fallback: call API to get accurate pricing (with weekend/peak multipliers)
+  try {
+    console.log('🔄 [PaymentPage] Recalculating pricing via API for booking:', booking._id);
+    console.log('🔍 [PaymentPage] Booking insurance_option:', booking.insurance_option);
+    
+    // ✅ FIX: Extract boolean value from insurance_option
+    let insurancePremium = false;
+    if (booking.insurance_option) {
+      if (typeof booking.insurance_option === 'boolean') {
+        insurancePremium = booking.insurance_option;
+      } else if (typeof booking.insurance_option === 'object' && 'premium' in booking.insurance_option) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        insurancePremium = (booking.insurance_option as any).premium;
+      }
+    }
+    
+    console.log('🔧 [PaymentPage] Insurance extraction:', {
+      'original booking.insurance_option': booking.insurance_option,
+      'extracted insurancePremium': insurancePremium,
+      'type': typeof booking.insurance_option
+    });
+    
+    const priceRequest = {
+      vehicleId: booking.vehicle_id,
+      startAt: booking.start_at,
+      endAt: booking.end_at,
+      insurancePremium: insurancePremium
+    };
+    
+    console.log('📤 [PaymentPage] Price request with insurance:', priceRequest);
+    
+    const apiPricing = await bookingService.calculatePrice(priceRequest);
+    console.log('✅ [PaymentPage] API pricing result:', apiPricing);
+    console.log('🔍 [PaymentPage] API insurance price:', apiPricing.insurancePrice);
+    
+    return {
+      hours: Math.ceil((new Date(booking.end_at).getTime() - new Date(booking.start_at).getTime()) / (1000 * 60 * 60)),
+      rentalType: (apiPricing.details?.hours || 0) >= 24 ? 'daily' : 'hourly',
+      basePrice: apiPricing.basePrice || 0,
+      taxes: apiPricing.taxes || 0,
+      insurance: apiPricing.insurancePrice || 0, // ✅ FIX: Use API response directly, not booking.insurance_option
+      totalPrice: apiPricing.totalPrice || 0,
+      deposit: apiPricing.deposit || 0
+    };
+  } catch (error) {
+    console.error('❌ [PaymentPage] API pricing failed, using fallback:', error);
+    
+    // Final fallback: simple calculation
+    const start = new Date(booking.start_at);
+    const end = new Date(booking.end_at);
+    const hours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+    
+    const hourlyRate = booking.pricing_snapshot?.hourly_rate || 20;
+    const dailyRate = booking.pricing_snapshot?.daily_rate || 135;
+    
+    let basePrice = 0;
+    let rentalType = '';
+    
+    if (hours >= 24 && dailyRate > 0) {
+      rentalType = 'daily';
+      const totalDays = Math.ceil(hours / 24);
+      basePrice = dailyRate * totalDays;
+    } else {
+      rentalType = 'hourly';
+      const totalHours = Math.ceil(hours);
+      basePrice = hourlyRate * totalHours;
+    }
+    
+    const taxes = basePrice * 0.1;
+    const insurance = 0; // ✅ FIX: Let API be the source of truth, don't use booking.insurance_option
+    const totalPrice = basePrice + taxes + insurance;
+    const deposit = totalPrice * 0.2;
+    
+    return {
+      hours: Math.ceil(hours),
+      rentalType,
+      basePrice: Number(basePrice.toFixed(2)),
+      taxes: Number(taxes.toFixed(2)),
+      insurance: Number(insurance.toFixed(2)),
+      totalPrice: Number(totalPrice.toFixed(2)),
+      deposit: Number(deposit.toFixed(2))
+    };
+  }
+};
+
 const PaymentPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -23,6 +123,15 @@ const PaymentPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [lastPaymentAttempt, setLastPaymentAttempt] = useState<number>(0);
+  const [calculatedPricing, setCalculatedPricing] = useState<{
+    hours: number;
+    rentalType: string;
+    basePrice: number;
+    taxes: number;
+    insurance: number;
+    totalPrice: number;
+    deposit: number;
+  } | null>(null);
 
   // Load booking data function
   const loadBookingData = useCallback(async () => {
@@ -42,6 +151,16 @@ const PaymentPage: React.FC = () => {
       console.log('🔍 [PaymentPage] pricing_snapshot details:', bookingData.pricing_snapshot);
       console.log('🔍 [PaymentPage] vehicle_snapshot details:', bookingData.vehicle_snapshot);
       console.log('🔍 [PaymentPage] Full booking structure:', JSON.stringify(bookingData, null, 2));
+
+      // Calculate accurate pricing with API
+      try {
+        const pricing = await calculatePricing(bookingData);
+        setCalculatedPricing(pricing);
+        console.log('✅ [PaymentPage] Calculated pricing:', pricing);
+      } catch (pricingError) {
+        console.error('❌ [PaymentPage] Pricing calculation failed:', pricingError);
+        // Continue with booking data anyway
+      }
 
       // Load existing payments
       const paymentsData = await bookingService.getBookingPayments(bookingId);
@@ -112,37 +231,26 @@ const PaymentPage: React.FC = () => {
       setCreating(true);
       setLastPaymentAttempt(now);
       
-      // Calculate from new backend format
-      const hoursTotal = Math.ceil((new Date(booking.end_at).getTime() - new Date(booking.start_at).getTime()) / (1000 * 60 * 60));
-      const basePrice = (booking.pricing_snapshot.hourly_rate || 0) * hoursTotal;
-      const taxes = basePrice * 0.1; // 10% tax
-      const total = basePrice + taxes;
-      
-      const depositAmount = booking.pricing_snapshot.deposit || 
-                            Math.round(total * 0.2) || // 20% of total if no deposit from backend
-                            0;
+      // ✅ Use proper pricing calculation with API
+      const pricing = await calculatePricing(booking);
       
       const paymentRequest = {
         bookingId: booking._id,
-        amount: depositAmount,
+        amount: pricing.deposit,
         returnUrl: `${window.location.origin}/payment/success?bookingId=${booking._id}`,
         cancelUrl: `${window.location.origin}/payment/cancel?bookingId=${booking._id}`
       };
 
-      console.log('=== PayOS DEPOSIT CALCULATION (NEW FORMAT) ===');
-      console.log('Hours:', hoursTotal);
+      console.log('=== PayOS DEPOSIT CALCULATION (FIXED LOGIC) ===');
+      console.log('Hours:', pricing.hours);
+      console.log('Rental type:', pricing.rentalType);
       console.log('Hourly rate:', booking.pricing_snapshot.hourly_rate);
-      console.log('Base price:', basePrice);
-      console.log('Taxes (10%):', taxes);
-      console.log('Total:', total);
-      console.log('Deposit from backend:', booking.pricing_snapshot.deposit);
-      console.log('Calculated deposit (20% of total):', Math.round(total * 0.2));
-      console.log('Final deposit amount:', depositAmount);
+      console.log('Daily rate:', booking.pricing_snapshot.daily_rate);
+      console.log('Base price:', pricing.basePrice);
+      console.log('Taxes (10%):', pricing.taxes);
+      console.log('Total:', pricing.totalPrice);
+      console.log('Final deposit amount:', pricing.deposit);
       console.log('Booking pricing_snapshot:', booking.pricing_snapshot);
-      console.log('Calculated total:', total);
-      console.log('Deposit from backend:', booking.pricing_snapshot.deposit);
-      console.log('Calculated deposit (20% of total):', Math.round(total * 0.2));
-      console.log('Final deposit amount:', depositAmount);
 
       const paymentResponse = await bookingService.createPayOSPayment(paymentRequest);
       
@@ -216,30 +324,23 @@ const PaymentPage: React.FC = () => {
       setCreating(true);
       setLastPaymentAttempt(now);
       
-      // Calculate from new backend format (same as PayOS and display logic)
-      const hours = Math.ceil((new Date(booking.end_at).getTime() - new Date(booking.start_at).getTime()) / (1000 * 60 * 60));
-      const basePrice = booking.pricing_snapshot.basePrice || 
-        (booking.pricing_snapshot.hourly_rate || 0) * hours;
-      const taxes = booking.pricing_snapshot.taxes || 
-        Math.round(basePrice * 0.1);
-      const insurance = booking.pricing_snapshot.insurancePrice || 0;
-      const totalPrice = booking.pricing_snapshot.totalPrice || 
-        (basePrice + taxes + insurance);
-      const depositAmount = booking.pricing_snapshot.deposit || 
-        Math.round(totalPrice * 0.2);
+      // ✅ Use proper pricing calculation with API
+      const pricing = await calculatePricing(booking);
       
       // TEMPORARY FIX: Send smaller amount for testing
       // VNPAY sandbox may have amount limits
       const testAmount = 100; // Test with 100 VND
       
       console.log('VNPay payment calculation:', {
-        hours,
+        hours: pricing.hours,
+        rentalType: pricing.rentalType,
         hourlyRate: booking.pricing_snapshot.hourly_rate,
-        basePrice,
-        taxes,
-        insurance,
-        totalPrice,
-        depositAmountUSD: depositAmount,
+        dailyRate: booking.pricing_snapshot.daily_rate,
+        basePrice: pricing.basePrice,
+        taxes: pricing.taxes,
+        insurance: pricing.insurance,
+        totalPrice: pricing.totalPrice,
+        depositAmountVND: pricing.deposit,
         testAmountVND: testAmount
       });
       
@@ -313,10 +414,10 @@ const PaymentPage: React.FC = () => {
           <div className="flex items-center gap-3">
             <CheckCircleOutlined className="text-green-600 text-xl" />
             <div>
-              <Text className="text-green-800 font-semibold">Payment Successful</Text>
+              <Text className="text-green-800 font-semibold">Thanh toán thành công</Text>
               <br />
               <Text className="text-green-600 text-sm">
-                Transaction ID: {successfulPayment.transaction_ref}
+                Mã giao dịch: {successfulPayment.transaction_ref}
               </Text>
             </div>
           </div>
@@ -330,10 +431,10 @@ const PaymentPage: React.FC = () => {
           <div className="flex items-center gap-3">
             <ClockCircleOutlined className="text-yellow-600 text-xl" />
             <div>
-              <Text className="text-yellow-800 font-semibold">Payment Pending</Text>
+              <Text className="text-yellow-800 font-semibold">Đang xử lý giao dịch ...</Text>
               <br />
               <Text className="text-yellow-600 text-sm">
-                Waiting for payment confirmation...
+                Đang chờ xác nhận thanh toán...
               </Text>
             </div>
           </div>
@@ -347,10 +448,10 @@ const PaymentPage: React.FC = () => {
           <div className="flex items-center gap-3">
             <ExclamationCircleOutlined className="text-red-600 text-xl" />
             <div>
-              <Text className="text-red-800 font-semibold">Payment Failed</Text>
+              <Text className="text-red-800 font-semibold">Thanh toán thất bại</Text>
               <br />
               <Text className="text-red-600 text-sm">
-                Please try again with a different payment method
+                Vui lòng thử lại với phương thức thanh toán khác
               </Text>
             </div>
           </div>
@@ -366,7 +467,7 @@ const PaymentPage: React.FC = () => {
       <div className="max-w-4xl mx-auto p-4">
         <div className="flex justify-center items-center h-64">
           <Spin size="large" />
-          <span className="ml-3">Loading payment information...</span>
+          <span className="ml-3">Đang tải thông tin thanh toán...</span>
         </div>
       </div>
     );
@@ -377,10 +478,10 @@ const PaymentPage: React.FC = () => {
       <div className="max-w-4xl mx-auto p-4">
         <Card>
           <div className="text-center p-8">
-            <Title level={3}>Booking Not Found</Title>
-            <Paragraph>The booking you're looking for could not be found.</Paragraph>
+            <Title level={3}>Không tìm thấy đặt chỗ</Title>
+            <Paragraph>Đặt chỗ mà bạn đang tìm kiếm không thể được tìm thấy.</Paragraph>
             <Button type="primary" onClick={() => navigate('/vehicles')}>
-              Back to Vehicles
+              Quay lại xe
             </Button>
           </div>
         </Card>
@@ -399,7 +500,7 @@ const PaymentPage: React.FC = () => {
             loading={loading}
             className="flex items-center gap-2"
           >
-            🔄 Refresh
+            Tải lại
           </Button>
         </div>
         <Text type="secondary">
@@ -409,8 +510,8 @@ const PaymentPage: React.FC = () => {
         {/* Helpful message about payment errors */}
         <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
           <Text className="text-sm text-blue-800">
-            💡 <strong>Having payment issues?</strong> If you see duplicate error messages, please refresh the page and try again. 
-            Avoid clicking payment buttons multiple times to prevent duplicate requests.
+            <strong>Gặp sự cố với thanh toán?</strong> Nếu bạn thấy thông báo lỗi trùng lặp, vui lòng tải lại trang và thử lại.
+            Tránh nhấp vào các nút thanh toán nhiều lần để ngăn chặn các yêu cầu trùng lặp.
           </Text>
         </div>
       </div>
@@ -556,7 +657,8 @@ const PaymentPage: React.FC = () => {
                   <Text className="font-semibold">{booking.vehicle_snapshot.name}</Text>
                   <br />
                   <Text className="text-sm text-gray-500">
-                    {booking.vehicle_snapshot.type} • {booking.vehicle_snapshot.licensePlate}
+                    • {booking.vehicle_snapshot.type} <br/>
+                    • {booking.vehicle_snapshot.brand}
                   </Text>
                 </>
               )}
@@ -597,12 +699,20 @@ const PaymentPage: React.FC = () => {
               <div className="space-y-2">
                 <div className="flex justify-between">
                   <Text>Daily Rate:</Text>
-                  <Text>${booking.pricing_snapshot.daily_rate || 0}/day</Text>
+                  <Text>{(() => {
+                    // Display VND directly
+                    const dailyRate = booking.pricing_snapshot.daily_rate || 0;
+                    return new Intl.NumberFormat('vi-VN').format(dailyRate) + ' VND';
+                  })()}/day</Text>
                 </div>
                 {booking.pricing_snapshot.hourly_rate && (
                   <div className="flex justify-between">
                     <Text>Hourly Rate:</Text>
-                    <Text>${booking.pricing_snapshot.hourly_rate}/hour</Text>
+                    <Text>{(() => {
+                      // Display VND directly
+                      const hourlyRate = booking.pricing_snapshot.hourly_rate;
+                      return new Intl.NumberFormat('vi-VN').format(hourlyRate) + ' VND';
+                    })()}/hour</Text>
                   </div>
                 )}
                 
@@ -610,51 +720,50 @@ const PaymentPage: React.FC = () => {
                 <Text strong>Booking Summary</Text>
                 
                 {(() => {
-                  // Calculate from new backend format
-                  const hours = Math.ceil((new Date(booking.end_at).getTime() - new Date(booking.start_at).getTime()) / (1000 * 60 * 60));
-                  const basePrice = booking.pricing_snapshot.basePrice || 
-                    (booking.pricing_snapshot.hourly_rate || 0) * hours;
-                  const taxes = booking.pricing_snapshot.taxes || 
-                    Math.round(basePrice * 0.1);
-                  const insurance = booking.pricing_snapshot.insurancePrice || 0;
-                  const totalPrice = booking.pricing_snapshot.totalPrice || 
-                    (basePrice + taxes + insurance);
-                  const deposit = booking.pricing_snapshot.deposit || 
-                    Math.round(totalPrice * 0.2);
+                  // ✅ Use calculated pricing from state or fallback
+                  const pricing = calculatedPricing || {
+                    hours: Math.ceil((new Date(booking.end_at).getTime() - new Date(booking.start_at).getTime()) / (1000 * 60 * 60)),
+                    rentalType: 'unknown',
+                    basePrice: booking.pricing_snapshot?.basePrice || 0,
+                    taxes: booking.pricing_snapshot?.taxes || 0,
+                    insurance: booking.pricing_snapshot?.insurancePrice || 0,
+                    totalPrice: booking.pricing_snapshot?.totalPrice || 0,
+                    deposit: booking.pricing_snapshot?.deposit || 0
+                  };
                   
                   return (
                     <>
                       <div className="flex justify-between">
-                        <Text>Base Price ({hours}h):</Text>
-                        <Text>${basePrice.toFixed(2)}</Text>
+                        <Text>Base Price ({pricing.hours}h{pricing.rentalType === 'daily' ? ` = ${Math.ceil(pricing.hours/24)}d` : ''}):</Text>
+                        <Text>${pricing.basePrice}</Text>
                       </div>
                       
                       <div className="flex justify-between">
                         <Text>Taxes (10%):</Text>
-                        <Text>${taxes.toFixed(2)}</Text>
+                        <Text>${pricing.taxes}</Text>
                       </div>
                       
-                      {((insurance > 0) || booking.insurance_option) && (
+                      {((pricing.insurance > 0) || booking.insurance_option) && (
                         <div className="flex justify-between">
                           <Text>Insurance:</Text>
-                          <Text>${insurance.toFixed(2)}</Text>
+                          <Text>${pricing.insurance}</Text>
                         </div>
                       )}
                       
                       <Divider className="my-2" />
                       <div className="flex justify-between font-semibold">
                         <Text strong>Total:</Text>
-                        <Text strong>${totalPrice.toFixed(2)}</Text>
+                        <Text strong>${pricing.totalPrice}</Text>
                       </div>
                       <div className="flex justify-between text-green-600">
                         <Text className="text-green-600">Required Deposit:</Text>
-                        <Text strong className="text-green-600">${deposit.toFixed(2)}</Text>
+                        <Text strong className="text-green-600">${pricing.deposit}</Text>
                       </div>
                     </>
                   );
                 })()}
                 <div className="text-xs text-gray-500 mt-2">
-                  * Remaining balance will be charged at pickup
+                  * Remaining balance will be charged at return time
                 </div>
               </div>
             )}

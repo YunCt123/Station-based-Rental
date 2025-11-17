@@ -8,19 +8,69 @@ import type { Booking } from "../../services/bookingService";
 const { Title } = Typography;
 
 const BookingsPage: React.FC = () => {
+  console.log('🎯 Đang render component BookingsPage...');
   const navigate = useNavigate();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Hàm trợ giúp để định dạng giá VND hiển thị
+  const formatVndPrice = (vndAmount: number): string => {
+    if (!vndAmount) return '0 VND';
+    return new Intl.NumberFormat('vi-VN').format(vndAmount) + ' VND';
+  };
+
+  // Hàm trợ giúp để định dạng giá hiển thị
+  const formatPrice = (pricing?: { 
+    total_price?: number;
+    base_price?: number;
+    taxes?: number;
+    insurance_price?: number;
+    deposit?: number;
+    currency?: string;
+    details?: {
+      days?: number;
+      hours?: number;
+    }
+  }) => {
+    if (!pricing) return { total: 0, deposit: 0 };
+
+    // Lấy tổng giá trực tiếp từ API
+    const total = pricing.total_price || 0;
+    const deposit = pricing.deposit || 0;
+
+    // Hiển thị giá VND trực tiếp
+    if ((pricing.currency === 'VND') || (total > 1000)) {
+      console.log('Sử dụng giá VND trực tiếp:', { 
+        total, 
+        deposit,
+        base: pricing.base_price,
+        insurance: pricing.insurance_price,
+        taxes: pricing.taxes,
+        days: pricing.details?.days,
+        hours: pricing.details?.hours
+      });
+      return {
+        total: total,
+        deposit: deposit
+      };
+    }
+    
+    // Đã ở VND
+    return {
+      total: total,
+      deposit: deposit
+    };
+  };
 
   const loadBookings = useCallback(async () => {
     try {
       setLoading(true);
       const userBookings = await bookingService.getUserBookings();
       setBookings(userBookings);
-      console.log('User bookings loaded:', userBookings);
+      console.log('Đã tải danh sách đặt xe:', userBookings);
     } catch (error) {
-      console.error('Error loading bookings:', error);
-      message.error('Failed to load bookings');
+      console.error('Lỗi khi tải danh sách đặt xe:', error);
+      message.error('Không thể tải danh sách đặt xe');
     } finally {
       setLoading(false);
     }
@@ -30,12 +80,12 @@ const BookingsPage: React.FC = () => {
     loadBookings();
   }, [loadBookings]);
 
-  // Auto-refresh every 2 minutes to check for status updates
+  // Tự động làm mới mỗi 2 phút để kiểm tra cập nhật trạng thái
   useEffect(() => {
     const interval = setInterval(() => {
-      console.log('Auto-refreshing bookings...');
+      console.log('Đang tự động làm mới danh sách đặt xe...');
       loadBookings();
-    }, 120000); // 2 minutes
+    }, 120000); // 2 phút
 
     return () => clearInterval(interval);
   }, [loadBookings]);
@@ -57,7 +107,7 @@ const BookingsPage: React.FC = () => {
 
   const columns = [
     {
-      title: 'Booking ID',
+      title: 'Mã Đặt Xe',
       dataIndex: '_id',
       key: '_id',
       render: (id: string) => (
@@ -67,18 +117,18 @@ const BookingsPage: React.FC = () => {
       ),
     },
     {
-      title: 'Vehicle',
+      title: 'Phương Tiện',
       dataIndex: 'vehicle_snapshot',
       key: 'vehicle',
       render: (vehicle: { name?: string; type?: string; licensePlate?: string }) => (
         <div>
-          <div className="font-semibold">{vehicle?.name || 'Unknown Vehicle'}</div>
+          <div className="font-semibold">{vehicle?.name || 'Phương tiện không xác định'}</div>
           <div className="text-xs text-gray-500">{vehicle?.type} • {vehicle?.licensePlate}</div>
         </div>
       ),
     },
     {
-      title: 'Pickup Date',
+      title: 'Ngày Nhận Xe',
       dataIndex: 'start_at',
       key: 'start_at',
       render: (date: string) => (
@@ -89,7 +139,7 @@ const BookingsPage: React.FC = () => {
       ),
     },
     {
-      title: 'Return Date',
+      title: 'Ngày Trả Xe',
       dataIndex: 'end_at',
       key: 'end_at',
       render: (date: string) => (
@@ -100,22 +150,38 @@ const BookingsPage: React.FC = () => {
       ),
     },
     {
-      title: 'Total Amount',
+      title: 'Tổng Số Tiền',
       dataIndex: 'pricing_snapshot',
       key: 'total',
-      render: (pricing: { totalPrice?: number; deposit?: number }) => (
-        <div>
-          <div className="font-semibold">
-            ${pricing?.totalPrice || 0}
+      render: (pricing: { 
+        total_price?: number;
+        base_price?: number;
+        taxes?: number;
+        insurance_price?: number;
+        deposit?: number;
+        currency?: string;
+        details?: {
+          days?: number;
+          hours?: number;
+        }
+      }) => {
+        console.log('Chi tiết giá:', pricing);
+        const prices = formatPrice(pricing);
+        console.log('Giá đã định dạng:', prices);
+        return (
+          <div>
+            <div className="font-semibold">
+              {formatVndPrice(prices.total)}
+            </div>
+            <div className="text-xs text-gray-500">
+              Tiền cọc: {formatVndPrice(prices.deposit)}
+            </div>
           </div>
-          <div className="text-xs text-gray-500">
-            Deposit: ${pricing?.deposit || 0}
-          </div>
-        </div>
-      ),
+        );
+      },
     },
     {
-      title: 'Status',
+      title: 'Trạng Thái',
       dataIndex: 'status',
       key: 'status',
       render: (status: string) => (
@@ -125,7 +191,7 @@ const BookingsPage: React.FC = () => {
       ),
     },
     {
-      title: 'Actions',
+      title: 'Hành Động',
       key: 'actions',
       render: (_: unknown, record: Booking) => (
         <Space>
@@ -136,11 +202,11 @@ const BookingsPage: React.FC = () => {
               if (record.status === 'HELD') {
                 navigate(`/payment?bookingId=${record._id}`);
               } else {
-                message.info('Booking details view coming soon');
+                navigate(`/bookings/${record._id}`);
               }
             }}
           >
-            {record.status === 'HELD' ? 'Pay Now' : 'View'}
+            {record.status === 'HELD' ? 'Thanh Toán' : 'Xem'}
           </Button>
         </Space>
       ),
@@ -148,20 +214,21 @@ const BookingsPage: React.FC = () => {
   ];
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <Title level={2}>My Bookings</Title>
+    <div className="min-h-screen bg-gray-50">
+      <div className="p-6">
+        <div className="flex justify-between items-center mb-6">
+        <Title level={2}>Danh Sách Đặt Xe</Title>
         <Button 
           type="primary" 
           icon={<ReloadOutlined />}
           onClick={loadBookings}
           loading={loading}
         >
-          Refresh
+          Làm Mới
         </Button>
       </div>
 
-      <Card>
+      <Card variant="outlined">
         <Table
           columns={columns}
           dataSource={bookings}
@@ -171,14 +238,14 @@ const BookingsPage: React.FC = () => {
             pageSize: 10,
             showSizeChanger: true,
             showTotal: (total, range) =>
-              `${range[0]}-${range[1]} of ${total} bookings`,
+              `${range[0]}-${range[1]} trong tổng số ${total} đặt xe`,
           }}
           locale={{
             emptyText: (
               <div className="text-center py-8">
-                <p className="text-gray-500 mb-4">No bookings found</p>
+                <p className="text-gray-500 mb-4">Không tìm thấy đặt xe nào</p>
                 <Button type="primary" onClick={() => navigate('/vehicles')}>
-                  Book a Vehicle
+                  Đặt Xe Ngay
                 </Button>
               </div>
             ),
@@ -186,41 +253,42 @@ const BookingsPage: React.FC = () => {
         />
       </Card>
 
-      {/* Quick Stats */}
+      {/* Thống Kê Nhanh */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6">
-        <Card>
+        <Card variant="outlined">
           <div className="text-center">
             <div className="text-2xl font-bold text-orange-600">
               {bookings.filter(b => b.status === 'HELD').length}
             </div>
-            <div className="text-sm text-gray-500">Pending Payment</div>
+            <div className="text-sm text-gray-500">Chờ Thanh Toán</div>
           </div>
         </Card>
-        <Card>
+        <Card variant="outlined">
           <div className="text-center">
             <div className="text-2xl font-bold text-green-600">
               {bookings.filter(b => b.status === 'CONFIRMED').length}
             </div>
-            <div className="text-sm text-gray-500">Confirmed</div>
+            <div className="text-sm text-gray-500">Đã Xác Nhận</div>
           </div>
         </Card>
-        <Card>
+        <Card variant="outlined">
           <div className="text-center">
             <div className="text-2xl font-bold text-gray-600">
               {bookings.filter(b => b.status === 'CANCELLED' || b.status === 'EXPIRED').length}
             </div>
-            <div className="text-sm text-gray-500">Cancelled/Expired</div>
+            <div className="text-sm text-gray-500">Đã Hủy/Hết Hạn</div>
           </div>
         </Card>
-        <Card>
+        <Card variant="outlined">
           <div className="text-center">
             <div className="text-2xl font-bold text-blue-600">
               {bookings.length}
             </div>
-            <div className="text-sm text-gray-500">Total Bookings</div>
+            <div className="text-sm text-gray-500">Tổng Số Đặt Xe</div>
           </div>
         </Card>
       </div>
+    </div>
     </div>
   );
 };

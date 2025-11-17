@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import api from "./api";
 
 export interface UserProfile {
@@ -58,8 +59,25 @@ export interface UploadVerificationImagesPayload {
 }
 
 export const userService = {
-  // Get current user profile using /users/me endpoint
+  // Get current user profile - auto-detect auth type
   async getCurrentUser(): Promise<UserProfile> {
+    const accessToken = localStorage.getItem("access_token");
+    const firebaseToken = localStorage.getItem("firebase_token");
+    
+    console.log('🔍 [userService] getCurrentUser - checking auth type:', {
+      hasAccessToken: !!accessToken,
+      hasFirebaseToken: !!firebaseToken
+    });
+    
+    // If user logged in via Firebase (Google), use Firebase endpoint
+    if (firebaseToken && !accessToken) {
+      console.log('🔥 [userService] Using Firebase endpoint: /auth/firebase/me');
+      const response = await api.get("/auth/firebase/me");
+      return response.data.user || response.data.data || response.data;
+    }
+    
+    // Otherwise use regular endpoint for local auth users
+    console.log('🔑 [userService] Using regular endpoint: /users/me');
     const response = await api.get("/users/me");
     return response.data.data;
   },
@@ -70,14 +88,66 @@ export const userService = {
     return response.data.data;
   },
 
+  // Get user contact info by ID (for staff to get customer phone)
+  async getUserContact(userId: string): Promise<{
+    _id: string;
+    name: string;
+    email: string;
+    phoneNumber?: string;
+    phone?: string;
+    mobile?: string;
+    telephone?: string;
+  }> {
+    try {
+      console.log('🔍 [USER_SERVICE] Fetching contact for user:', userId);
+      const response = await api.get(`/users/${userId}`);
+      const userData = response.data.data || response.data;
+      console.log('🔍 [USER_SERVICE] User contact response:', userData);
+      return {
+        _id: userData._id,
+        name: userData.name || 'Unknown User',
+        email: userData.email || '',
+        phoneNumber: userData.phoneNumber,
+        phone: userData.phone,
+        mobile: userData.mobile,
+        telephone: userData.telephone
+      };
+    } catch (error: unknown) {
+      console.error('❌ [USER_SERVICE] Error fetching user contact:', error);
+      // Fallback - return empty contact if user not found
+      return {
+        _id: userId,
+        name: 'Unknown User',
+        email: ''
+      };
+    }
+  },
+
   // Update user profile (admin only for now)
   async updateUser(userId: string, payload: UpdateUserPayload): Promise<UserProfile> {
     const response = await api.patch(`/users/${userId}`, payload);
     return response.data.data;
   },
 
-  // Update current user's own profile
+  // Update current user's own profile - auto-detect auth type  
   async updateSelf(payload: UpdateUserPayload): Promise<UserProfile> {
+    const accessToken = localStorage.getItem("access_token");
+    const firebaseToken = localStorage.getItem("firebase_token");
+    
+    console.log('🔍 [userService] updateSelf - checking auth type:', {
+      hasAccessToken: !!accessToken,
+      hasFirebaseToken: !!firebaseToken
+    });
+    
+    // If user logged in via Firebase (Google), use Firebase endpoint
+    if (firebaseToken && !accessToken) {
+      console.log('🔥 [userService] Updating via Firebase endpoint: /auth/firebase/profile');
+      const response = await api.put("/auth/firebase/profile", payload);
+      return response.data.user || response.data.data || response.data;
+    }
+    
+    // Otherwise use regular endpoint for local auth users
+    console.log('🔑 [userService] Updating via regular endpoint: /users/profile');
     const response = await api.patch("/users/profile", payload);
     return response.data.data;
   },
@@ -88,9 +158,68 @@ export const userService = {
     return response.data.data;
   },
 
-  // Upload verification images
+  // Upload verification images (bulk upload for first time)
   async uploadVerificationImages(payload: UploadVerificationImagesPayload): Promise<UserProfile> {
+    console.log('🚀 Starting uploadVerificationImages with payload:', {
+      payloadKeys: Object.keys(payload),
+      payloadSizes: Object.entries(payload).map(([key, value]) => ({
+        [key]: value ? `${value.length} chars` : 'null'
+      }))
+    });
+    
     const response = await api.post("/users/verification/upload", payload);
+    console.log('✅ Upload response received:', {
+      status: response.status,
+      hasData: !!response.data,
+      dataKeys: response.data ? Object.keys(response.data) : []
+    });
+    
+    return response.data.data;
+  },
+
+  // Update single verification document (for re-upload)
+  async updateSingleDocument(
+    documentType: 'idCardFront' | 'idCardBack' | 'driverLicense' | 'selfiePhoto',
+    base64Data: string
+  ): Promise<UserProfile> {
+    console.log('🔄 Updating single document:', {
+      documentType,
+      dataLength: base64Data.length,
+      preview: base64Data.substring(0, 50) + '...'
+    });
+    
+    const payload = { [documentType]: base64Data };
+    const response = await api.patch(`/users/verification/upload/${documentType}`, payload);
+    
+    console.log('✅ Single document update response:', {
+      status: response.status,
+      hasData: !!response.data,
+      dataKeys: response.data ? Object.keys(response.data) : []
+    });
+    
+    return response.data.data;
+  },
+
+  // Update single verification document
+  async updateSingleVerificationDocument(
+    documentType: 'idCardFront' | 'idCardBack' | 'driverLicense' | 'selfiePhoto',
+    base64Data: string
+  ): Promise<UserProfile> {
+    console.log('🔄 Updating single document:', {
+      documentType,
+      dataLength: base64Data.length,
+      preview: base64Data.substring(0, 50) + '...'
+    });
+    
+    const payload = { [documentType]: base64Data };
+    const response = await api.patch(`/users/verification/upload/${documentType}`, payload);
+    
+    console.log('✅ Single document update response:', {
+      status: response.status,
+      hasData: !!response.data,
+      dataKeys: response.data ? Object.keys(response.data) : []
+    });
+    
     return response.data.data;
   },
 
@@ -114,7 +243,6 @@ export const userService = {
 };
 
 export default userService;
-import api from './api';
 
 // User interfaces
 export interface User {

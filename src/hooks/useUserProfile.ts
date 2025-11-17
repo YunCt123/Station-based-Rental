@@ -76,12 +76,19 @@ export const useUserProfile = (): UseUserProfileReturn => {
   const loadProfile = useCallback(async () => {
     console.log("🔍 [useUserProfile] Starting to load profile...");
     
-    // Check if user is authenticated
+    // Check if user is authenticated (support both local and Firebase auth)
     const accessToken = localStorage.getItem("access_token");
-    console.log("🔑 [useUserProfile] Access token:", accessToken ? "exists" : "missing");
+    const firebaseToken = localStorage.getItem("firebase_token");
+    const token = accessToken || firebaseToken;
     
-    if (!accessToken) {
-      console.log("❌ [useUserProfile] No access token found");
+    console.log("🔑 [useUserProfile] Token status:", {
+      accessToken: accessToken ? "exists" : "missing",
+      firebaseToken: firebaseToken ? "exists" : "missing",
+      hasToken: !!token
+    });
+    
+    if (!token) {
+      console.log("❌ [useUserProfile] No authentication token found");
       setError("User not authenticated");
       setIsLoading(false);
       return;
@@ -94,12 +101,28 @@ export const useUserProfile = (): UseUserProfileReturn => {
       // Load user profile from userService
       let userData: UserProfile | null = null;
       try {
-        console.log("🔍 [useUserProfile] Trying userService.getCurrentUser()...");
+        console.log("🔍 [useUserProfile] Calling userService.getCurrentUser()...");
         userData = await userService.getCurrentUser();
         console.log("✅ [useUserProfile] userService success:", userData);
       } catch (userServiceError) {
-        console.log("❌ [useUserProfile] userService failed:", userServiceError);
-        throw userServiceError; // Re-throw error instead of fallback
+        console.error("❌ [useUserProfile] userService failed:", userServiceError);
+        
+        // Provide more specific error message
+        if (userServiceError && typeof userServiceError === 'object' && 'message' in userServiceError) {
+          const errorMessage = (userServiceError as { message: string }).message;
+          if (errorMessage.includes('Invalid or expired token')) {
+            setError("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
+          } else if (errorMessage.includes('Unauthorized')) {
+            setError("Không có quyền truy cập. Vui lòng đăng nhập lại.");
+          } else {
+            setError(`Lỗi tải thông tin: ${errorMessage}`);
+          }
+        } else {
+          setError("Không thể tải thông tin người dùng. Vui lòng thử lại.");
+        }
+        
+        setIsLoading(false);
+        return;
       }
 
       if (userData) {

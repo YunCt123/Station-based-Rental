@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import api from "./api";
+import api from './api';
 
 // Types for API responses
 export interface ApiResponse<T> {
@@ -40,18 +40,23 @@ export interface PriceBreakdown {
   daily_rate?: number;
   currency: string;
   deposit: number;
+  total_price?: number; // Backend uses snake_case
+  base_price?: number;
+  insurance_price?: number;
+  taxes?: number;
   policy_version?: string;
   
   // Legacy/calculated fields (for compatibility)
   basePrice?: number;
   insurancePrice?: number;
-  taxes?: number;
-  totalPrice?: number;
+  totalPrice?: number; // Frontend uses camelCase
   details?: {
-    rawBase: number;
-    peakMultiplier: number;
-    weekendMultiplier: number;
-    hours: number;
+    rawBase?: number;
+    rentalType?: string;
+    hours?: number;
+    days?: number;
+    peakMultiplier?: number;
+    weekendMultiplier?: number;
   };
 }
 
@@ -185,28 +190,145 @@ export interface BookingFormData {
   specialRequests?: string;
 }
 
+
+export interface PayOSCallbackParams {
+  transaction_ref: string;
+  status: "SUCCESS" | "FAILED";
+  provider: string;
+  amount: number;
+  provider_payment_id?: string | null;
+
+  // PayOS specific params
+  id?: string;
+  orderCode?: string;
+  paymentAmount?: string; // Renamed to avoid conflict
+  paymentStatus?: string; // Renamed to avoid conflict
+  code?: string;
+  cancel?: string;
+  bookingId?: string;
+  paymentLinkId?: string;
+  desc?: string;
+  counterAccountBankId?: string;
+  counterAccountBankName?: string;
+  counterAccountNumber?: string;
+  counterAccountName?: string;
+  virtualAccountNumber?: string;
+  virtualAccountName?: string;
+  transactionDate?: string;
+  paymentDate?: string;
+
+  [key: string]: any;
+}
+
+export interface PaymentCallbackResponse {
+  status: "SUCCESS" | "FAILED";
+  bookingId?: string;
+}
+
+
 // Main booking service class
 export class BookingService {
+  // ✅ FIXED: Helper function to validate and debug price calculation
+  private validatePriceCalculation(request: PriceCalculationRequest, response: PriceBreakdown): void {
+    console.log('🔍 [Frontend] Validating price calculation:');
+    console.log('📤 Request:', request);
+    console.log('📥 Response:', response);
+    
+    // Basic validation
+    if (!response.basePrice || response.basePrice < 0) {
+      console.warn('⚠️ Invalid base price:', response.basePrice);
+    }
+    
+    if (!response.totalPrice || response.totalPrice < (response.basePrice || 0)) {
+      console.warn('⚠️ Invalid total price:', response.totalPrice);
+    }
+    
+    // Calculate time difference
+    const startTime = new Date(request.startAt);
+    const endTime = new Date(request.endAt);
+    const hours = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
+    const days = hours / 24;
+    
+    console.log(`⏰ Time analysis: ${hours.toFixed(2)}h (${days.toFixed(2)} days)`);
+    
+    // Expected pricing analysis
+    if (response.hourly_rate && response.daily_rate && response.basePrice) {
+      const expectedHourly = hours * response.hourly_rate;
+      const expectedDaily = Math.ceil(days) * response.daily_rate;
+      
+      console.log(`💰 Expected pricing:`);
+      console.log(`   Hourly: ${hours.toFixed(2)}h × $${response.hourly_rate} = $${expectedHourly.toFixed(2)}`);
+      console.log(`   Daily: ${Math.ceil(days)} days × $${response.daily_rate} = $${expectedDaily.toFixed(2)}`);
+      console.log(`   Actual base: $${response.basePrice}`);
+      
+      // Flag potential issues
+      const tolerance = 50; // $50 tolerance for multipliers
+      if (hours >= 24 && Math.abs(response.basePrice - expectedDaily) > tolerance) {
+        console.warn(`⚠️ Daily pricing mismatch: expected ~$${expectedDaily}, got $${response.basePrice}`);
+      } else if (hours < 24 && Math.abs(response.basePrice - expectedHourly) > tolerance) {
+        console.warn(`⚠️ Hourly pricing mismatch: expected ~$${expectedHourly}, got $${response.basePrice}`);
+      }
+    }
+  }
+
   // Calculate booking price before creating booking
   async calculatePrice(request: PriceCalculationRequest): Promise<PriceBreakdown> {
     try {
-      console.log('[BookingService] Calculating price via API:', request);
+      console.log('🚀 [Frontend] Original request (VND):', {
+        ...request,
+        timestamp: new Date().toISOString(),
+        requestId: Math.random().toString(36).substr(2, 9)
+      });
       
-      const response = await api.post<ApiResponse<PriceBreakdown>>('/bookings/calculate-price', request);
+      // Send VND prices directly to backend
+      const vndRequest = {
+        ...request,
+        currency: 'VND'
+      };
+      
+      console.log('� [Frontend] Sending request to backend (VND):', vndRequest);
+      
+      const response = await api.post<ApiResponse<PriceBreakdown>>('/bookings/calculate-price', vndRequest);
       
       if (response.data.success && response.data.data) {
-        console.log('[BookingService] ✅ API Success - Price calculated:', response.data.data);
-        return response.data.data;
+        let pricing = response.data.data;
+        
+        console.log('📥 [Frontend] Raw backend response:', pricing);
+        
+        // Using VND response directly
+        if (pricing.currency === 'VND' || !pricing.currency) {
+          console.log('✅ [Frontend] Using VND response directly');
+          
+          pricing = {
+            ...pricing,
+            currency: 'VND' // Frontend now displays VND directly
+          };
+          
+          console.log('✅ [Frontend] VND pricing:', pricing);
+        }
+        
+        // ✅ Validate and debug pricing
+        this.validatePriceCalculation(request, pricing);
+        
+        console.log('✅ [Frontend] Price calculation successful (VND):', pricing);
+        return pricing;
+      } else {
+        throw new Error('Price calculation failed: Invalid response');
+      }
+    } catch (error: any) {
+      console.error('💥 [Frontend] Price calculation error:', error);
+      
+      if (error.response?.status === 404) {
+        throw new Error('Vehicle not found');
+      } else if (error.response?.status === 400) {
+        throw new Error(error.response.data?.message || 'Invalid booking parameters');
       }
       
-      throw new Error('Failed to calculate price');
-    } catch (error: any) {
-      console.warn('[BookingService] ❌ API Failed, using fallback calculation:', error.message);
-      
-      // Fallback price calculation for development
-      const fallback = this.calculateFallbackPrice(request);
-      console.log('[BookingService] 🔄 Fallback price:', fallback);
-      return fallback;
+      // ✅ Fallback calculation for development
+      console.warn('⚠️ [Frontend] Using fallback price calculation');
+      const fallbackPrice = this.calculateFallbackPrice(request);
+      this.validatePriceCalculation(request, fallbackPrice);
+      return fallbackPrice;
     }
   }
 
@@ -291,6 +413,40 @@ export class BookingService {
     }
   }
 
+  // ✅ NEW: Get bookings by station (for staff)
+  async getStationBookings(
+    stationId: string, 
+    status: 'HELD' | 'CONFIRMED' | 'CANCELLED' = 'CONFIRMED'
+  ): Promise<Booking[]> {
+    try {
+      console.log('[BookingService] Getting station bookings:', { stationId, status });
+      
+      const response = await api.get<ApiResponse<Booking[]>>(
+        `/bookings/station/${stationId}?status=${status}`
+      );
+      
+      if (response.data.success && response.data.data) {
+        console.log('[BookingService] Station bookings retrieved:', {
+          count: response.data.data.length,
+          bookings: response.data.data.map((b: any) => ({
+            id: b._id,
+            status: b.status,
+            startAt: b.start_at,
+            endAt: b.end_at,
+            vehicle: b.vehicle_snapshot?.name || 'Unknown',
+            user: 'Customer' // Will be populated by backend
+          }))
+        });
+        return response.data.data;
+      }
+      
+      return [];
+    } catch (error: any) {
+      console.error('[BookingService] Get station bookings error:', error);
+      return [];
+    }
+  }
+
   // Create deposit payment for booking
   async createDepositPayment(request: PaymentCreateRequest): Promise<PaymentResponse> {
     try {
@@ -348,6 +504,7 @@ export class BookingService {
       throw new Error(error.response?.data?.message || error.message || 'Failed to create PayOS payment');
     }
   }
+
 
   // Check payment status
   async checkPaymentStatus(paymentId: string): Promise<Payment> {
@@ -457,6 +614,130 @@ export class BookingService {
     }
   }
 
+  async handleVnpayCallback(params: {
+  transaction_ref: string;
+  status: "SUCCESS" | "FAILED";
+  provider: string;
+  amount: number;
+  provider_payment_id?: string | null;
+
+  // TOÀN BỘ vnp_* Ở ROOT
+  vnp_SecureHash: string;
+  vnp_TxnRef: string;
+  vnp_ResponseCode: string;
+  vnp_Amount: string;
+  vnp_TransactionNo?: string;
+  vnp_BankCode?: string;
+  vnp_OrderInfo?: string;
+  vnp_PayDate?: string;
+  vnp_TmnCode?: string;
+  vnp_TransactionStatus?: string;
+  vnp_CardType?: string;
+
+  [key: string]: any; // Cho phép tất cả vnp_*
+}): Promise<{
+  status: "SUCCESS" | "FAILED";
+  bookingId?: string;
+}> {
+  try {
+    console.log('[BookingService] handleVnpayCallback - Payload:', params);
+    console.log('[BookingService] vnp_ResponseCode trong params:', params.vnp_ResponseCode);
+    console.log('[BookingService] status trong params:', params.status);
+
+    const response = await api.post<ApiResponse<{
+      message: string;
+      status: "SUCCESS" | "FAILED";
+      bookingId?: string;
+    }>>('/payments/vnpay/callback', params);
+
+    console.log('[BookingService] Backend response:', response.data);
+    console.log('[BookingService] Backend response.data.data:', response.data.data);
+
+    if (response.data.success && response.data.data) {
+      const responseData = response.data.data;
+      
+      // Handle different backend response formats
+      let result: { status: "SUCCESS" | "FAILED"; bookingId?: string };
+      
+      if (responseData.status) {
+        // New format: {status: "SUCCESS", bookingId: "..."}
+        result = responseData;
+      } else if (responseData.message === 'ok') {
+        // Old format: {message: 'ok'} - consider as success
+        result = {
+          status: "SUCCESS",
+          bookingId: responseData.bookingId || undefined
+        };
+      } else {
+        // Unknown format - consider as failed
+        result = {
+          status: "FAILED"
+        };
+      }
+      
+      console.log('[BookingService] Normalized result:', result);
+      return result;
+    }
+
+    throw new Error('Xử lý VNPay callback thất bại');
+  } catch (error: any) {
+    console.error('[BookingService] Lỗi:', error);
+    throw new Error(
+      error.response?.data?.message ||
+      error.message ||
+      'Lỗi hệ thống'
+    );
+  }
+}
+
+ async handlePayOSCallback(
+  params: PayOSCallbackParams
+): Promise<PaymentCallbackResponse> {
+  try {
+    console.log('[BookingService] handlePayOSCallback - Payload:', params);
+
+    const response = await api.post<ApiResponse<PaymentCallbackResponse>>(
+      '/payments/payos/callback',
+      params
+    );
+
+    if (response.data.success && response.data.data) {
+      return response.data.data;
+    }
+
+    throw new Error('Xử lý PayOS callback thất bại');
+  } catch (error: any) {
+    console.error('[BookingService] Lỗi PayOS:', error);
+    throw new Error(
+      error.response?.data?.message ||
+      error.message ||
+      'Lỗi hệ thống'
+    );
+  }
+}
+
+  async checkVnpayPaymentStatus(txnRef: string): Promise<Payment> {
+    try {
+      console.log('[BookingService] Checking VNPAY payment status for txnRef:', txnRef);
+
+      const response = await api.get<ApiResponse<Payment>>(`/payments/vnpay/status/${txnRef}`);
+
+      if (response.data.success && response.data.data) {
+        console.log('[BookingService] VNPAY payment status:', response.data.data);
+        return response.data.data;
+      }
+
+      throw new Error('Payment not found or still pending');
+    } catch (error: any) {
+      console.error('[BookingService] Check VNPAY status error:', error);
+      throw new Error(
+        error.response?.data?.message ||
+        error.message ||
+        'Không thể kiểm tra trạng thái thanh toán'
+      );
+    }
+  }
+
   // Check vehicle availability for booking dates
   async checkVehicleAvailability(vehicleId: string, startAt: string, endAt: string): Promise<boolean> {
     try {
@@ -470,57 +751,193 @@ export class BookingService {
     }
   }
 
-  // Helper: Format booking request for API
-  formatBookingRequest(formData: any): BookingRequest {
-    // Handle different field names from the form
+  // Helper: Format price calculation request from form data
+  formatPriceCalculationRequest(formData: any): PriceCalculationRequest {
+    console.log('💰 [formatPriceCalculationRequest] Processing form data:', formData);
+    
     const vehicleId = formData.vehicleId || formData.vehicle_id;
-    const stationId = formData.stationId || formData.station_id;
+    const rentalType = formData.rental_type;
     
-    // Handle date and time - could be from rental_period array or separate fields
-    let startAt: Date;
-    let endAt: Date;
+    let startAt: string;
+    let endAt: string;
     
-    if (formData.rental_period && Array.isArray(formData.rental_period)) {
-      // If using rental_period array from DatePicker.RangePicker
-      const [startDate, endDate] = formData.rental_period;
+    if (rentalType === "hourly") {
+      // For hourly rental: use current date + start/end times
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
       const startTime = formData.rental_start_time;
       const endTime = formData.rental_end_time;
       
-      startAt = new Date(startDate.toDate());
-      if (startTime) {
-        startAt.setHours(startTime.hour(), startTime.minute(), 0, 0);
+      if (!startTime || !endTime) {
+        throw new Error('Start time and end time are required for hourly rental');
       }
       
-      endAt = new Date(endDate.toDate());
-      if (endTime) {
-        endAt.setHours(endTime.hour(), endTime.minute(), 0, 0);
+      const startDateTime = new Date(today);
+      startDateTime.setHours(startTime.hour(), startTime.minute(), 0, 0);
+      
+      const endDateTime = new Date(today);
+      endDateTime.setHours(endTime.hour(), endTime.minute(), 0, 0);
+      
+      startAt = startDateTime.toISOString();
+      endAt = endDateTime.toISOString();
+      
+    } else if (rentalType === "daily") {
+      // For daily rental: use rental_period + pickup time
+      if (!formData.rental_period || !Array.isArray(formData.rental_period) || formData.rental_period.length !== 2) {
+        throw new Error('Rental period is required for daily rental');
       }
+      
+      const [startDate, endDate] = formData.rental_period;
+      const pickupTime = formData.rental_start_time;
+      
+      if (!pickupTime) {
+        throw new Error('Pickup time is required for daily rental');
+      }
+      
+      const startDateTime = new Date(startDate.toDate());
+      startDateTime.setHours(pickupTime.hour(), pickupTime.minute(), 0, 0);
+      
+      const endDateTime = new Date(endDate.toDate());
+      endDateTime.setHours(pickupTime.hour(), pickupTime.minute(), 0, 0);
+      
+      startAt = startDateTime.toISOString();
+      endAt = endDateTime.toISOString();
+      
     } else {
-      // Fallback to individual fields
-      startAt = new Date(formData.startDate);
-      if (formData.startTime) {
-        if (typeof formData.startTime === 'string') {
-          const [hours, minutes] = formData.startTime.split(':');
-          startAt.setHours(parseInt(hours), parseInt(minutes), 0, 0);
-        } else if (formData.startTime.hour) {
-          // dayjs object
-          startAt.setHours(formData.startTime.hour(), formData.startTime.minute(), 0, 0);
-        }
-      }
-      
-      endAt = new Date(formData.endDate);
-      if (formData.endTime) {
-        if (typeof formData.endTime === 'string') {
-          const [hours, minutes] = formData.endTime.split(':');
-          endAt.setHours(parseInt(hours), parseInt(minutes), 0, 0);
-        } else if (formData.endTime.hour) {
-          // dayjs object
-          endAt.setHours(formData.endTime.hour(), formData.endTime.minute(), 0, 0);
-        }
-      }
+      // Fallback - direct startAt/endAt if provided
+      startAt = formData.startAt;
+      endAt = formData.endAt;
     }
     
-    return {
+    const request = {
+      vehicleId,
+      startAt,
+      endAt,
+      insurancePremium: formData.insurance?.premium || formData.insurance_premium || false
+    };
+    
+    console.log('🔍 [formatPriceCalculationRequest] Insurance debug:', {
+      'formData.insurance?.premium': formData.insurance?.premium,
+      'formData.insurance_premium': formData.insurance_premium,
+      'final insurancePremium': request.insurancePremium,
+      'formData keys': Object.keys(formData)
+    });
+    
+    console.log('✅ [formatPriceCalculationRequest] Final request:', request);
+    return request;
+  }
+
+  // Helper: Format booking request for API
+  formatBookingRequest(formData: any): BookingRequest {
+    console.log('🔧 [formatBookingRequest] Processing form data:', formData);
+    
+    // Handle different field names from the form
+    const vehicleId = formData.vehicleId || formData.vehicle_id;
+    const stationId = formData.stationId || formData.station_id;
+    const rentalType = formData.rental_type;
+    
+    // Handle date and time based on rental type
+    let startAt: Date;
+    let endAt: Date;
+    
+    if (rentalType === "hourly") {
+      // For hourly rental: use current date + start/end times
+      const today = new Date();
+      today.setHours(0, 0, 0, 0); // Reset to start of day
+      
+      const startTime = formData.rental_start_time;
+      const endTime = formData.rental_end_time;
+      
+      if (!startTime || !endTime) {
+        throw new Error('Start time and end time are required for hourly rental');
+      }
+      
+      startAt = new Date(today);
+      startAt.setHours(startTime.hour(), startTime.minute(), 0, 0);
+      
+      endAt = new Date(today);
+      endAt.setHours(endTime.hour(), endTime.minute(), 0, 0);
+      
+      console.log('⏰ [formatBookingRequest] Hourly rental:', { startAt, endAt });
+      
+    } else if (rentalType === "daily") {
+      // For daily rental: use rental_period + pickup time
+      if (!formData.rental_period || !Array.isArray(formData.rental_period) || formData.rental_period.length !== 2) {
+        throw new Error('Rental period is required for daily rental');
+      }
+      
+      const [startDate, endDate] = formData.rental_period;
+      const pickupTime = formData.rental_start_time;
+      
+      if (!pickupTime) {
+        throw new Error('Pickup time is required for daily rental');
+      }
+      
+      startAt = new Date(startDate.toDate());
+      startAt.setHours(pickupTime.hour(), pickupTime.minute(), 0, 0);
+      
+      // For daily rental, end time is typically end of day or same pickup time on end date
+      endAt = new Date(endDate.toDate());
+      endAt.setHours(pickupTime.hour(), pickupTime.minute(), 0, 0);
+      
+      console.log('📅 [formatBookingRequest] Daily rental:', { startAt, endAt });
+      
+    } else {
+      // Fallback to original logic for backward compatibility
+      if (formData.rental_period && Array.isArray(formData.rental_period)) {
+        // If using rental_period array from DatePicker.RangePicker
+        const [startDate, endDate] = formData.rental_period;
+        const startTime = formData.rental_start_time;
+        const endTime = formData.rental_end_time || formData.rental_start_time; // Fallback to start time
+        
+        startAt = new Date(startDate.toDate());
+        if (startTime) {
+          startAt.setHours(startTime.hour(), startTime.minute(), 0, 0);
+        }
+        
+        endAt = new Date(endDate.toDate());
+        if (endTime) {
+          endAt.setHours(endTime.hour(), endTime.minute(), 0, 0);
+        }
+      } else {
+        // Fallback to individual fields
+        startAt = new Date(formData.startDate);
+        if (formData.startTime) {
+          if (typeof formData.startTime === 'string') {
+            const [hours, minutes] = formData.startTime.split(':');
+            startAt.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+          } else if (formData.startTime.hour) {
+            // dayjs object
+            startAt.setHours(formData.startTime.hour(), formData.startTime.minute(), 0, 0);
+          }
+        }
+        
+        endAt = new Date(formData.endDate);
+        if (formData.endTime) {
+          if (typeof formData.endTime === 'string') {
+            const [hours, minutes] = formData.endTime.split(':');
+            endAt.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+          } else if (formData.endTime.hour) {
+            // dayjs object
+            endAt.setHours(formData.endTime.hour(), formData.endTime.minute(), 0, 0);
+          }
+        }
+      }
+      
+      console.log('🔄 [formatBookingRequest] Fallback logic:', { startAt, endAt });
+    }
+    
+    // Validate dates
+    if (isNaN(startAt.getTime()) || isNaN(endAt.getTime())) {
+      throw new Error('Invalid start or end date');
+    }
+    
+    if (endAt <= startAt) {
+      throw new Error('End date must be after start date');
+    }
+    
+    const bookingRequest = {
       vehicleId,
       stationId,
       startAt: startAt.toISOString(),
@@ -532,6 +949,9 @@ export class BookingService {
         premium: formData.insurance?.premium || formData.insurance_premium || false
       }
     };
+    
+    console.log('✅ [formatBookingRequest] Final booking request:', bookingRequest);
+    return bookingRequest;
   }
 
   // Helper: Format booking for display
@@ -552,12 +972,13 @@ export class BookingService {
       createdAt: new Date(booking.createdAt),
       updatedAt: new Date(booking.updatedAt),
       totalAmount: booking.pricing_snapshot?.totalPrice || 0,
-      currency: booking.pricing_snapshot?.currency || 'USD',
+      currency: booking.pricing_snapshot?.currency || 'VND',
       deposit: booking.pricing_snapshot?.deposit || 0,
       canConfirm: booking.status === 'HELD' && this.isWithinHoldPeriod(booking),
       canCancel: ['HELD', 'CONFIRMED'].includes(booking.status)
     };
   }
+  
 
   // Helper: Check if booking is still within hold period
   private isWithinHoldPeriod(booking: Booking): boolean {
@@ -565,38 +986,141 @@ export class BookingService {
     return new Date() < new Date(booking.hold_expires_at);
   }
 
-  // Fallback price calculation for development/offline mode
+  // ✅ IMPROVED: Fallback price calculation for development/offline mode
   private calculateFallbackPrice(request: PriceCalculationRequest): PriceBreakdown {
-    console.log('[BookingService] Using fallback price calculation');
+    console.log('🔧 [Frontend] Calculating fallback price for:', request);
     
-    const start = new Date(request.startAt);
-    const end = new Date(request.endAt);
-    const hours = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60)));
+    const startTime = new Date(request.startAt);
+    const endTime = new Date(request.endAt);
+    const hours = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
+    const days = hours / 24;
     
-    // Use realistic rates instead of hardcoded $50/hour
-    const baseHourlyRate = 19; // $19/hour to match the UI
-    const basePrice = hours * baseHourlyRate;
+    // Default rates (should match backend)
+    const defaultRates = {
+      hourly: 20,  // $20/hour
+      daily: 135,  // $135/day
+      currency: 'VND'
+    };
+    
+    let basePrice = 0;
+    
+    // ✅ Same logic as backend
+    if (hours >= 24) {
+      // Use daily pricing for 24+ hours
+      const totalDays = Math.ceil(days);
+      
+      // Apply weekend multiplier
+      for (let i = 0; i < totalDays; i++) {
+        const dayDate = new Date(startTime.getTime() + i * 24 * 60 * 60 * 1000);
+        const isWeekend = dayDate.getDay() === 0 || dayDate.getDay() === 6;
+        const weekendMultiplier = isWeekend ? 1.2 : 1.0;
+        basePrice += defaultRates.daily * weekendMultiplier;
+      }
+    } else {
+      // Use hourly pricing for < 24 hours
+      const totalHours = Math.ceil(hours);
+      
+      // Apply peak and weekend multipliers
+      for (let i = 0; i < totalHours; i++) {
+        const hourStart = new Date(startTime.getTime() + i * 60 * 60 * 1000);
+        const hour = hourStart.getHours();
+        const isWeekend = hourStart.getDay() === 0 || hourStart.getDay() === 6;
+        
+        // Peak hours: 7-9 AM and 5-7 PM
+        const isPeakHour = (hour >= 7 && hour < 9) || (hour >= 17 && hour < 19);
+        
+        const peakMultiplier = isPeakHour ? 1.5 : 1.0;
+        const weekendMultiplier = isWeekend ? 1.2 : 1.0;
+        
+        basePrice += defaultRates.hourly * peakMultiplier * weekendMultiplier;
+      }
+    }
+    
+    // Calculate additional costs
     const insurancePrice = request.insurancePremium ? basePrice * 0.1 : 0;
-    const taxes = (basePrice + insurancePrice) * 0.1; // 10% tax
-    const total = basePrice + insurancePrice + taxes;
-    const deposit = Math.round(total * 0.2); // 20% deposit
+    const subtotal = basePrice + insurancePrice;
+    const taxes = subtotal * 0.1;
+    const total = subtotal + taxes;
+    const deposit = total * 0.2;
     
-    return {
+    const breakdown: PriceBreakdown = {
+      // Backend format
+      hourly_rate: defaultRates.hourly,
+      daily_rate: defaultRates.daily,
+      currency: defaultRates.currency,
+      deposit: Number(deposit.toFixed(2)),
+      policy_version: 'fallback-v1.0',
+      
+      // Frontend format
       basePrice: Number(basePrice.toFixed(2)),
       insurancePrice: Number(insurancePrice.toFixed(2)),
       taxes: Number(taxes.toFixed(2)),
-      deposit: Number(deposit.toFixed(2)),
       totalPrice: Number(total.toFixed(2)),
-      currency: 'USD',
-      daily_rate: 130, // Match UI display
-      hourly_rate: 19, // Match UI display
       details: {
-        rawBase: basePrice,
+        rawBase: Number(basePrice.toFixed(2)),
         peakMultiplier: 1,
         weekendMultiplier: 1,
-        hours
+        hours: Number(hours.toFixed(2))
       }
     };
+    
+    console.log('✅ [Frontend] Fallback calculation result:', breakdown);
+    return breakdown;
+  }
+
+  // ✅ NEW: Get all bookings for staff/admin
+  async getAllBookings(params?: {
+    status?: 'HELD' | 'CONFIRMED' | 'CANCELLED' | 'EXPIRED';
+    limit?: number;
+    page?: number;
+    startDate?: string;
+    endDate?: string;
+    stationId?: string;
+  }): Promise<Booking[]> {
+    try {
+      console.log('[BookingService] Getting all bookings for staff:', params);
+      
+      const queryParams = new URLSearchParams();
+      if (params?.status) queryParams.append('status', params.status);
+      if (params?.limit) queryParams.append('limit', params.limit.toString());
+      if (params?.page) queryParams.append('page', params.page.toString());
+      if (params?.startDate) queryParams.append('startDate', params.startDate);
+      if (params?.endDate) queryParams.append('endDate', params.endDate);
+      if (params?.stationId) queryParams.append('stationId', params.stationId);
+      
+      // ✅ Request populated data for staff view
+      queryParams.append('populate', 'user_id,vehicle_id,station_id');
+      
+      const url = `/bookings/all${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
+      console.log('[BookingService] API URL:', url);
+      
+      const response = await api.get<ApiResponse<Booking[]>>(url);
+      
+      if (response.data.success && response.data.data) {
+        console.log('[BookingService] All bookings retrieved:', {
+          count: response.data.data.length,
+          sample: response.data.data.slice(0, 2).map((b: any) => ({
+            id: b._id,
+            status: b.status,
+            user: b.user_id?.name || 'Unknown User',
+            vehicle: b.vehicle_id?.name || 'Unknown Vehicle',
+            deposit: b.financial_summary?.deposit_amount || 0,
+            paid: b.financial_summary?.deposit_paid || 0
+          }))
+        });
+        return response.data.data;
+      }
+      
+      return [];
+    } catch (error: any) {
+      console.error('[BookingService] Get all bookings error:', error);
+      console.error('[BookingService] Error details:', {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        message: error.response?.data?.message
+      });
+      throw new Error(error.response?.data?.message || error.message || 'Failed to get all bookings');
+    }
   }
 }
 

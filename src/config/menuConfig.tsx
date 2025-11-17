@@ -10,7 +10,9 @@ import {
   WrenchScrewdriverIcon,
   UserIcon,
   CurrencyDollarIcon,
-  BoltIcon
+  BoltIcon,
+  BuildingStorefrontIcon,
+  Cog6ToothIcon
 } from '@heroicons/react/24/outline';
 
 import type { SidebarSection } from '../types/sidebar';
@@ -32,7 +34,7 @@ export const getMenuSections = (): SidebarSection[] => [
       },
       {
         id: 'vehicle-handover',
-        title: 'Giao - nhận xe',
+        title: 'Quản lý xe',
         icon: <TruckIcon className="w-5 h-5" />,
         path: '/staff/vehicle-handover',
         roles: [UserRole.STATION_STAFF],
@@ -61,17 +63,17 @@ export const getMenuSections = (): SidebarSection[] => [
         ]
       },
       {
-        id: 'delivery-procedures',
-        title: 'Thủ tục bàn giao',
-        icon: <DocumentTextIcon className="w-5 h-5" />,
-        path: '/staff/delivery-procedures',
-        roles: [UserRole.STATION_STAFF]
-      },
-      {
         id: 'customer-verification',
         title: 'Xác thực khách hàng',
         icon: <UserIcon className="w-5 h-5" />,
         path: '/staff/customer-verification',
+        roles: [UserRole.STATION_STAFF],
+      },
+      {
+        id: 'delivery-procedures',
+        title: 'Giao - Nhận xe',
+        icon: <TruckIcon className="w-5 h-5" />,
+        path: '/staff/delivery-procedures',
         roles: [UserRole.STATION_STAFF],
       }
     ]
@@ -174,6 +176,20 @@ export const getMenuSections = (): SidebarSection[] => [
             roles: [UserRole.ADMIN]
           }
         ]
+      },
+      {
+        id: 'vehicle-management',
+        title: 'Quản lý xe',
+        icon: <Cog6ToothIcon className="w-5 h-5" />,
+        path: '/admin/vehicles',
+        roles: [UserRole.ADMIN]
+      },
+      {
+        id: 'station-management',
+        title: 'Quản lý trạm',
+        icon: <BuildingStorefrontIcon className="w-5 h-5" />,
+        path: '/admin/stations',
+        roles: [UserRole.ADMIN]
       },
       {
         id: 'transaction-history',

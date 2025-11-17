@@ -156,8 +156,8 @@ const Vehicles = () => {
         filters.minPrice = priceRange[0] * 23000;
         filters.maxPrice = priceRange[1] * 23000;
       } else {
-        filters.minPrice = priceRange[0];
-        filters.maxPrice = priceRange[1];
+        filters.minPrice = 0;
+        filters.maxPrice = 10000000;
       }
 
       // Map frontend sort to backend sort
@@ -326,27 +326,27 @@ const Vehicles = () => {
         {
           image:
             "https://shop.vinfastauto.com/on/demandware.static/-/Sites-app_vinfast_vn-Library/default/dw174b57d5/images/PDP/vf9/202406/hero.webp",
-          title: t("common.vehiclesHeaderTitle"),
-          subtitle: t("common.vehiclesHeaderSubtitle"),
-          ctaText: t("common.viewAllVehicles"),
+          title: "Khám phá các phương tiện của chúng tôi",
+          subtitle: "Tìm phương tiện phù hợp với bạn",
+          ctaText: "Xem tất cả phương tiện",
           ctaHref: "/vehicles",
           align: "center",
         },
         {
           image:
             "https://cdn.tienphong.vn/images/a6bf4f60924201126af6849ca45a3980b039b2e68480d2da6589e6ff9ba548c624bbdbb2416fe89d78f7f83417d8c92791c395aaa9493e5cdaf349cad3d4a15e/vf9-9117.jpg",
-          title: t("common.evDealsTitle"),
-          subtitle: t("common.evDealsSubtitle"),
-          ctaText: t("common.bookNow"),
+          title: "Ưu đãi xe điện",
+          subtitle: "Đặt ngay hôm nay để nhận ưu đãi đặc biệt",
+          ctaText: "Đặt ngay",
           ctaHref: "/deals",
           align: "left",
         },
         {
           image:
             "https://static.automotor.vn/images/upload/2024/05/08/vinfast-vf3-vneconomtautomotive3.jpg",
-          title: t("common.safetyTitle"),
-          subtitle: t("common.safetySubtitle"),
-          ctaText: t("common.learnMore"),
+          title: "An toàn là trên hết",
+          subtitle: "Tìm hiểu thêm về các tính năng an toàn của chúng tôi",
+          ctaText: "Tìm hiểu thêm",
           ctaHref: "/safety",
           align: "right",
         },
@@ -363,12 +363,11 @@ const Vehicles = () => {
                   value={searchTerm}
                   onChange={handleSearchChange}
                   onSuggestionSelect={(suggestion: SearchSuggestion) => {
-                    // Handle different suggestion types
                     if (suggestion.type === "location") {
                       setLocationFilter(suggestion.value);
                     }
                   }}
-                  placeholder={t("common.searchPlaceholder")}
+                  placeholder="Tìm kiếm phương tiện"
                 />
               </div>
 
@@ -382,12 +381,10 @@ const Vehicles = () => {
                   }}
                 >
                   <SelectTrigger className="w-48">
-                    <SelectValue placeholder={t("common.allLocations")} />
+                    <SelectValue placeholder="Tất cả địa điểm" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">
-                      {t("common.allLocations")}
-                    </SelectItem>
+                    <SelectItem value="all">Tất cả địa điểm</SelectItem>
                     {locations.map((location) => (
                       <SelectItem
                         key={String(location)}
@@ -407,17 +404,13 @@ const Vehicles = () => {
                   }}
                 >
                   <SelectTrigger className="w-40">
-                    <SelectValue placeholder={t("common.availability")} />
+                    <SelectValue placeholder="Tình trạng" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">{t("common.allStatus")}</SelectItem>
-                    <SelectItem value="available">
-                      {t("common.available")}
-                    </SelectItem>
-                    <SelectItem value="rented">{t("common.rented")}</SelectItem>
-                    <SelectItem value="maintenance">
-                      {t("common.maintenance")}
-                    </SelectItem>
+                    <SelectItem value="all">Tất cả trạng thái</SelectItem>
+                    <SelectItem value="available">Có sẵn</SelectItem>
+                    <SelectItem value="rented">Đã thuê</SelectItem>
+                    <SelectItem value="maintenance">Bảo trì</SelectItem>
                   </SelectContent>
                 </Select>
 
@@ -427,7 +420,7 @@ const Vehicles = () => {
                   className="px-4"
                 >
                   <SlidersHorizontal className="h-4 w-4 mr-2" />
-                  {t("common.filter")}
+                  Bộ lọc
                 </Button>
               </div>
             </div>
@@ -439,7 +432,7 @@ const Vehicles = () => {
                   ? [
                       {
                         key: "search",
-                        label: `Search: ${searchTerm}`,
+                        label: `Tìm kiếm: ${searchTerm}`,
                         onRemove: () => handleSearchChange(""),
                       },
                     ]
@@ -448,7 +441,7 @@ const Vehicles = () => {
                   ? [
                       {
                         key: "location",
-                        label: `Location: ${locationFilter}`,
+                        label: `Địa điểm: ${locationFilter}`,
                         onRemove: () => handleFilterChange("location", "all"),
                       },
                     ]
@@ -457,7 +450,7 @@ const Vehicles = () => {
                   ? [
                       {
                         key: "availability",
-                        label: `Status: ${availabilityFilter}`,
+                        label: `Trạng thái: ${availabilityFilter}`,
                         onRemove: () =>
                           handleFilterChange("availability", "all"),
                       },
@@ -467,7 +460,7 @@ const Vehicles = () => {
                   ? [
                       {
                         key: "vehicleType",
-                        label: `Type: ${vehicleTypeFilter}`,
+                        label: `Loại: ${vehicleTypeFilter}`,
                         onRemove: () =>
                           handleFilterChange("vehicleType", "all"),
                       },
@@ -477,7 +470,7 @@ const Vehicles = () => {
                   ? [
                       {
                         key: "sortBy",
-                        label: `Sort: ${sortBy}`,
+                        label: `Sắp xếp: ${sortBy}`,
                         onRemove: () => handleFilterChange("sortBy", "name"),
                       },
                     ]
@@ -499,13 +492,12 @@ const Vehicles = () => {
                   {/* Price Range */}
                   <div>
                     <label className="text-sm font-medium mb-3 block">
-                      {t("common.priceRangeLabel")}:{" "}
-                      {language === "vi" ? "₫" : "$"}
+                      Khoảng giá: {language === "vi" ? "₫" : "$"}
                       {priceRange[0]}
                       {language === "vi" ? "k" : ""} -{" "}
                       {language === "vi" ? "₫" : "$"}
                       {priceRange[1]}
-                      {language === "vi" ? "k" : ""}/hour
+                      {language === "vi" ? "k" : ""}/giờ
                     </label>
                     <Slider
                       value={priceRange}
@@ -520,7 +512,7 @@ const Vehicles = () => {
                   {/* Vehicle Type Filter */}
                   <div>
                     <label className="text-sm font-medium mb-3 block">
-                      {t("common.vehicleType")}
+                      Loại phương tiện
                     </label>
                     <Select
                       value={vehicleTypeFilter}
@@ -533,26 +525,24 @@ const Vehicles = () => {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="all">
-                          {t("common.allTypes")}
-                        </SelectItem>
+                        <SelectItem value="all">Tất cả loại</SelectItem>
                         <SelectItem value="SUV">SUV</SelectItem>
                         <SelectItem value="Sedan">Sedan</SelectItem>
                         <SelectItem value="Hatchback">Hatchback</SelectItem>
                         <SelectItem value="Crossover">Crossover</SelectItem>
-                        <SelectItem value="Scooter">Scooter</SelectItem>
-                        <SelectItem value="Motorcycle">Motorcycle</SelectItem>
-                        <SelectItem value="Bike">Bike</SelectItem>
-                        <SelectItem value="Van">Van</SelectItem>
-                        <SelectItem value="Bus">Bus</SelectItem>
-                        <SelectItem value="Truck">Truck</SelectItem>
+                        <SelectItem value="Scooter">Xe tay ga</SelectItem>
+                        <SelectItem value="Motorcycle">Xe máy</SelectItem>
+                        <SelectItem value="Bike">Xe đạp</SelectItem>
+                        <SelectItem value="Van">Xe van</SelectItem>
+                        <SelectItem value="Bus">Xe buýt</SelectItem>
+                        <SelectItem value="Truck">Xe tải</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   {/* Sort By */}
                   <div>
                     <label className="text-sm font-medium mb-3 block">
-                      {t("common.sortBy")}
+                      Sắp xếp theo
                     </label>
                     <Select
                       value={sortBy}
@@ -565,21 +555,15 @@ const Vehicles = () => {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="name">
-                          {t("common.nameAsc")}
-                        </SelectItem>
+                        <SelectItem value="name">Tên (A-Z)</SelectItem>
                         <SelectItem value="price-low">
-                          {t("common.priceLowToHigh")}
+                          Giá thấp đến cao
                         </SelectItem>
                         <SelectItem value="price-high">
-                          {t("common.priceHighToLow")}
+                          Giá cao đến thấp
                         </SelectItem>
-                        <SelectItem value="rating">
-                          {t("common.highestRated")}
-                        </SelectItem>
-                        <SelectItem value="range">
-                          {t("common.longestRange")}
-                        </SelectItem>
+                        <SelectItem value="rating">Đánh giá cao nhất</SelectItem>
+                        <SelectItem value="range">Phạm vi xa nhất</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -587,7 +571,7 @@ const Vehicles = () => {
                   {/* View Mode */}
                   <div>
                     <label className="text-sm font-medium mb-3 block">
-                      {t("common.viewMode")}
+                      Chế độ xem
                     </label>
                     <div className="flex rounded-lg border border-border overflow-hidden">
                       <Button
@@ -597,7 +581,7 @@ const Vehicles = () => {
                         size="sm"
                       >
                         <Grid className="h-4 w-4 mr-2" />
-                        {t("common.grid")}
+                        Lưới
                       </Button>
                       <Button
                         variant={viewMode === "list" ? "default" : "ghost"}
@@ -606,7 +590,7 @@ const Vehicles = () => {
                         size="sm"
                       >
                         <List className="h-4 w-4 mr-2" />
-                        {t("common.list")}
+                        Danh sách
                       </Button>
                     </div>
                   </div>
@@ -618,13 +602,11 @@ const Vehicles = () => {
           {/* Results Header */}
           <div className="flex justify-between items-center mb-6">
             <div>
-              <h2 className="text-2xl font-semibold">
-                {t("common.availableVehicles")}
-              </h2>
+              <h2 className="text-2xl font-semibold">Phương tiện có sẵn</h2>
               <p className="text-muted-foreground">
-                {filteredVehicles.length} {t("common.vehiclesFound")}
+                {filteredVehicles.length} phương tiện được tìm thấy
                 {totalVehicles > filteredVehicles.length && (
-                  <span className="text-sm"> (of {totalVehicles} total)</span>
+                  <span className="text-sm"> (trong tổng số {totalVehicles})</span>
                 )}
               </p>
             </div>
@@ -641,7 +623,7 @@ const Vehicles = () => {
                   size="sm"
                   className="mt-2"
                 >
-                  Retry
+                  Thử lại
                 </Button>
               </div>
             </FadeIn>
@@ -686,12 +668,11 @@ const Vehicles = () => {
             ) : !isInitialLoading && !isError ? (
               <FadeIn delay={400}>
                 <div className="text-center py-12">
-                  <div className="text-6xl mb-4">🚗</div>
                   <h3 className="text-xl font-semibold mb-2">
-                    {t("common.noVehiclesFound")}
+                    Không tìm thấy phương tiện nào
                   </h3>
                   <p className="text-muted-foreground mb-4">
-                    Try adjusting your search criteria or filters
+                    Hãy thử điều chỉnh tiêu chí tìm kiếm hoặc bộ lọc
                   </p>
                   <Button
                     onClick={() => {
@@ -703,7 +684,7 @@ const Vehicles = () => {
                       setSortBy("name");
                     }}
                   >
-                    Clear Filters
+                    Xóa bộ lọc
                   </Button>
                 </div>
               </FadeIn>

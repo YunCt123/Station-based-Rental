@@ -51,6 +51,7 @@ export interface Vehicle {
   inspectionDate: string;
   insuranceExpiry: string;
   description: string;
+  
 }
 
 // Backend vehicle data structure (from API)

@@ -1,8 +1,8 @@
 import * as React from "react";
 import useEmblaCarousel from "embla-carousel-react";
 import Autoplay from "embla-carousel-autoplay";
-import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
+// import { Button } from "@/components/ui/button";
+// import { Link } from "react-router-dom";
 
 type Slide = {
   image: string;
@@ -71,11 +71,11 @@ const HeroCarousel: React.FC<HeroCarouselProps> = ({
                         {s.subtitle}
                       </p>
                     )}
-                    {s.ctaText && s.ctaHref && (
+                    {/* {s.ctaText && s.ctaHref && (
                       <Button asChild size="lg" className="shadow-soft">
                         <Link to={s.ctaHref}>{s.ctaText}</Link>
                       </Button>
-                    )}
+                    )} */}
                   </div>
                 </div>
               </div>
@@ -88,14 +88,14 @@ const HeroCarousel: React.FC<HeroCarouselProps> = ({
       <button
         aria-label="Previous slide"
         onClick={scrollPrev}
-        className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full bg-black/40 backdrop-blur-sm p-2 text-white hover:bg-black/60"
+        className="absolute left-3 top-1/2 -translate-y-1/2 text-white text-4xl"
       >
         ‹
       </button>
       <button
         aria-label="Next slide"
         onClick={scrollNext}
-        className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-black/40 backdrop-blur-sm p-2 text-white hover:bg-black/60"
+        className="absolute right-3 top-1/2 -translate-y-1/2 text-white text-4xl"
       >
         ›
       </button>

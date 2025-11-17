@@ -119,6 +119,7 @@ const StationDetails = () => {
         setStationVehicles(vehiclesData.vehicles);
         
         console.log('✅ Station vehicles loaded:', vehiclesData.vehicles);
+        console.log('🔍 First vehicle ID:', vehiclesData.vehicles[0]?.id);
         
       } catch (err: unknown) {
         console.error('❌ Error fetching station vehicles:', err);

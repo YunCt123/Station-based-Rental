@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import api from './api';
 
 // Document types based on backend schema
@@ -22,23 +23,32 @@ export interface DocumentUpload {
   expiry?: string;
 }
 
-export interface PendingDocument extends Omit<Document, 'user_id'> {
-  user_id: {
-    _id: string;
-    name: string;
-    email: string;
-    dateOfBirth?: string;
-  };
-  user?: {
-    id: string;
-    name: string;
-    email: string;
-  };
+export interface PendingDocument {
+  _id: string;
+  name: string;
+  email: string;
+  phoneNumber?: string;
+  dateOfBirth?: string;
+  role: string;
+  isVerified: boolean;
+  verificationStatus: 'PENDING' | 'APPROVED' | 'REJECTED';
+  
+  // Verification images
+  idCardFront?: string;
+  idCardBack?: string;
+  driverLicense?: string;
+  selfiePhoto?: string;
+  
+  rejectionReason?: string;
+  verifiedAt?: string;
+  verifiedBy?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface DocumentApproval {
   status: 'APPROVED' | 'REJECTED';
-  note?: string;
+  rejectionReason?: string;
 }
 
 // User Profile interfaces
@@ -71,7 +81,6 @@ export const uploadFile = async (file: File): Promise<{ url: string }> => {
   const formData = new FormData();
   formData.append('file', file);
 
-  console.log('Uploading file:', file.name, file.size, file.type);
   
   try {
     // Try /upload first
@@ -81,8 +90,8 @@ export const uploadFile = async (file: File): Promise<{ url: string }> => {
       },
     });
     return response.data;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (error) {
-    console.log('Upload failed, trying /files endpoint...');
     // Fallback to /files
     const response = await api.post('/files', formData, {
       headers: {
@@ -103,7 +112,6 @@ export const createDocument = async (data: {
   number?: string;
   expiry?: string;
 }): Promise<Document> => {
-  console.log('Creating document record:', data);
   
   const response = await api.post('/documents', data);
   return response.data;
@@ -127,13 +135,6 @@ export const uploadDocument = async (documentData: DocumentUpload): Promise<Docu
       formData.append('expiry', documentData.expiry);
     }
 
-    console.log('Uploading document with data:', {
-      type: documentData.type,
-      number: documentData.number,
-      expiry: documentData.expiry,
-      fileName: documentData.file.name,
-      fileSize: documentData.file.size,
-    });
 
     const response = await api.post('/documents', formData, {
       headers: {
@@ -141,7 +142,6 @@ export const uploadDocument = async (documentData: DocumentUpload): Promise<Docu
       },
     });
     
-    console.log('Document uploaded successfully:', response.data);
     return response.data;
   } catch (error: any) {
     console.error('Upload document error:', error);
@@ -161,23 +161,59 @@ export const getUserDocuments = async (): Promise<Document[]> => {
 
 /**
  * Get pending documents (staff/admin only)
- * GET /v1/documents/pending
+ * GET /v1/users/verification/pending
  */
 export const getPendingDocuments = async (): Promise<PendingDocument[]> => {
-  const response = await api.get('/documents/pending');
-  return response.data.data || response.data;
+  try {
+    console.log('📞 Calling API: GET /users/verification/pending');
+    const response = await api.get('/users/verification/pending');
+    console.log('📥 Raw API response:', response);
+    console.log('📊 Response data:', response.data);
+    
+    const documents = response.data.data || response.data;
+    console.log('📋 Processed documents:', documents);
+    console.log('🔢 Number of documents:', Array.isArray(documents) ? documents.length : 'Not an array');
+    
+    return documents;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } catch (error: any) {
+    console.error('❌ getPendingDocuments failed:', error);
+    console.error('📝 Error details:', {
+      message: error.message,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data
+    });
+    throw error;
+  }
 };
 
 /**
- * Approve or reject document (staff/admin only)
- * PATCH /v1/documents/{id}/approve
+ * Approve or reject user verification (staff/admin only)
+ * POST /v1/users/{userId}/verification/review
  */
 export const approveDocument = async (
-  documentId: string, 
+  userId: string, 
   approvalData: DocumentApproval
 ): Promise<Document> => {
-  const response = await api.patch(`/documents/${documentId}/approve`, approvalData);
-  return response.data;
+  try {
+    console.log('📞 Calling API: POST /users/' + userId + '/verification/review');
+    console.log('📝 Approval data:', approvalData);
+    
+    const response = await api.post(`/users/${userId}/verification/review`, approvalData);
+    console.log('✅ Approval response:', response.data);
+    
+    return response.data;
+  } catch (error: any) {
+    console.error('❌ approveDocument failed:', error);
+    console.error('📝 Error details:', {
+      message: error.message,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data
+    });
+    throw error;
+  }
 };
 
 // Helper functions
@@ -216,12 +252,26 @@ export const getDocumentTypeLabel = (type: Document['type']) => {
 
 
 /**
- * Get user profile
- * GET /v1/users/profile
+ * Upload verification images for user
+ * POST /v1/users/verification/upload
  */
-export const getUserProfile = async (): Promise<UserProfile> => {
-  const response = await api.get('/v1/users/profile');
+export const uploadVerificationImages = async (images: {
+  idCardFront?: string;
+  idCardBack?: string;
+  driverLicense?: string;
+  selfiePhoto?: string;
+}): Promise<any> => {
+  const response = await api.post('/users/verification/upload', images);
   return response.data;
+};
+
+/**
+ * Get user verification status
+ * GET /v1/users/verification/status
+ */
+export const getVerificationStatus = async (): Promise<any> => {
+  const response = await api.get('/users/verification/status');
+  return response.data.data || response.data;
 };
 
 

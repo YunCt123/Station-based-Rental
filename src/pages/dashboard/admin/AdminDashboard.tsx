@@ -1,85 +1,245 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
-  ChartBarIcon,
   TruckIcon,
   UserGroupIcon,
   CurrencyDollarIcon,
-  ExclamationTriangleIcon,
-  ClockIcon
+  ClockIcon,
+  BuildingStorefrontIcon,
+  DocumentCheckIcon
 } from '@heroicons/react/24/outline';
+import { adminVehicleService } from '../../../services/adminVehicleService';
+import { getAllUsers } from '../../../services/userService';
+import { rentalService } from '../../../services/rentalService';
+import { getAllIssues } from '../../../services/issueService';
+import { getPendingDocuments } from '../../../services/documentService';
+import adminStationService from '../../../services/adminStationService';
+
+interface DashboardStats {
+  totalVehicles: number;
+  rentedVehicles: number;
+  totalCustomers: number;
+  reservedVehicles: number;
+}
+
+interface RecentActivity {
+  id: string;
+  type: 'rental' | 'issue' | 'document' | 'user';
+  message: string;
+  time: string;
+  status: 'success' | 'warning' | 'error';
+  timestamp: Date;
+}
+
+interface TopStation {
+  id: string;
+  name: string;
+  totalVehicles: number;
+  availableVehicles: number;
+  utilizationRate: number;
+}
 
 const AdminDashboard: React.FC = () => {
-  const stats = [
+  const navigate = useNavigate();
+  const [stats, setStats] = useState<DashboardStats>({
+    totalVehicles: 0,
+    rentedVehicles: 0,
+    totalCustomers: 0,
+    reservedVehicles: 0
+  });
+  const [loading, setLoading] = useState(true);
+  const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([]);
+  const [activitiesLoading, setActivitiesLoading] = useState(true);
+  const [topStations, setTopStations] = useState<TopStation[]>([]);
+  const [stationsLoading, setStationsLoading] = useState(true);
+
+  // Helper function to format relative time
+  const getRelativeTime = (date: Date): string => {
+    const now = new Date();
+    const diffInMs = now.getTime() - date.getTime();
+    const diffInMinutes = Math.floor(diffInMs / 60000);
+    const diffInHours = Math.floor(diffInMs / 3600000);
+    const diffInDays = Math.floor(diffInMs / 86400000);
+
+    if (diffInMinutes < 1) return 'Vừa xong';
+    if (diffInMinutes < 60) return `${diffInMinutes} phút trước`;
+    if (diffInHours < 24) return `${diffInHours} giờ trước`;
+    return `${diffInDays} ngày trước`;
+  };
+
+  useEffect(() => {
+    const fetchAllData = async () => {
+      try {
+        setLoading(true);
+        setActivitiesLoading(true);
+        
+        // Get date 1 week ago for filtering activities
+        const oneWeekAgo = new Date();
+        oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+        
+        // Fetch all data in parallel
+        const [vehicleStats, allUsers, issues, rentals, pendingDocs, stationsResponse] = await Promise.all([
+          adminVehicleService.getVehicleStats(),
+          getAllUsers(),
+          getAllIssues({}).catch(error => {
+            console.error('Error fetching issues:', error);
+            return [];
+          }),
+          rentalService.getAllRentals().catch(error => {
+            console.error('Error fetching rentals:', error);
+            return [];
+          }),
+          getPendingDocuments().catch(error => {
+            console.error('Error fetching pending documents:', error);
+            return [];
+          }),
+          adminStationService.getAllStations({ limit: 100 }).catch(error => {
+            console.error('Error fetching stations:', error);
+            return { success: false, data: [] };
+          })
+        ]);
+
+        // Process stats data
+        const customers = allUsers.filter(user => user.role === 'customer');
+        setStats({
+          totalVehicles: vehicleStats.total,
+          rentedVehicles: vehicleStats.rented,
+          totalCustomers: customers.length,
+          reservedVehicles: vehicleStats.reserved
+        });
+        setLoading(false);
+
+        // Process recent activities from already fetched data
+        const activities: RecentActivity[] = [];
+
+        // Add issues activities
+        const recentIssues = issues.filter(issue => 
+          new Date(issue.createdAt) >= oneWeekAgo
+        );
+        recentIssues.forEach(issue => {
+          activities.push({
+            id: `issue-${issue._id}`,
+            type: 'issue',
+            message: `Sự cố "${issue.title}" - ${issue.vehicle?.licensePlate || 'Xe không xác định'}`,
+            time: getRelativeTime(new Date(issue.createdAt)),
+            status: issue.status === 'RESOLVED' ? 'success' : 'error',
+            timestamp: new Date(issue.createdAt)
+          });
+        });
+
+        // Add rentals activities
+        const recentRentals = rentals.filter(rental => 
+          new Date(rental.start_at) >= oneWeekAgo
+        );
+        recentRentals.forEach(rental => {
+          const customerName = rental.user_id?.name || 'Khách hàng';
+          const vehicleName = rental.vehicle_id?.name || 'Xe không xác định';
+          const stationName = rental.station_id?.name || 'Trạm không xác định';
+          
+          activities.push({
+            id: `rental-${rental._id}`,
+            type: 'rental',
+            message: `${customerName} thuê xe ${vehicleName} tại ${stationName}`,
+            time: getRelativeTime(new Date(rental.start_at)),
+            status: 'success',
+            timestamp: new Date(rental.start_at)
+          });
+        });
+
+        // Add pending documents activities
+        const recentDocs = pendingDocs.filter(doc => 
+          new Date(doc.createdAt) >= oneWeekAgo
+        );
+        recentDocs.forEach(doc => {
+          activities.push({
+            id: `doc-${doc._id}`,
+            type: 'document',
+            message: `Tài liệu mới từ ${doc.name} đang chờ xét duyệt`,
+            time: getRelativeTime(new Date(doc.createdAt)),
+            status: 'warning',
+            timestamp: new Date(doc.createdAt)
+          });
+        });
+
+        // Add new users activities
+        const newUsers = allUsers.filter(user => 
+          new Date(user.createdAt) >= oneWeekAgo && user.role === 'customer'
+        );
+        newUsers.forEach(user => {
+          activities.push({
+            id: `user-${user._id}`,
+            type: 'user',
+            message: `Khách hàng mới ${user.name} đã đăng ký`,
+            time: getRelativeTime(new Date(user.createdAt)),
+            status: 'success',
+            timestamp: new Date(user.createdAt)
+          });
+        });
+
+        // Sort by timestamp (most recent first) and take top 10
+        activities.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+        setRecentActivities(activities.slice(0, 10));
+
+        // Process stations data - sort by total vehicles and utilization rate
+        const stations = stationsResponse.data || [];
+        const sortedStations = stations
+          .filter(station => station.status === 'ACTIVE')
+          .sort((a, b) => {
+            // Sort by total vehicles first, then by utilization rate
+            if (b.metrics.vehicles_total !== a.metrics.vehicles_total) {
+              return b.metrics.vehicles_total - a.metrics.vehicles_total;
+            }
+            return b.metrics.utilization_rate - a.metrics.utilization_rate;
+          })
+          .slice(0, 5)
+          .map(station => ({
+            id: station._id,
+            name: station.name,
+            totalVehicles: station.metrics.vehicles_total,
+            availableVehicles: station.metrics.vehicles_available,
+            utilizationRate: Math.round(station.metrics.utilization_rate * 100)
+          }));
+        
+        setTopStations(sortedStations);
+        setStationsLoading(false);
+
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error);
+      } finally {
+        setLoading(false);
+        setActivitiesLoading(false);
+        setStationsLoading(false);
+      }
+    };
+
+    fetchAllData();
+  }, []);
+
+  const statsCards = [
     {
       title: 'Tổng số xe',
-      value: '247',
-      change: '+12%',
-      changeType: 'increase',
+      value: loading ? '...' : stats.totalVehicles.toString(),
       icon: TruckIcon,
       color: 'bg-blue-500'
     },
     {
       title: 'Xe đang cho thuê',
-      value: '156',
-      change: '+8%',
-      changeType: 'increase',
+      value: loading ? '...' : stats.rentedVehicles.toString(),
       icon: TruckIcon,
       color: 'bg-green-500'
     },
     {
-      title: 'Doanh thu tháng',
-      value: '₫ 125M',
-      change: '+15%',
-      changeType: 'increase',
+      title: 'Xe đang đặt trước',
+      value: loading ? '...' : stats.reservedVehicles.toString(),
       icon: CurrencyDollarIcon,
       color: 'bg-yellow-500'
     },
     {
-      title: 'Khách hàng mới',
-      value: '89',
-      change: '+23%',
-      changeType: 'increase',
+      title: 'Tổng khách hàng',
+      value: loading ? '...' : stats.totalCustomers.toString(),
       icon: UserGroupIcon,
       color: 'bg-purple-500'
     }
-  ];
-
-  const recentActivities = [
-    {
-      id: 1,
-      type: 'rental',
-      message: 'Khách hàng Nguyễn Văn A thuê xe EV-001 tại Trạm Cầu Giấy',
-      time: '5 phút trước',
-      status: 'success'
-    },
-    {
-      id: 2,
-      type: 'maintenance',
-      message: 'Xe EV-045 cần bảo trì định kỳ tại Trạm Hàng Xanh',
-      time: '15 phút trước',
-      status: 'warning'
-    },
-    {
-      id: 3,
-      type: 'return',
-      message: 'Xe EV-023 đã được trả về Trạm Lotte Center Hanoi',
-      time: '32 phút trước',
-      status: 'success'
-    },
-    {
-      id: 4,
-      type: 'issue',
-      message: 'Báo cáo sự cố pin yếu xe EV-067 tại Trạm Times City',
-      time: '1 giờ trước',
-      status: 'error'
-    }
-  ];
-
-  const topStations = [
-    { name: 'Trạm Cầu Giấy', revenue: '₫ 15.2M', vehicles: 25, usage: 89 },
-    { name: 'Trạm Lotte Center', revenue: '₫ 12.8M', vehicles: 20, usage: 78 },
-    { name: 'Trạm Times City', revenue: '₫ 11.5M', vehicles: 18, usage: 82 },
-    { name: 'Trạm Hàng Xanh', revenue: '₫ 9.3M', vehicles: 15, usage: 65 }
   ];
 
   return (
@@ -98,17 +258,12 @@ const AdminDashboard: React.FC = () => {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map((stat) => (
+        {statsCards.map((stat) => (
           <div key={stat.title} className="bg-white rounded-lg shadow p-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">{stat.title}</p>
                 <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
-                <p className={`text-sm ${
-                  stat.changeType === 'increase' ? 'text-green-600' : 'text-red-600'
-                }`}>
-                  {stat.change} so với tháng trước
-                </p>
               </div>
               <div className={`p-3 rounded-full ${stat.color}`}>
                 <stat.icon className="w-6 h-6 text-white" />
@@ -125,53 +280,73 @@ const AdminDashboard: React.FC = () => {
             <h2 className="text-lg font-semibold text-gray-900">Hoạt động gần đây</h2>
           </div>
           <div className="p-6">
-            <div className="space-y-4">
-              {recentActivities.map((activity) => (
-                <div key={activity.id} className="flex items-start space-x-3">
-                  <div className={`p-2 rounded-full ${
-                    activity.status === 'success' ? 'bg-green-100' :
-                    activity.status === 'warning' ? 'bg-yellow-100' : 'bg-red-100'
-                  }`}>
-                    <div className={`w-2 h-2 rounded-full ${
-                      activity.status === 'success' ? 'bg-green-500' :
-                      activity.status === 'warning' ? 'bg-yellow-500' : 'bg-red-500'
-                    }`} />
+            {activitiesLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              </div>
+            ) : recentActivities.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <p>Không có hoạt động nào trong tuần qua</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {recentActivities.map((activity) => (
+                  <div key={activity.id} className="flex items-start space-x-3">
+                    <div className={`p-2 rounded-full ${
+                      activity.status === 'success' ? 'bg-green-100' :
+                      activity.status === 'warning' ? 'bg-yellow-100' : 'bg-red-100'
+                    }`}>
+                      <div className={`w-2 h-2 rounded-full ${
+                        activity.status === 'success' ? 'bg-green-500' :
+                        activity.status === 'warning' ? 'bg-yellow-500' : 'bg-red-500'
+                      }`} />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm text-gray-900">{activity.message}</p>
+                      <p className="text-xs text-gray-500">{activity.time}</p>
+                    </div>
                   </div>
-                  <div className="flex-1">
-                    <p className="text-sm text-gray-900">{activity.message}</p>
-                    <p className="text-xs text-gray-500">{activity.time}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
         {/* Top Stations */}
         <div className="bg-white rounded-lg shadow">
           <div className="p-6 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-900">Trạm hiệu quả nhất</h2>
+            <h2 className="text-lg font-semibold text-gray-900">Trạm đang hoạt động</h2>
           </div>
           <div className="p-6">
-            <div className="space-y-4">
-              {topStations.map((station, index) => (
-                <div key={station.name} className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="flex items-center justify-center w-8 h-8 bg-blue-100 text-blue-600 rounded-full text-sm font-medium">
-                      {index + 1}
+            {stationsLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              </div>
+            ) : topStations.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <p>Không có dữ liệu trạm</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {topStations.map((station, index) => (
+                  <div key={station.id} className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className="flex items-center justify-center w-8 h-8 bg-blue-100 text-blue-600 rounded-full text-sm font-medium">
+                        {index + 1}
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">{station.name}</p>
+                        <p className="text-xs text-gray-500">{station.availableVehicles}/{station.totalVehicles} xe khả dụng</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">{station.name}</p>
-                      <p className="text-xs text-gray-500">{station.vehicles} xe</p>
+                    <div className="text-right">
+                      <p className="text-sm font-medium text-gray-900">{station.totalVehicles} xe</p>
+                      <p className="text-xs text-gray-500">{station.utilizationRate}% sử dụng</p>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm font-medium text-gray-900">{station.revenue}</p>
-                    <p className="text-xs text-gray-500">{station.usage}% sử dụng</p>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -180,21 +355,33 @@ const AdminDashboard: React.FC = () => {
       <div className="bg-white rounded-lg shadow p-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Thao tác nhanh</h2>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <button className="flex items-center space-x-2 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+          <button 
+            onClick={() => navigate('/admin/vehicles')}
+            className="flex items-center space-x-2 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-blue-300 transition-colors"
+          >
             <TruckIcon className="w-5 h-5 text-blue-600" />
-            <span className="text-sm font-medium">Thêm xe mới</span>
+            <span className="text-sm font-medium">Quản lý xe</span>
           </button>
-          <button className="flex items-center space-x-2 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+          <button 
+            onClick={() => navigate('/admin/staff/list')}
+            className="flex items-center space-x-2 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-green-300 transition-colors"
+          >
             <UserGroupIcon className="w-5 h-5 text-green-600" />
             <span className="text-sm font-medium">Quản lý nhân viên</span>
           </button>
-          <button className="flex items-center space-x-2 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-            <ChartBarIcon className="w-5 h-5 text-purple-600" />
-            <span className="text-sm font-medium">Xem báo cáo</span>
+          <button 
+            onClick={() => navigate('/admin/stations')}
+            className="flex items-center space-x-2 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-purple-300 transition-colors"
+          >
+            <BuildingStorefrontIcon className="w-5 h-5 text-purple-600" />
+            <span className="text-sm font-medium">Quản lý trạm</span>
           </button>
-          <button className="flex items-center space-x-2 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-            <ExclamationTriangleIcon className="w-5 h-5 text-red-600" />
-            <span className="text-sm font-medium">Xử lý sự cố</span>
+          <button 
+            onClick={() => navigate('/admin/customers/customer_management')}
+            className="flex items-center space-x-2 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-orange-300 transition-colors"
+          >
+            <DocumentCheckIcon className="w-5 h-5 text-orange-600" />
+            <span className="text-sm font-medium">Quản lý khách hàng</span>
           </button>
         </div>
       </div>

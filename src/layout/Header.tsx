@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import logoImage from "../assets/logo.jpg";
 import { Car, User, Menu, X, LogOut, Settings, History } from "lucide-react";
 import {
   DropdownMenu,
@@ -35,10 +36,10 @@ const Navbar = ({ user, onLogout }: NavbarProps) => {
     localStorage.removeItem("access_token");
     localStorage.removeItem("refresh_token");
     
-    // Show success toast
+    // Hiển thị thông báo thành công
     toast({
-      title: "Logout Successful",
-      description: "You have successfully logged out!",
+      title: "Đăng xuất thành công",
+      description: "Bạn đã đăng xuất thành công!",
     });
     
     onLogout?.();
@@ -54,7 +55,7 @@ const Navbar = ({ user, onLogout }: NavbarProps) => {
             <div className="p-2 bg-gradient-primary rounded-lg group-hover:scale-105 transition-transform duration-200">
               <Car className="h-6 w-6 text-white" />
             </div>
-            <span className="text-xl font-bold text-gradient">EVRentals</span>
+            <img src={logoImage} alt="EVRentals Logo" className="h-12 w-auto hover:scale-110 transition-transform duration-300" />
           </Link>
 
           {/* Desktop Navigation */}
@@ -67,7 +68,7 @@ const Navbar = ({ user, onLogout }: NavbarProps) => {
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              {t("nav.home")}
+              Trang chủ
             </Link>
             <Link
               to="/vehicles"
@@ -77,7 +78,7 @@ const Navbar = ({ user, onLogout }: NavbarProps) => {
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              {t("nav.vehicles")}
+              Phương tiện
             </Link>
             <Link
               to="/stations"
@@ -87,7 +88,7 @@ const Navbar = ({ user, onLogout }: NavbarProps) => {
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              {t("nav.stations")}
+              Trạm
             </Link>
             <Link
               to="/how-it-works"
@@ -97,7 +98,17 @@ const Navbar = ({ user, onLogout }: NavbarProps) => {
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              {t("common.howItWorks")}
+              Cách hoạt động
+            </Link>
+            <Link
+              to="/policy"
+              className={`text-sm font-medium transition-colors duration-200 ${
+                isActive("/policy")
+                  ? "text-primary"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Chính sách
             </Link>
           </div>
 
@@ -127,19 +138,25 @@ const Navbar = ({ user, onLogout }: NavbarProps) => {
                   <DropdownMenuItem asChild>
                     <Link to="/dashboard" className="flex items-center">
                       <User className="mr-2 h-4 w-4" />
-                      {t("nav.dashboard")}
+                      Bảng điều khiển
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/my-rentals" className="flex items-center">
+                      <Car className="mr-2 h-4 w-4" />
+                      Lịch sử thuê xe
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
                     <Link to="/bookings" className="flex items-center">
                       <History className="mr-2 h-4 w-4" />
-                      {t("nav.bookings")}
+                      Lịch sử thanh toán
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
                     <Link to="/settings" className="flex items-center">
                       <Settings className="mr-2 h-4 w-4" />
-                      {t("nav.settings")}
+                      Cài đặt
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
@@ -148,17 +165,17 @@ const Navbar = ({ user, onLogout }: NavbarProps) => {
                     className="text-destructive focus:text-destructive"
                   >
                     <LogOut className="mr-2 h-4 w-4" />
-                    {t("nav.logout")}
+                    Đăng xuất
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
               <>
                 <Button variant="ghost" asChild>
-                  <Link to="/login">{t("nav.login")}</Link>
+                  <Link to="/login">Đăng nhập</Link>
                 </Button>
                 <Button variant="default" asChild>
-                  <Link to="/register">{t("nav.register")}</Link>
+                  <Link to="/register">Đăng ký</Link>
                 </Button>
               </>
             )}
@@ -229,6 +246,17 @@ const Navbar = ({ user, onLogout }: NavbarProps) => {
               >
                 {t("common.howItWorks")}
               </Link>
+              <Link
+                to="/policy"
+                className={`block px-3 py-2 rounded-md text-base font-medium transition-colors duration-200 ${
+                  isActive("/policy")
+                    ? "text-primary bg-primary-light"
+                    : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+                }`}
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                Policy
+              </Link>
 
               <div className="border-t border-border pt-3 mt-3">
                 {user ? (
@@ -245,6 +273,13 @@ const Navbar = ({ user, onLogout }: NavbarProps) => {
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
                       {t("nav.dashboard")}
+                    </Link>
+                    <Link
+                      to="/my-rentals"
+                      className="block px-3 py-2 rounded-md text-base font-medium text-muted-foreground hover:text-foreground hover:bg-secondary"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      Xe thuê của tôi
                     </Link>
                     <Link
                       to="/bookings"
@@ -270,14 +305,14 @@ const Navbar = ({ user, onLogout }: NavbarProps) => {
                       className="block px-3 py-2 rounded-md text-base font-medium text-muted-foreground hover:text-foreground hover:bg-secondary"
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
-                      {t("nav.login")}
+                      Đăng nhập
                     </Link>
                     <Link
                       to="/register"
                       className="block px-3 py-2 rounded-md text-base font-medium bg-primary text-primary-foreground hover:bg-primary-dark"
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
-                      {t("nav.register")}
+                      Đăng ký
                     </Link>
                   </>
                 )}

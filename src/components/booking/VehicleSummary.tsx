@@ -11,9 +11,10 @@ interface VehicleSummaryProps {
   vehicle: Vehicle;
   priceBreakdown?: PriceBreakdown | null;
   loading?: boolean;
+  insuranceSelected?: boolean; // ✅ Add prop to track insurance selection
 }
 
-const VehicleSummary: React.FC<VehicleSummaryProps> = ({ vehicle, priceBreakdown, loading }) => {
+const VehicleSummary: React.FC<VehicleSummaryProps> = ({ vehicle, priceBreakdown, loading, insuranceSelected = false }) => {
   
   // Debug log to see what priceBreakdown we receive
   console.log('🏷️ [VehicleSummary] Received priceBreakdown:', priceBreakdown);
@@ -30,17 +31,22 @@ const VehicleSummary: React.FC<VehicleSummaryProps> = ({ vehicle, priceBreakdown
         </div>
         <Title level={4}>{vehicle.name}</Title>
         <Text type="secondary" className="block mb-2">
-          {`${vehicle.type} • ${vehicle.seats} Seats`}
+          {vehicle.type} <br/>
+          {vehicle.seats} Chỗ ngồi
         </Text>
 
         <div className="mb-4">
           <div className="flex justify-between mb-2">
-            <Text>Daily Rate:</Text>
-            <Text strong>${vehicle.pricePerDay}/day</Text>
+            <Text>Giá theo ngày:</Text>
+            <Text strong>
+              {vehicle.pricePerDay.toLocaleString("vi-VN")}đ/ngày
+            </Text>
           </div>
           <div className="flex justify-between mb-4">
-            <Text>Hourly Rate:</Text>
-            <Text strong>${vehicle.pricePerHour}/hour</Text>
+            <Text>Giá theo giờ:</Text>
+            <Text strong>
+              {vehicle.pricePerHour.toLocaleString("vi-VN")}đ/giờ
+            </Text>
           </div>
 
           {vehicle.features?.slice(0, 3).map((feature, index) => (
@@ -56,11 +62,11 @@ const VehicleSummary: React.FC<VehicleSummaryProps> = ({ vehicle, priceBreakdown
         {/* Price Breakdown */}
         <Divider />
         <div className="mb-4">
-          <Title level={5}>Booking Summary</Title>
+            <Title level={5}>Tóm tắt đặt xe</Title>
           {loading ? (
             <div className="flex justify-center py-4">
               <Spin size="small" />
-              <Text className="ml-2">Calculating price...</Text>
+              <Text className="ml-2">Đang tính giá...</Text>
             </div>
           ) : priceBreakdown ? (
             (() => {
@@ -70,7 +76,7 @@ const VehicleSummary: React.FC<VehicleSummaryProps> = ({ vehicle, priceBreakdown
                 (priceBreakdown.hourly_rate || 0) * hours;
               const taxes = priceBreakdown.taxes || 
                 Math.round(basePrice * 0.1);
-              const insurance = priceBreakdown.insurancePrice || 0;
+              const insurance = (insuranceSelected && priceBreakdown.insurancePrice) ? priceBreakdown.insurancePrice : 0;
               const totalPrice = priceBreakdown.totalPrice || 
                 (basePrice + taxes + insurance);
               const deposit = priceBreakdown.deposit || 
@@ -79,27 +85,27 @@ const VehicleSummary: React.FC<VehicleSummaryProps> = ({ vehicle, priceBreakdown
               return (
                 <div className="space-y-2">
                   <div className="flex justify-between">
-                    <Text>Base Price ({hours.toFixed(1)}h):</Text>
-                    <Text>${basePrice.toFixed(2)}</Text>
+                    <Text>Giá ban đầu ({hours.toFixed(1)}h):</Text>
+                    <Text>{basePrice.toLocaleString("vi-VN")}đ</Text>
                   </div>
                   {insurance > 0 && (
                     <div className="flex justify-between">
-                      <Text>Insurance:</Text>
-                      <Text>${insurance.toFixed(2)}</Text>
+                      <Text>Bảo hiểm:</Text>
+                      <Text>{insurance.toLocaleString("vi-VN")}đ</Text>
                     </div>
                   )}
                   <div className="flex justify-between">
-                    <Text>Taxes (10%):</Text>
-                    <Text>${taxes.toFixed(2)}</Text>
+                    <Text>Thuế (10%):</Text>
+                    <Text>{taxes.toLocaleString("vi-VN")}đ</Text>
                   </div>
                   <Divider className="my-2" />
                   <div className="flex justify-between font-semibold">
-                    <Text strong>Total:</Text>
-                    <Text strong>${totalPrice.toFixed(2)}</Text>
+                    <Text strong>Tổng cộng:</Text>
+                    <Text strong>{totalPrice.toLocaleString("vi-VN")}đ</Text>
                   </div>
                   <div className="flex justify-between text-green-600">
-                    <Text>Required Deposit:</Text>
-                    <Text strong>${deposit.toFixed(2)}</Text>
+                    <Text>Yêu cầu đặt cọc:</Text>
+                    <Text strong>{deposit.toLocaleString("vi-VN")}đ</Text>
                   </div>
                   {(priceBreakdown.details?.peakMultiplier || 0) > 1 && (
                     <Text type="warning" className="text-xs">
@@ -115,7 +121,7 @@ const VehicleSummary: React.FC<VehicleSummaryProps> = ({ vehicle, priceBreakdown
               );
             })()
           ) : (
-            <Text type="secondary">Select rental period to see pricing</Text>
+            <Text type="secondary">Chọn thời gian thuê để xem giá</Text>
           )}
         </div>
       </Card>
@@ -126,7 +132,7 @@ const VehicleSummary: React.FC<VehicleSummaryProps> = ({ vehicle, priceBreakdown
           className="text-primary-500 hover:underline flex items-center gap-1"
         >
           <ArrowLeftIcon className="h-4 w-4" />
-          <span>Back to Vehicle Selection</span>
+          <span>Quay lại chọn xe</span>
         </Link>
       </div>
     </>

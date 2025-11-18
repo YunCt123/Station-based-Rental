@@ -114,7 +114,7 @@ export const useFinalPayment = () => {
           rentalId, 
           window.location.origin + '/payment-result'
         );
-        window.location.href = paymentResponse?.checkoutUrl;
+        window.location.href = paymentResponse?.payment?.vnpay_checkout_url;
         return true;
         
       } catch (paymentError: any) {

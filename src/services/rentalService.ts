@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import api from "./api";
+import type { Rental } from './customerService';
 
 // Types for handover operations
 export interface AcceptHandoverPayload {
@@ -52,6 +53,7 @@ export const COMMON_REJECT_REASONS = [
   "Khách hàng không đồng ý với điều khoản thuê",
   "Lý do khác (vui lòng ghi rõ bên dưới)",
 ] as const;
+
 export interface RentalCustomer {
   id: string;
   name: string;
@@ -69,6 +71,10 @@ export interface RentalVehicle {
   image: string;
   seats: number;
   status: string;
+  licensePlate?: string;
+  year?: number;
+  battery_kWh?: number;
+  odo_km?: number;
 }
 
 export interface RentalStation {
@@ -86,6 +92,82 @@ export interface RentalPricing {
   currency: string;
   hourly_rate?: number;
   daily_rate?: number;
+  insurance_price?: number;
+  policy_version?: string;
+  details?: {
+    rawBase: number;
+    rentalType: 'hourly' | 'daily';
+    hours: number;
+    days: number;
+  };
+}
+
+export interface RentalCharges {
+  rental_fee: number;
+  cleaning_fee: number;
+  damage_fee: number;
+  late_fee: number;
+  other_fees: number;
+  extra_fees: number;
+  total: number;
+}
+
+export interface PickupInfo {
+  at?: string;
+  photos?: Array<{
+    _id: string;
+    url: string;
+    phase: string;
+    taken_at: string;
+  }>;
+  notes?: string;
+  odo_km?: number;
+  soc?: number;
+  staff_id?: string;
+  rejected?: {
+    at?: string;
+    reason?: string;
+    photos?: Array<{
+      _id: string;
+      url: string;
+      phase: string;
+      taken_at: string;
+    }>;
+  };
+}
+
+export interface ReturnInfo {
+  at?: string;
+  photos?: Array<{
+    _id: string;
+    url: string;
+    phase: string;
+    taken_at: string;
+  }>;
+  odo_km?: number;
+  soc?: number;
+  staff_id?: string;
+}
+
+export interface PendingReturnRental {
+  _id: string;
+  booking_id: {
+    _id: string;
+    start_at: string;
+    end_at: string;
+    status: string;
+    pricing_snapshot: RentalPricing;
+  };
+  user_id: RentalCustomer | null;
+  vehicle_id: RentalVehicle;
+  station_id: RentalStation;
+  status: 'RETURN_PENDING';
+  pickup: PickupInfo;
+  return: ReturnInfo;
+  pricing_snapshot: RentalPricing;
+  charges: RentalCharges;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface StationRental {
@@ -166,6 +248,26 @@ export interface ReturnResponse {
   message: string;
 }
 
+export interface CashPaymentRequest {
+  amount: number;
+  note?: string;
+}
+
+export interface CashPaymentResponse {
+  success: boolean;
+  data: {
+    rental: PendingReturnRental;
+    payment: {
+      id: string;
+      transaction_ref: string;
+      status: 'SUCCESS';
+      type: 'CASH';
+      amount: number;
+    };
+    message: string;
+  };
+}
+
 export const rentalService = {
   /**
    * Get rentals by station (for staff)
@@ -201,6 +303,74 @@ export const rentalService = {
     } catch (error: any) {
       console.error('[RentalService] Get station rentals error:', error);
       return [];
+    }
+  },
+
+  /**
+   * Get pending returns (for staff/admin dashboard)
+   * GET /v1/rentals/pending-returns?search=&stationId=&limit=&page=
+   */
+  async getPendingReturns(
+    options: {
+      search?: string;
+      stationId?: string;
+      limit?: number;
+      page?: number;
+    } = {}
+  ): Promise<ApiResponse<PendingReturnRental[]>> {
+    try {
+      console.log('[RentalService] Getting pending returns:', options);
+      
+      const params = new URLSearchParams();
+      if (options.search) params.append('search', options.search);
+      if (options.stationId) params.append('stationId', options.stationId);
+      if (options.limit) params.append('limit', options.limit.toString());
+      if (options.page) params.append('page', options.page.toString());
+      
+      const response = await api.get<ApiResponse<PendingReturnRental[]>>(
+        `/rentals/pending-returns?${params.toString()}`
+      );
+      
+      if (response.data.success) {
+        console.log('[RentalService] Pending returns retrieved:', {
+          count: response.data.data?.length || 0,
+          total: response.data.meta?.total || 0,
+          page: response.data.meta?.page || 1
+        });
+        return response.data;
+      }
+      
+      return { success: false, data: [], meta: undefined };
+    } catch (error: any) {
+      console.error('[RentalService] Get pending returns error:', error);
+      return { success: false, data: [], meta: undefined };
+    }
+  },
+
+  /**
+   * Process cash payment for pending return (only cash, disables other methods)
+   * POST /v1/rentals/{id}/payment-cash
+   */
+  async paymentCash(
+    rentalId: string,
+    paymentData: CashPaymentRequest
+  ): Promise<CashPaymentResponse> {
+    try {
+      
+      const response = await api.post<CashPaymentResponse>(
+        `/rentals/${rentalId}/complete-cash`,
+        paymentData
+      );
+      
+      if (response.data.success) {
+        console.log('[RentalService] Cash payment processed successfully:', response.data);
+        return response.data;
+      }
+      
+      throw new Error('Failed to process cash payment');
+    } catch (error: any) {
+      console.error('[RentalService] Cash payment error:', error);
+      throw new Error(error.response?.data?.message || error.message || 'Failed to process cash payment');
     }
   },
 
@@ -370,7 +540,7 @@ export const rentalService = {
   },
 
   // Get rentals ready for handover at a station
-  async getStationHandovers(stationId: string): Promise<SimpleRental[]> {
+  async getStationHandovers(stationId: string): Promise<Rental[]> {
     try {
       const response = await api.get(`/rentals/station/${stationId}?status=CONFIRMED`);
       return response.data.data || [];

@@ -478,7 +478,7 @@ const VehicleReturnForm: React.FC<VehicleReturnFormProps> = ({
             const now = new Date();
             
             // Use the helper function to get consistent expected return date
-            const { date: expectedReturnDate, isFromBooking } = getExpectedReturnDate();
+            const { date: expectedReturnDate, isFromBooking: _isFromBooking } = getExpectedReturnDate();
             
             if (!expectedReturnDate) {
               return <div>Không thể xác định thời gian trả xe</div>;

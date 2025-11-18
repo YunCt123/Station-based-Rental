@@ -62,10 +62,10 @@ export interface RentalReturn {
 }
 
 export interface PricingSnapshot {
-  base_price(base_price: any, currency: string): import("react").ReactNode;
+  base_price: number;
   insurance_price: number;
   taxes: number;
-  total_price(total_price: any, currency: string): import("react").ReactNode;
+  total_price: number;
   hourly_rate?: number;
   daily_rate?: number;
   currency: string;

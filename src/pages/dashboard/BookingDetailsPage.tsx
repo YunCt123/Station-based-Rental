@@ -70,17 +70,20 @@ const BookingDetailsPage: React.FC = () => {
       case 'daily':
         return {
           text: 'Thuê theo ngày',
-          color: 'blue' as const
+          color: 'blue' as const,
+          icon: undefined
         };
       case 'hourly':
         return {
           text: 'Thuê theo giờ',
-          color: 'green' as const
+          color: 'green' as const,
+          icon: undefined
         };
       default:
         return {
           text: 'Không xác định',
-          color: 'default' as const
+          color: 'default' as const,
+          icon: undefined
         };
     }
   };
@@ -328,7 +331,7 @@ const BookingDetailsPage: React.FC = () => {
                 <span className="text-gray-600">Hình thức thuê:</span>
                 <div className="flex items-center">
                   <Tag color={rentalTypeInfo.color} className="px-3 py-1">
-                    <span className="mr-1">{rentalTypeInfo.icon}</span>
+                    {rentalTypeInfo.icon && <span className="mr-1">{rentalTypeInfo.icon}</span>}
                     {rentalTypeInfo.text}
                   </Tag>
                 </div>

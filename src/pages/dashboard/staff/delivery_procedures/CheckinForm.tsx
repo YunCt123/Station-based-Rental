@@ -5,7 +5,7 @@ import type { UploadFile, UploadProps } from 'antd/es/upload';
 import type { RcFile } from 'antd/es/upload/interface';
 import api from '../../../../services/api';
 import { rentalService, COMMON_REJECT_REASONS } from '../../../../services/rentalService';
-import type { HandoverPayload } from '../../../../services/rentalService';
+// import type { HandoverPayload } from '../../../../services/rentalService';
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
@@ -64,12 +64,12 @@ interface CheckinFormProps {
   };
 }
 
-interface CheckinData {
-  photos: string[];
-  odo_km?: number;
-  soc?: number;
-  notes?: string;
-}
+// interface CheckinData {
+//   photos: string[];
+//   odo_km?: number;
+//   soc?: number;
+//   notes?: string;
+// }
 
 const CheckinForm: React.FC<CheckinFormProps> = ({ 
   visible, 
@@ -144,7 +144,8 @@ const CheckinForm: React.FC<CheckinFormProps> = ({
   };
 
   // Perform vehicle checkin
-  const performCheckin = async (imageUrls: string[], formData: CheckinData) => {
+  /*
+  const _performCheckin = async (imageUrls: string[], formData: CheckinData) => {
     try {
       console.log('🚗 Performing vehicle checkin...');
       
@@ -182,6 +183,7 @@ const CheckinForm: React.FC<CheckinFormProps> = ({
       throw new Error(errorMessage);
     }
   };
+  */
 
   // Handle form submission
   const handleSubmit = async (values: {

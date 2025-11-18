@@ -27,6 +27,7 @@ function mapBackendVehicleToFrontend(backendVehicle: BackendVehicle): Vehicle {
     batteryLevel: backendVehicle.batteryLevel || (backendVehicle.battery_soc ? backendVehicle.battery_soc * 100 : 0),
     batterykWh: backendVehicle.battery_kWh || 0,
     location: backendVehicle.station_name || "Unknown Location",
+    stationId: backendVehicle.station_id, // Map station ID
     availability: mapBackendStatusToFrontend(backendVehicle.status),
     pricePerHour: backendVehicle.pricePerHour || backendVehicle.pricing?.hourly || 0,
     pricePerDay: backendVehicle.pricePerDay || backendVehicle.pricing?.daily || 0,

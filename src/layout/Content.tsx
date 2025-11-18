@@ -1,126 +1,216 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import VehicleCard from '../components/VehicleCard';
-import { SAMPLE_VEHICLES, type VehicleData } from '../data/vehicles';
-import type { Vehicle } from '@/types/vehicle';
-
-// Helper function to convert VehicleData to Vehicle
-const convertToVehicle = (data: VehicleData): Vehicle => ({
-  id: data.id,
-  name: data.name,
-  year: data.year,
-  brand: data.brand,
-  model: data.name.split(' ').slice(1).join(' ') || data.name,
-  type: data.type as Vehicle['type'],
-  image: data.image,
-  batteryLevel: data.batteryLevel,
-  location: data.location,
-  availability: data.status === 'Available' ? 'available' : 'maintenance',
-  pricePerHour: data.hourlyRate,
-  pricePerDay: data.dailyRate,
-  rating: data.rating,
-  reviewCount: data.reviewCount,
-  trips: 0,
-  range: data.range,
-  seats: data.seats,
-  features: data.features || [],
-  condition: data.condition.toLowerCase() as Vehicle['condition'],
-  lastMaintenance: new Date().toISOString().split('T')[0],
-  mileage: 0,
-  fuelEfficiency: `${data.range} km`,
-  inspectionDate: new Date().toISOString().split('T')[0],
-  insuranceExpiry: new Date().toISOString().split('T')[0],
-  description: data.description || '',
-});
+import type { Vehicle, VehicleSearchFilters } from '@/types/vehicle';
+import { vehicleService } from '@/services/vehicleService';
+import { useToast } from '@/hooks/use-toast';
+import { LoadingWrapper } from '@/components/LoadingComponents';
 
 const Content: React.FC = () => {
-  // Use first 6 vehicles for homepage display
-  const vehicles = SAMPLE_VEHICLES.slice(0, 6).map(convertToVehicle);
+  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [filters, setFilters] = useState<VehicleSearchFilters>({});
+  const [sortBy, setSortBy] = useState<string>('');
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const fetchVehicles = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        
+        console.log('🚗 Đang tải danh sách phương tiện từ API...');
+        
+        await vehicleService.testConnection();
+        
+        const { vehicles: fetchedVehicles } = await vehicleService.getAvailableVehicles(
+          filters,
+          { limit: 6, sort: sortBy || undefined }
+        );
+        
+        console.log('✅ Đã tải phương tiện:', fetchedVehicles.length);
+        setVehicles(fetchedVehicles);
+        
+      } catch (err: unknown) {
+        console.error('❌ Lỗi khi tải phương tiện:', err);
+        const errorMessage = err instanceof Error ? err.message : 'Không thể tải phương tiện';
+        setError(errorMessage);
+        toast({
+          title: "Lỗi",
+          description: "Không thể tải phương tiện. Sử dụng dữ liệu dự phòng.",
+          variant: "destructive",
+        });
+        
+        setVehicles([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchVehicles();
+  }, [filters, sortBy, toast]);
+
+  const handleFilterChange = (filterKey: keyof VehicleSearchFilters, value: string) => {
+    if (value === '' || value === 'all') {
+      const newFilters = { ...filters };
+      delete newFilters[filterKey];
+      setFilters(newFilters);
+    } else {
+      setFilters(prev => ({ ...prev, [filterKey]: value }));
+    }
+  };
+
+  const handleSortChange = (value: string) => {
+    setSortBy(value === 'default' ? '' : value);
+  };
 
   return (  
     <div className="bg-gray-50 py-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Section header */}
         <div className="text-center mb-12">
           <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-            Available Electric Vehicles
+            Phương Tiện Điện Có Sẵn
           </h2>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Choose from our premium fleet of electric vehicles. All vehicles are regularly maintained and charged for your convenience.
+            Lựa chọn từ đội xe điện cao cấp của chúng tôi. Tất cả phương tiện đều được bảo trì và sạc đầy để bạn sử dụng.
           </p>
         </div>
 
-        {/* Filter bar */}
         <div className="flex flex-wrap items-center justify-between mb-8 p-4 bg-white rounded-lg shadow-sm">
           <div className="flex flex-wrap items-center space-x-4 mb-4 md:mb-0">
-            <select className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-              <option>All Types</option>
-              <option>SUV</option>
-              <option>Sedan</option>
-              <option>Crossover</option>
-              <option>Hatchback</option>
+            <select 
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              onChange={(e) => handleFilterChange('type', e.target.value)}
+              defaultValue=""
+            >
+              <option value="">Tất Cả Loại</option>
+              <option value="SUV">SUV</option>
+              <option value="Sedan">Sedan</option>
+              <option value="Crossover">Crossover</option>
+              <option value="Hatchback">Hatchback</option>
+              <option value="Motorcycle">Xe Máy</option>
+              <option value="Scooter">Xe Tay Ga</option>
             </select>
-            <select className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-              <option>All Brands</option>
-              <option>Tesla</option>
-              <option>VinFast</option>
-              <option>BMW</option>
-              <option>Audi</option>
-              <option>Hyundai</option>
-              <option>Nissan</option>
+            <select 
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              onChange={(e) => handleFilterChange('brand', e.target.value)}
+              defaultValue=""
+            >
+              <option value="">Tất Cả Hãng</option>
+              <option value="Tesla">Tesla</option>
+              <option value="VinFast">VinFast</option>
+              <option value="BMW">BMW</option>
+              <option value="Audi">Audi</option>
+              <option value="Hyundai">Hyundai</option>
+              <option value="Nissan">Nissan</option>
             </select>
-            <select className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-              <option>All Locations</option>
-              <option>District 1 Station</option>
-              <option>District 7 Station</option>
-              <option>District 3 Station</option>
-              <option>Airport Station</option>
-              <option>Binh Thanh Station</option>
+            <select 
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              onChange={(e) => handleFilterChange('search', e.target.value)}
+              defaultValue=""
+            >
+              <option value="">Tất Cả Địa Điểm</option>
+              <option value="District 1">Trạm Quận 1</option>
+              <option value="District 7">Trạm Quận 7</option>
+              <option value="District 3">Trạm Quận 3</option>
+              <option value="Airport">Trạm Sân Bay</option>
+              <option value="Binh Thanh">Trạm Bình Thạnh</option>
             </select>
           </div>
           <div className="flex items-center space-x-2">
-            <span className="text-sm text-gray-600">Sort by:</span>
-            <select className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-              <option>Price: Low to High</option>
-              <option>Price: High to Low</option>
-              <option>Rating</option>
-              <option>Battery Level</option>
-              <option>Range</option>
+            <span className="text-sm text-gray-600">Sắp xếp theo:</span>
+            <select 
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              onChange={(e) => handleSortChange(e.target.value)}
+              defaultValue="default"
+            >
+              <option value="default">Mặc Định</option>
+              <option value="pricePerHour">Giá: Thấp đến Cao</option>
+              <option value="-pricePerHour">Giá: Cao đến Thấp</option>
+              <option value="-rating">Đánh Giá</option>
+              <option value="-batteryLevel">Mức Pin</option>
+              <option value="-range">Quãng Đường</option>
             </select>
           </div>
         </div>
 
-        {/* Vehicle grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {vehicles.map((vehicle) => (
-            <VehicleCard key={vehicle.id} vehicle={vehicle} />
-          ))}
-        </div>
+        <LoadingWrapper
+          isLoading={isLoading}
+          fallback={
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <div key={i} className="h-96 bg-gray-200 rounded-lg animate-pulse" />
+              ))}
+            </div>
+          }
+        >
+          {error ? (
+            <div className="text-center py-12">
+              <div className="text-red-500 mb-4">
+                <svg className="h-16 w-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">Không Thể Tải Phương Tiện</h3>
+              <p className="text-gray-600 mb-4">{error}</p>
+              <button 
+                onClick={() => window.location.reload()} 
+                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold transition-colors duration-200"
+              >
+                Thử Lại
+              </button>
+            </div>
+          ) : vehicles.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="text-gray-400 mb-4">
+                <svg className="h-16 w-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">Không Có Phương Tiện</h3>
+              <p className="text-gray-600">Hãy thử thay đổi bộ lọc hoặc quay lại sau.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {vehicles.map((vehicle) => (
+                <VehicleCard key={vehicle.id} vehicle={vehicle} />
+              ))}
+            </div>
+          )}
+        </LoadingWrapper>
 
-        {/* Load more button */}
-        <div className="text-center mt-12">
-          <button className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-semibold transition-colors duration-200">
-            Load More Vehicles
-          </button>
-        </div>
+        {!error && vehicles.length > 0 && (
+          <div className="text-center mt-12">
+            <button 
+              onClick={() => {
+                window.location.href = '/vehicles';
+              }}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-semibold transition-colors duration-200"
+            >
+              Xem Tất Cả Phương Tiện
+            </button>
+          </div>
+        )}
 
-        {/* Quick stats */}
         <div className="mt-16 bg-white rounded-2xl p-8 shadow-lg">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
             <div>
-              <div className="text-3xl font-bold text-blue-600 mb-2">50+</div>
-              <div className="text-gray-600">Electric Vehicles</div>
+              <div className="text-3xl font-bold text-blue-600 mb-2">
+                {isLoading ? '...' : `${vehicles.length}+`}
+              </div>
+              <div className="text-gray-600">Có Sẵn Ngay</div>
             </div>
             <div>
               <div className="text-3xl font-bold text-green-600 mb-2">8</div>
-              <div className="text-gray-600">Charging Stations</div>
+              <div className="text-gray-600">Trạm Sạc</div>
             </div>
             <div>
               <div className="text-3xl font-bold text-purple-600 mb-2">24/7</div>
-              <div className="text-gray-600">Customer Support</div>
+              <div className="text-gray-600">Hỗ Trợ Khách Hàng</div>
             </div>
             <div>
               <div className="text-3xl font-bold text-amber-600 mb-2">95%</div>
-              <div className="text-gray-600">Customer Satisfaction</div>
+              <div className="text-gray-600">Hài Lòng Khách Hàng</div>
             </div>
           </div>
         </div>

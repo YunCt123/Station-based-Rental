@@ -33,44 +33,26 @@ export interface Vehicle {
   model: string;
   type: VehicleType | string;
   image: string;
-  station_id?: string;
-  station_name?: string;
-  location?: string;
-  status?: BackendVehicleStatus | string;
-  batteryLevel?: number;
-  battery_soc?: number;
-  battery_kWh?: number;
-  range?: number;
-  seats?: number;
-  pricePerHour?: number;
-  pricePerDay?: number;
-  pricing?: {
-    hourly?: number;
-    daily?: number;
-    currency?: string;
-  };
-  rating?: number;
-  reviewCount?: number;
-  trips?: number;
-  features?: string[];
-  condition?: VehicleCondition | string;
-  lastMaintenance?: string;
-  mileage?: number;
-  odo_km?: number;
-  fuelEfficiency?: string;
-  consumption_wh_per_km?: number;
-  inspectionDate?: string;
-  inspection_due_at?: string;
-  insuranceExpiry?: string;
-  insurance_expiry_at?: string;
-  description?: string;
-  active?: boolean;
-  tags?: string[];
-  createdAt?: string;
-  updatedAt?: string;
-  availability?: VehicleAvailability;
-  lock_version?: number;
-  priceDetail?: string;
+  batteryLevel: number;
+  location: string;
+  stationId?: string; // Add station ID field
+  availability: VehicleAvailability;
+  pricePerHour: number;
+  pricePerDay: number;
+  rating: number;
+  reviewCount: number;
+  trips: number;
+  range: number;
+  seats: number;
+  features: string[];
+  condition: VehicleCondition;
+  lastMaintenance: string;
+  mileage: number;
+  fuelEfficiency: string;
+  inspectionDate: string;
+  insuranceExpiry: string;
+  description: string;
+  
 }
 
 // Backend vehicle data structure (from API)

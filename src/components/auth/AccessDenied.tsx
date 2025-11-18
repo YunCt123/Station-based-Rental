@@ -96,3 +96,4 @@ const AccessDenied: React.FC<AccessDeniedProps> = ({ user }) => {
 };
 
 export default AccessDenied;
+export { AccessDenied };

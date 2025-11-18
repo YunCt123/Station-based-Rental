@@ -67,7 +67,9 @@ export const CustomerManagement: React.FC = () => {
         : Array.isArray(res.data)
           ? res.data
           : [];
-      const rows = buildRows(users);
+      // Only include customers in the management screen
+      const customers = users.filter(u => u.role === 'customer');
+      const rows = buildRows(customers);
       setList(rows);
     } catch (e: any) {
       setError(e?.message || 'Không thể tải danh sách khách hàng');

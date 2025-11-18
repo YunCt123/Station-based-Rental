@@ -22,7 +22,20 @@ const Stations = () => {
 
   // Fetch stations from API
   useEffect(() => {
-    const fetchStations = async () => {
+    // Chỉ fetch theo thành phố nếu đang ở mode 'city'
+    if (searchMode !== 'city') return;
+
+    const fetchStationsByCity = async () => {
+      setLoading(true);
+      setAllStations([]);
+      setCurrentPage(1);
+      setNearbyError(null); // Xóa lỗi lân cận cũ
+
+      const filterParams: StationSearchFilters = {};
+      if (apiCityFilter && apiCityFilter !== 'All Cities') {
+        filterParams.city = apiCityFilter;
+      }
+
       try {
         setError(null);
         setIsLoading(true);
@@ -79,7 +92,7 @@ const Stations = () => {
         setError(`Không thể tải danh sách trạm: ${error.message || 'Lỗi không xác định'}`);
         setStations([]);
       } finally {
-        setIsLoading(false);
+        setLoading(false);
       }
     };
 
@@ -97,6 +110,71 @@ const Stations = () => {
       default:
         return <Badge variant="outline">Không xác định</Badge>;
     }
+    // Filter by Fast Charging
+    if (clientFilters.fastCharging !== 'all') {
+      const hasFastCharging = clientFilters.fastCharging === 'true';
+      stations = stations.filter(
+        (station) => station.fastCharging === hasFastCharging
+      );
+    }
+    // Filter by Rating
+    if (clientFilters.minRating !== 'all') {
+      const minRating = Number(clientFilters.minRating);
+      stations = stations.filter((station) => station.rating >= minRating);
+    }
+    // Sorting
+    stations.sort((a, b) => {
+      const [field, order] = clientFilters.sortBy.split(':');
+      let valA: any; let valB: any;
+      switch (field) {
+        case 'name': valA = a.name.toLowerCase(); valB = b.name.toLowerCase(); break;
+        case 'totalSlots': valA = a.totalSlots; valB = b.totalSlots; break;
+        case 'rating': valA = a.rating; valB = b.rating; break;
+        default: return 0;
+      }
+      if (valA < valB) return order === 'asc' ? -1 : 1;
+      if (valA > valB) return order === 'asc' ? 1 : -1;
+      return 0;
+    });
+
+    // Sắp xếp: Nếu đang ở mode nearby, ưu tiên sắp xếp theo distance
+    if (searchMode === 'nearby') {
+      stations.sort((a, b) => (a.distance ?? Infinity) - (b.distance ?? Infinity));
+    } else {
+      // Sắp xếp theo lựa chọn của người dùng (như cũ)
+      stations.sort((a, b) => {
+        const [field, order] = clientFilters.sortBy.split(':');
+        let valA: any; let valB: any;
+        switch (field) {
+          case 'name': valA = a.name.toLowerCase(); valB = b.name.toLowerCase(); break;
+          case 'totalSlots': valA = a.totalSlots; valB = b.totalSlots; break;
+          case 'rating': valA = a.rating; valB = b.rating; break;
+          default: return 0;
+        }
+        if (valA < valB) return order === 'asc' ? -1 : 1;
+        if (valA > valB) return order === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
+
+    return stations;
+  }, [allStations, clientFilters, searchMode]);
+
+  // 3. CLIENT PAGINATION: (No change)
+  const totalPages = Math.ceil(filteredAndSortedStations.length / stationsPerPage);
+  const paginatedStations = useMemo(() => {
+    const startIndex = (currentPage - 1) * stationsPerPage;
+    const endIndex = startIndex + stationsPerPage;
+    return filteredAndSortedStations.slice(startIndex, endIndex);
+  }, [filteredAndSortedStations, currentPage, stationsPerPage]);
+
+  // Handler for client filters
+  const handleClientFilterChange = (
+    key: keyof ClientFilters,
+    value: string
+  ) => {
+    setClientFilters(prev => ({ ...prev, [key]: value as any }));
+    setCurrentPage(1);
   };
 
   return (
@@ -274,9 +352,51 @@ const Stations = () => {
             ) : null}
           </LoadingWrapper>
         </div>
+
+        {/* No Results Message */}
+        {!loading && paginatedStations.length === 0 && (
+          <div className="col-span-full text-center py-12 bg-white rounded-lg shadow">
+            <BatteryCharging className="mx-auto h-12 w-12 text-gray-400" />
+            {/* TRANSLATED: */}
+            <h3 className="mt-2 text-lg font-medium text-gray-900">No stations found</h3>
+            <p className="mt-1 text-sm text-gray-500">
+              {allStations.length > 0
+                // TRANSLATED:
+                ? 'Try adjusting your search filters.'
+                // TRANSLATED:
+                : 'No stations available for this city.'}
+            </p>
+          </div>
+        )}
+
+        {/* Pagination (Client-side) */}
+        {!loading && filteredAndSortedStations.length > stationsPerPage && (
+          <div className="flex justify-center items-center mt-8 space-x-2">
+            <Button
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage <= 1}
+              variant="outline"
+            >
+              {/* TRANSLATED: */}
+              Previous
+            </Button>
+            <span className="text-sm text-gray-700">
+              {/* TRANSLATED: */}
+              Page {currentPage} / {totalPages}
+            </span>
+            <Button
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage >= totalPages}
+              variant="outline"
+            >
+              {/* TRANSLATED: */}
+              Next
+            </Button>
+          </div>
+        )}
       </div>
-    </PageTransition>
+    </div>
   );
 };
 
-export default Stations;
+export default StationsPage;

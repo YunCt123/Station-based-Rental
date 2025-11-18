@@ -38,11 +38,21 @@ const StationDetails = () => {
   const [isLoadingVehicles, setIsLoadingVehicles] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch station data from API
   useEffect(() => {
+    if (!stationId) {
+      // TRANSLATED:
+      setError('Station ID not found.');
+      setLoadingStation(false);
+      setLoadingVehicles(false);
+      setStationData(null);
+      setVehicles([]);
+      return;
+    }
+
     const fetchStationData = async () => {
-      if (!id) return;
-      
+      setLoadingStation(true);
+      setStationData(null);
+      setError(null);
       try {
         setIsLoading(true);
         setError(null);
@@ -97,18 +107,13 @@ const StationDetails = () => {
           variant: "destructive",
         });
       } finally {
-        setIsLoading(false);
+        setLoadingStation(false);
       }
     };
 
-    fetchStationData();
-  }, [id, toast]);
-
-  // Fetch vehicles at this station
-  useEffect(() => {
     const fetchStationVehicles = async () => {
-      if (!id || !station) return;
-      
+      setLoadingVehicles(true);
+      setVehicles([]);
       try {
         setIsLoadingVehicles(true);
         
@@ -129,84 +134,76 @@ const StationDetails = () => {
           variant: "destructive",
         });
       } finally {
-        setIsLoadingVehicles(false);
+        setLoadingVehicles(false);
       }
     };
 
+    fetchStationData();
     fetchStationVehicles();
-  }, [id, station, toast]);
+  }, [stationId]); // Rerun when stationId changes
 
-  // Function to retry loading station data
-  const handleRetry = () => {
-    window.location.reload();
-  };
-
-  // Function to get formatted operating hours
-  const getOperatingHoursDisplay = (operatingHours: Station['operatingHours']) => {
-    if (!operatingHours) return "Contact station for hours";
-    
-    if (operatingHours.weekday && operatingHours.weekday === operatingHours.weekend) {
-      return operatingHours.weekday;
-    }
-    
-    const parts = [];
-    if (operatingHours.weekday) parts.push(`Weekdays: ${operatingHours.weekday}`);
-    if (operatingHours.weekend) parts.push(`Weekends: ${operatingHours.weekend}`);
-    if (operatingHours.holiday) parts.push(`Holidays: ${operatingHours.holiday}`);
-    
-    return parts.length > 0 ? parts.join(', ') : "24/7";
-  };
-
-  // Loading state
-  if (isLoading) {
+  // === Render Loading ===
+  if (loadingStation) {
+    // Skeleton structure remains the same
     return (
-      <LoadingWrapper isLoading={true}>
-        <div className="min-h-screen bg-background" />
-      </LoadingWrapper>
-    );
-  }
-
-  // Error state
-  if (error || !station) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center max-w-md mx-auto p-6">
-          <AlertCircle className="h-16 w-16 text-destructive mx-auto mb-4" />
-          <h1 className="text-2xl font-bold mb-4">
-            {error ? "Error Loading Station" : t("common.vehicleNotFound")}
-          </h1>
-          <p className="text-muted-foreground mb-6">
-            {error || "Station not found or may have been removed"}
-          </p>
-          <div className="space-y-3">
-            <Button onClick={handleRetry} className="w-full">
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Try Again
-            </Button>
-            <Button variant="outline" asChild className="w-full">
-              <Link to="/stations">{t("nav.stations")}</Link>
-            </Button>
+      <div className="container mx-auto p-4 md:p-8 space-y-6">
+        <Skeleton className="h-10 w-3/4 mb-4" />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Left Column (Image + Map) */}
+          <div className="md:col-span-1 space-y-6">
+            <Skeleton className="h-64 w-full rounded-lg" />
+            <Skeleton className="h-64 w-full rounded-lg" />
           </div>
+          {/* Right Column (Info) */}
+          <div className="md:col-span-2 space-y-4">
+            <Skeleton className="h-8 w-1/2" />
+            <Skeleton className="h-6 w-full" />
+            <Skeleton className="h-6 w-full" />
+            <Skeleton className="h-6 w-3/4" />
+          </div>
+        </div>
+        <Skeleton className="h-10 w-1/4 mt-8" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[1, 2, 3].map((i) => (
+             <div key={i} className="border rounded-lg overflow-hidden shadow-lg">
+               <Skeleton className="h-48 w-full" />
+               <div className="p-4 space-y-3">
+                 <Skeleton className="h-6 w-3/4" />
+                 <Skeleton className="h-4 w-full" />
+                 <Skeleton className="h-4 w-1/2" />
+                 <Skeleton className="h-10 w-full" />
+               </div>
+             </div>
+          ))}
         </div>
       </div>
     );
   }
 
-  const getAmenityIcon = (amenity: string) => {
-    switch (amenity.toLowerCase()) {
-      case "fast charging":
-        return <Zap className="h-4 w-4" />;
-      case "cafe":
-      case "restaurant":
-        return <Coffee className="h-4 w-4" />;
-      case "wifi":
-        return <Wifi className="h-4 w-4" />;
-      case "parking":
-        return <Car className="h-4 w-4" />;
-      default:
-        return <CheckCircle className="h-4 w-4" />;
-    }
-  };
+  // === Render Error ===
+  if (error) {
+    return (
+      <div className="container mx-auto p-4 md:p-8 text-center text-red-600">
+        <p>{error}</p>
+        <Link to="/stations" className="text-blue-500 hover:underline mt-4 inline-block">
+          {/* TRANSLATED: */}
+          Back to station list
+        </Link>
+      </div>
+    );
+  }
+
+  // === Render Content ===
+  if (!stationData) {
+    return (
+      <div className="container mx-auto p-4 md:p-8 text-center text-gray-500">
+        {/* TRANSLATED: */}
+        Station information not found.
+      </div>
+    );
+  }
+
+  const statusInfo = formatStatus(stationData.status);
 
   return (
     <PageTransition>
@@ -343,24 +340,11 @@ const StationDetails = () => {
                     {getOperatingHoursDisplay(station.operatingHours)}
                   </p>
                 </div>
-
-                <Separator />
-
-                {/* Amenities */}
-                <div>
-                  <h3 className="font-medium mb-3">
-                    {t("common.whatsIncluded")}
-                  </h3>
-                  <div className="grid grid-cols-2 gap-2">
-                    {station.amenities.map((amenity, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center gap-2 text-sm"
-                      >
-                        {getAmenityIcon(amenity)}
-                        <span>{amenity}</span>
-                      </div>
-                    ))}
+                 {stationData.fastCharging && (
+                  <div className="flex items-center gap-1 text-blue-600 font-medium">
+                    <Zap className="w-5 h-5 fill-blue-600" />
+                    {/* TRANSLATED: */}
+                    <span>Fast Charging Available</span>
                   </div>
                 </div>
               </CardContent>
@@ -564,11 +548,26 @@ const StationDetails = () => {
               </CardContent>
             </Card>
           </div>
-        </div>
-        </div>
+        ) : vehicles.length > 0 ? (
+          // Display vehicle list
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {vehicles.map((vehicle) => (
+              <VehicleCard key={vehicle.id} vehicle={vehicle} />
+            ))}
+          </div>
+        ) : (
+          // Message if no vehicles
+          <Card className="text-center py-8">
+            <CardContent>
+              <Car className="mx-auto h-12 w-12 text-gray-400 mb-2" />
+              {/* TRANSLATED: */}
+              <p className="text-gray-500">No vehicles currently available at this station.</p>
+            </CardContent>
+          </Card>
+        )}
       </div>
-    </PageTransition>
+    </div>
   );
 };
 
-export default StationDetails;
+export default StationDetailPage;

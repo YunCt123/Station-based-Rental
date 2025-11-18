@@ -4,6 +4,12 @@ import { FaMapMarkerAlt, FaClock, FaCar } from "react-icons/fa";
 import { Link } from "react-router-dom";
 import type { Station } from "../data/stations";
 
+import React from 'react';
+import { Link } from 'react-router-dom';
+import { Progress } from '@/components/ui/Progress';
+import { LocateIcon, MapPin, Star, Zap } from 'lucide-react'; // THÊM MỚI: Star, Zap
+
+// Định nghĩa props cho component
 interface StationCardProps {
   station: Station;
 }

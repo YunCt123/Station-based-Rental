@@ -1,123 +1,58 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { getRentals, findRental, addRental, updateRental, deleteRental, resetRentals } from '../../../../data/rentalsStore';
-import type { Rental as RentalType } from '../../../../data/rentalsStore';
-import { DeleteOutlined, EyeOutlined, EditOutlined, PlusOutlined } from "@ant-design/icons";
-import { Button, Input, Modal, Select, InputNumber } from 'antd';
-// Use Rental type from the store for consistent shape
-type Rental = RentalType;
+import { EyeOutlined, ReloadOutlined } from "@ant-design/icons";
+import { Button, Input, Spin, Alert } from 'antd';
+import rentalService, { type StationRental } from '../../../../services/rentalService';
+import { useCurrency } from '../../../../lib/currency';
 
 const formatDate = (iso?: string) => iso ? new Date(iso).toLocaleString('vi-VN') : '-';
 
 const RentalHistory: React.FC = () => {
-
+  const { formatPrice } = useCurrency();
   const [query, setQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | Rental['status']>('all');
-  const [allRentals, setAllRentals] = useState(() => getRentals());
-  const [viewVisible, setViewVisible] = useState(false);
-  const [selected, setSelected] = useState<Rental | null>(null);
-  const [formVisible, setFormVisible] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [formValues, setFormValues] = useState<Partial<Rental>>({});
+  const [statusFilter, setStatusFilter] = useState<'all' | StationRental['status']>('all');
+  const [rentals, setRentals] = useState<StationRental[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  // detail view is navigated to a separate page now
+
+  const loadRentals = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await rentalService.getAllRentals();
+      setRentals(data);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Không thể tải dữ liệu.';
+      setError(msg);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    setAllRentals(getRentals());
+    loadRentals();
   }, []);
 
-  // Apply filters to the rental list
-  const filteredList = allRentals.filter(rental => {
-    // Filter by search query
-    const matchesQuery = query === '' || 
-      rental.name?.toLowerCase().includes(query.toLowerCase()) ||
-      rental.customerId?.toLowerCase().includes(query.toLowerCase()) ||
-      rental.vehicleId?.toLowerCase().includes(query.toLowerCase());
-    
-    // Filter by status
-    const matchesStatus = statusFilter === 'all' || rental.status === statusFilter;
-    
-    return matchesQuery && matchesStatus;
-  });
+  // Apply filters to the rental list (client-side)
+  const filteredList = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return rentals.filter((r) => {
+      const matchesQuery =
+        q === '' ||
+        r.user_id?.name?.toLowerCase().includes(q) ||
+        r.user_id?.email?.toLowerCase().includes(q) ||
+        (r.user_id?.phoneNumber || '').toLowerCase().includes(q) ||
+        r.vehicle_id?.name?.toLowerCase().includes(q) ||
+        (r.vehicle_id?.licensePlate || '').toLowerCase().includes(q) ||
+        (r.station_id?.name || '').toLowerCase().includes(q);
 
-  const openView = (id: string) => {
-    const r = findRental(id);
-    if (!r) return;
-    setSelected(r);
-    setViewVisible(true);
-  };
-
-  const closeView = () => {
-    setViewVisible(false);
-    setSelected(null);
-  };
-
-  const openAdd = () => {
-    setIsEditing(false);
-    setEditingId(null);
-    setFormValues({
-      name: '',
-      customerId: undefined,
-      vehicleId: '',
-      startAt: new Date().toISOString(),
-      endAt: undefined,
-      status: 'ongoing',
-      priceCents: 0,
-      notes: '',
+      const matchesStatus = statusFilter === 'all' || r.status === statusFilter;
+      return matchesQuery && matchesStatus;
     });
-    setFormVisible(true);
-  };
+  }, [rentals, query, statusFilter]);
 
-  const openEdit = (id: string) => {
-    const r = findRental(id);
-    if (!r) return;
-    setIsEditing(true);
-    setEditingId(id);
-    setFormValues({ ...r });
-    setFormVisible(true);
-  };
-
-  const closeForm = () => {
-    setFormVisible(false);
-    setIsEditing(false);
-    setEditingId(null);
-    setFormValues({});
-  };
-
-  const handleFormChange = (field: keyof Rental, value: any) => {
-    setFormValues(prev => ({ ...(prev as any), [field]: value }));
-  };
-
-  const submitForm = () => {
-    const payload: any = {
-      name: String(formValues.name || ''),
-      customerId: formValues.customerId,
-      vehicleId: String(formValues.vehicleId || ''),
-      startAt: String(formValues.startAt || new Date().toISOString()),
-      endAt: formValues.endAt ? String(formValues.endAt) : undefined,
-      status: (formValues.status as Rental['status']) || 'ongoing',
-      priceCents: Number(formValues.priceCents || 0),
-      notes: String(formValues.notes || ''),
-    };
-
-    if (isEditing && editingId) {
-      updateRental(editingId, payload);
-    } else {
-      addRental(payload);
-    }
-    setAllRentals(getRentals());
-    closeForm();
-  };
-
-  const handleDelete = (id: string) => {
-    Modal.confirm({
-      title: 'Xác nhận xoá',
-      content: 'Bạn có chắc muốn xoá bản ghi này không?',
-      onOk() {
-        deleteRental(id);
-        setAllRentals(getRentals());
-      }
-    });
-  };
+  // view handlers removed; navigation handled via Link
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -143,29 +78,28 @@ const RentalHistory: React.FC = () => {
               onSearch={(val) => setQuery(val)}
               style={{ width: 360 }}
             />
-            <select className="border rounded-md px-2 py-2" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as any)}>
+            <select className="border rounded-md px-2 py-2" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as StationRental['status'] | 'all')}>
               <option value="all">Tất cả</option>
-              <option value="completed">Hoàn thành</option>
-              <option value="ongoing">Đang chạy</option>
-              <option value="cancelled">Đã huỷ</option>
+              <option value="COMPLETED">Hoàn thành</option>
+              <option value="ONGOING">Đang chạy</option>
+              <option value="CANCELLED">Đã huỷ</option>
             </select>
-            <button onClick={openAdd} className="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white rounded-md text-sm">
-              <PlusOutlined className="w-4 h-4 mr-2" /> Thêm khách hàng
-            </button>
-            <button 
-              onClick={() => {
-                resetRentals();
-                setAllRentals(getRentals());
-              }}
-              className="inline-flex items-center px-3 py-1.5 bg-red-600 text-white rounded-md text-sm"
-            >
-              Reset Data
-            </button>
+            <Button onClick={loadRentals} icon={<ReloadOutlined />}>
+              Làm mới
+            </Button>
           </div>
         </div>
 
+        {error && (
+          <div className="mb-4">
+            <Alert type="error" message={error} showIcon />
+          </div>
+        )}
 
         <div className="overflow-x-auto">
+          {loading ? (
+            <div className="py-10 flex justify-center"><Spin /></div>
+          ) : (
           
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-200">
@@ -173,6 +107,7 @@ const RentalHistory: React.FC = () => {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-800 uppercase tracking-wider">ID</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-800 uppercase tracking-wider">Tên khách hàng</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-800 uppercase tracking-wider">Xe</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-800 uppercase tracking-wider">Trạm</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-800 uppercase tracking-wider">Bắt đầu</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-800 uppercase tracking-wider">Kết thúc</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-800 uppercase tracking-wider">Trạng thái</th>
@@ -181,46 +116,25 @@ const RentalHistory: React.FC = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {filteredList.map((r: RentalType) => {
+              {filteredList.map((r: StationRental) => {
                 return (
-                  <tr key={r.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{r.id}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{r.name}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{r.vehicleId}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatDate(r.startAt)}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatDate(r.endAt)}</td>
+                  <tr key={r._id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{r._id}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{r.user_id?.name || '-'}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{r.vehicle_id?.name || '-'}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{r.station_id?.name || '-'}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatDate(r.pickup?.at)}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatDate(r.return?.at)}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    <span className={`px-2 py-0.5 rounded-full text-xs ${r.status === 'completed' ? 'bg-green-100 text-green-800' : r.status === 'ongoing' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'}`}>
-                        {r.status === 'completed' ? 'Hoàn thành' : r.status === 'ongoing' ? 'Đang chạy' : r.status === 'cancelled' ? 'Đã huỷ' : 'cancelled'}
+                    <span className={`px-2 py-0.5 rounded-full text-xs ${r.status === 'COMPLETED' ? 'bg-green-100 text-green-800' : r.status === 'ONGOING' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'}`}>
+                        {r.status === 'COMPLETED' ? 'Hoàn thành' : r.status === 'ONGOING' ? 'Đang chạy' : r.status === 'CANCELLED' ? 'Đã huỷ' : r.status}
                     </span>
-                      {/* <span className={`px-2 py-0.5 rounded-full text-xs ${r.status === 'completed' ? 'bg-green-100 text-green-800' : r.status === 'ongoing' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'}`}>
-                      {r.status}
-                    </span> */}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{r.priceCents}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatPrice(r.pricing_snapshot?.total_price ?? 0)}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-right">
-                      <Button
-                        type="text"
-                        onClick={() => openView(r.id)}
-                        className="inline-flex items-center text-sm !text-blue-700 mr-4 hover:text-blue-600"
-                      >
+                      <Link to={`/admin/customers/history/${r._id}`} className="inline-flex items-center text-sm text-blue-700 mr-4 hover:text-blue-600">
                         <EyeOutlined className="mr-2 text-xl" />
-                      </Button>
-                      <Button
-                        type="text"
-                        onClick={() => openEdit(r.id)}
-                        className="inline-flex items-center text-sm text-gray-600 mr-4"
-
-                      >
-                        <EditOutlined className="text-xl" />
-                      </Button>
-                      <Button
-                        type="text"
-                        className="inline-flex items-center text-sm text-red-600"
-                        onClick={() => handleDelete(r.id)}
-                      >
-                        <DeleteOutlined className="mr-7 !text-red-600 text-xl" />
-                      </Button>
+                      </Link>
                     </td>
 
 
@@ -234,61 +148,9 @@ const RentalHistory: React.FC = () => {
               )}
             </tbody>
           </table>
+          )}
         </div>
-        {/* View Modal */}
-        <Modal visible={viewVisible} title="Chi tiết thuê" onCancel={closeView} footer={[<Button key="close" onClick={closeView}>Đóng</Button>]}>
-          {selected ? (
-            <div className="space-y-2">
-              <div><strong>ID:</strong> {selected.id}</div>
-              <div><strong>Tên khách hàng:</strong> {selected.name}</div>
-              <div><strong>Customer ID:</strong> {selected.customerId || '-'}</div>
-              <div><strong>Xe:</strong> {selected.vehicleId}</div>
-              <div><strong>Bắt đầu:</strong> {formatDate(selected.startAt)}</div>
-              <div><strong>Kết thúc:</strong> {formatDate(selected.endAt)}</div>
-              <div><strong>Trạng thái:</strong> {selected.status}</div>
-              <div><strong>Giá thuê:</strong> {selected.priceCents}</div>
-              <div><strong>Ghi chú:</strong> {selected.notes || '-'}</div>
-            </div>
-          ) : null}
-        </Modal>
-
-        {/* Add / Edit Modal */}
-        <Modal visible={formVisible} title={isEditing ? 'Chỉnh sửa thuê' : 'Thêm thuê'} onCancel={closeForm} onOk={submitForm} okText="Lưu">
-          <div className="space-y-3">
-            <div>
-              <label className="block text-sm text-gray-700">Tên khách hàng</label>
-              <Input value={formValues.name as string || ''} onChange={(e) => handleFormChange('name', e.target.value)} />
-            </div>
-            <div>
-              <label className="block text-sm text-gray-700">Mã xe</label>
-              <Input value={formValues.vehicleId as string || ''} onChange={(e) => handleFormChange('vehicleId', e.target.value)} />
-            </div>
-            <div>
-              <label className="block text-sm text-gray-700">Bắt đầu (ISO)</label>
-              <Input value={formValues.startAt as string || ''} onChange={(e) => handleFormChange('startAt', e.target.value)} />
-            </div>
-            <div>
-              <label className="block text-sm text-gray-700">Kết thúc (ISO)</label>
-              <Input value={formValues.endAt as string || ''} onChange={(e) => handleFormChange('endAt', e.target.value)} />
-            </div>
-            <div>
-              <label className="block text-sm text-gray-700">Trạng thái</label>
-              <Select value={formValues.status || 'ongoing'} onChange={(val) => handleFormChange('status', val as Rental['status'])} style={{ width: '100%' }}>
-                <Select.Option value="completed">Hoàn thành</Select.Option>
-                <Select.Option value="ongoing">Đang chạy</Select.Option>
-                <Select.Option value="cancelled">Đã huỷ</Select.Option>
-              </Select>
-            </div>
-            <div>
-              <label className="block text-sm text-gray-700">Giá thuê (cents)</label>
-              <InputNumber style={{ width: '100%' }} value={formValues.priceCents as number || 0} onChange={(val) => handleFormChange('priceCents', val)} />
-            </div>
-            <div>
-              <label className="block text-sm text-gray-700">Ghi chú</label>
-              <Input.TextArea rows={3} value={formValues.notes as string || ''} onChange={(e) => handleFormChange('notes', e.target.value)} />
-            </div>
-          </div>
-        </Modal>
+        {/* Detail modal removed; use dedicated page */}
       </div>
     </div>
   );

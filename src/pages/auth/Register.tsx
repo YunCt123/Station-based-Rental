@@ -42,7 +42,7 @@ interface RegisterProps {
   onRegister: (userData: User) => void;
 }
 
-const Register = ({ onRegister }: RegisterProps) => {
+const Register = ({ onRegister: _onRegister }: RegisterProps) => {
   const { t } = useTranslation();
   const [formData, setFormData] = useState({
     name: "",

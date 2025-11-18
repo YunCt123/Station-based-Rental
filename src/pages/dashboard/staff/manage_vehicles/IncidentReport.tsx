@@ -19,14 +19,9 @@ import {
   updateIssue, 
   getAllIssues,
   addIssueResolution,
-  assignIssue,
-  resolveIssue,
   getPriorityColor,
   getPriorityText,
-  type Issue,
-  type Priority,
   type AddResolutionRequest,
-  type AssignIssueRequest
 } from '@/services/issueService';
 import { toast } from 'sonner';
 
@@ -287,27 +282,6 @@ const IncidentReport: React.FC = () => {
 
   // ========== NEW RESOLUTION MANAGEMENT FUNCTIONS ==========
 
-  const handleAssignIssue = async (incidentId: string, staffId: string, priority?: Priority) => {
-    try {
-      setLoading(true);
-      const assignData: AssignIssueRequest = {
-        assigned_to: staffId,
-        ...(priority && { priority })
-      };
-      
-      await assignIssue(incidentId, assignData);
-      toast.success('Phân công sự cố thành công!');
-      
-      // Refresh issues list
-      await fetchIssues();
-    } catch (error: unknown) {
-      console.error('Error assigning issue:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Không thể phân công sự cố';
-      toast.error(errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleAddResolution = async (incidentId: string, resolutionData: AddResolutionRequest) => {
     try {
@@ -333,22 +307,6 @@ const IncidentReport: React.FC = () => {
     setShowResolutionModal(true);
   };
 
-  const handleResolveIssue = async (incidentId: string, resolveData?: { resolution_notes?: string; customer_satisfaction?: string; follow_up_required?: boolean }) => {
-    try {
-      setLoading(true);
-      await resolveIssue(incidentId, resolveData);
-      toast.success('Đánh dấu sự cố đã giải quyết thành công!');
-      
-      // Refresh issues list
-      await fetchIssues();
-    } catch (error: unknown) {
-      console.error('Error resolving issue:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Không thể đánh dấu sự cố đã giải quyết';
-      toast.error(errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   return (
     <div className="p-6 max-w-7xl mx-auto">

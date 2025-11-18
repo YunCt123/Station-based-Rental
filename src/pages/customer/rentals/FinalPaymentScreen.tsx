@@ -4,8 +4,6 @@ import {
   CreditCardOutlined,
   ArrowLeftOutlined,
   CheckCircleOutlined,
-  DollarOutlined,
-  CarOutlined
 } from '@ant-design/icons';
 import { useFinalPayment } from '../../../hooks/customer/useRentals';
 import type { Rental } from '../../../services/customerService';
@@ -248,33 +246,33 @@ const FinalPaymentScreen: React.FC<FinalPaymentScreenProps> = ({
                 
                 {/* Chi tiết các loại phí */}
                 <div style={{ paddingLeft: 16 }}>
-                  {rental.charges?.cleaning_fee > 0 && (
+                  {/*rental.charges?.cleaning_fee > 0 && (
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
                       <Text style={{ fontSize: 14 }}>• Phí vệ sinh:</Text>
                       <Text style={{ fontSize: 14 }}>{rental.charges.cleaning_fee.toLocaleString()} VND</Text>
                     </div>
-                  )}
+                  )*/}
                   
-                  {rental.charges?.damage_fee > 0 && (
+                  {/*rental.charges?.damage_fee > 0 && (
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
                       <Text style={{ fontSize: 14 }}>• Phí sửa chữa hư hỏng:</Text>
                       <Text style={{ fontSize: 14 }}>{rental.charges.damage_fee.toLocaleString()} VND</Text>
                     </div>
-                  )}
+                  )*/}
                   
-                  {rental.charges?.late_fee > 0 && (
+                  {/*rental.charges?.late_fee > 0 && (
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
                       <Text style={{ fontSize: 14 }}>• Phí trả xe muộn:</Text>
                       <Text style={{ fontSize: 14 }}>{rental.charges.late_fee.toLocaleString()} VND</Text>
                     </div>
-                  )}
+                  )*/}
                   
-                  {rental.charges?.other_fees > 0 && (
+                  {/*rental.charges?.other_fees > 0 && (
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
                       <Text style={{ fontSize: 14 }}>• Phí khác:</Text>
                       <Text style={{ fontSize: 14 }}>{rental.charges.other_fees.toLocaleString()} VND</Text>
                     </div>
-                  )}
+                  )*/}
                   
                   {/* Tổng phí phát sinh */}
                   <div style={{ 

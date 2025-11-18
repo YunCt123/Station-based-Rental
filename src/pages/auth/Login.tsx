@@ -126,12 +126,6 @@ const LoginPage = ({ onLogin }: LoginProps) => {
         return;
       }
       
-      const message =
-        err?.message ||
-        err?.error ||
-        err?.details ||
-        JSON.stringify(err, null, 2) ||
-        "Thông tin đăng nhập không hợp lệ.";
       toast({
         title: "Đăng nhập không thành công!",
         description: "Tài khoản hoặc mật khẩu không đúng.",

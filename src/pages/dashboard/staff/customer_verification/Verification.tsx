@@ -9,7 +9,6 @@ import {
   XCircle,
   Clock,
   User,
-  FileText,
   Search,
   RefreshCw,
   AlertCircle,
@@ -19,7 +18,6 @@ import {
   getPendingDocuments,
   approveDocument,
   getDocumentStatusColor,
-  getDocumentTypeLabel,
 } from '@/services/documentService';
 import { OnlineDocumentSummaryModal } from '@/components/dashboard/staff/verify/DocumentSummary';
 
@@ -311,7 +309,7 @@ const Verification: React.FC = () => {
                         </div>
                         <div className="flex flex-col items-end gap-2">
                           <div className="text-xs text-muted-foreground text-right">
-                            <p>{new Date(doc.verifiedAt).toLocaleDateString()}</p>
+                            <p>{doc.verifiedAt ? new Date(doc.verifiedAt).toLocaleDateString() : 'N/A'}</p>
                           </div>
                         </div>
                       </div>
@@ -334,7 +332,6 @@ const Verification: React.FC = () => {
             rejectionReason={rejectionReason}
             setRejectionReason={setRejectionReason}
             getDocumentStatusColor={getDocumentStatusColor}
-            getDocumentTypeLabel={getDocumentTypeLabel}
             isOpen={true}
             onClose={() => setSelectedDocument(null)}
           />

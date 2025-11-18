@@ -173,8 +173,8 @@ export const adminStationService = {
             type: 'Point',
             coordinates: [stationData.coordinates.lng!, stationData.coordinates.lat!]
           }
-        };
-        delete transformedData.coordinates;
+        } as any;
+        delete (transformedData as any).coordinates;
       }
       
       const response = await api.patch(`/stations/${id}`, transformedData);

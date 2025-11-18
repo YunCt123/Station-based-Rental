@@ -571,7 +571,7 @@ const StationManagement: React.FC = () => {
       {/* Modals */}
       <StationFormModal
         visible={isFormModalVisible}
-        station={editingStation}
+        station={editingStation as any}
         onCancel={() => {
           setIsFormModalVisible(false);
           setEditingStation(null);
@@ -581,7 +581,7 @@ const StationManagement: React.FC = () => {
 
       <StationDetailModal
         visible={isDetailModalVisible}
-        station={selectedStation}
+        station={selectedStation as any}
         onCancel={() => {
           setIsDetailModalVisible(false);
           setSelectedStation(null);

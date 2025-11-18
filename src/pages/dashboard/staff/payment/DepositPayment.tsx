@@ -133,7 +133,7 @@ const DepositPayment: React.FC = () => {
         console.log('📡 [DepositPayment] Full API Response:', apiResponse);
         
 
-        const bookingsArray = Array.isArray(apiResponse) ? apiResponse : (apiResponse?.data || []);
+        const bookingsArray = Array.isArray(apiResponse) ? apiResponse : ((apiResponse as any)?.data || []);
         console.log('📦 [DepositPayment] Extracted bookings array:', bookingsArray.length, 'items');
         console.log('📦 [DepositPayment] First booking sample:', bookingsArray[0]);
 
@@ -359,13 +359,13 @@ const DepositPayment: React.FC = () => {
           // Calculate status based on payment success
           const depositStatus: DepositRecord['depositStatus'] = (() => {
             if (paymentStatus === 'SUCCESS') {
-              return bookingStatus === 'CANCELLED' ? 'refunded' : 'collected';
+              return (bookingStatus as string) === 'CANCELLED' ? 'refunded' : 'collected';
             }
             return 'pending';
           })();
 
           const paidAmount = paymentStatus === 'SUCCESS' ? depositAmount : 0;
-          const refundedAmount = (paymentStatus === 'SUCCESS' && bookingStatus === 'CANCELLED') ? depositAmount : 0;
+          const refundedAmount = (paymentStatus === 'SUCCESS' && (bookingStatus as string) === 'CANCELLED') ? depositAmount : 0;
           const remainingDeposit = paymentStatus === 'SUCCESS' ? 0 : depositAmount;
 
           return {

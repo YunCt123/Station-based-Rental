@@ -146,7 +146,7 @@ const Astronaut404: React.FC = () => {
         </div>
       </div>
 
-      <style jsx>{`
+      <style>{`
         .scene {
           min-height: 100vh;
           width: 100%;

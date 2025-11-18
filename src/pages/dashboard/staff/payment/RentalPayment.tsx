@@ -3,7 +3,6 @@ import {
   MagnifyingGlassIcon,
   CreditCardIcon,
   CheckCircleIcon,
-  PrinterIcon,
   ClockIcon,
   UserIcon,
   TruckIcon,
@@ -61,7 +60,7 @@ const RentalPayment: React.FC = () => {
   const [rentals, setRentals] = useState<RentalRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [transactionRef, setTransactionRef] = useState<string>('');
+  const [_transactionRef, setTransactionRef] = useState<string>('');
 const paymentMethods: PaymentMethod[] = [
     {
       id: 'cash',
@@ -129,9 +128,9 @@ const paymentMethods: PaymentMethod[] = [
           return {
             id: rental._id,
             bookingId: `BK${booking._id.slice(-6)}`,
-            vehicleId: rental.vehicle_id.licensePlate || `EV-${rental.vehicle_id._id.slice(-4)}`,
+            vehicleId: rental.vehicle_id.licensePlate || `EV-${rental.vehicle_id.id?.slice(-4) || 'UNKNOWN'}`,
             vehicleName: `${rental.vehicle_id.brand} ${rental.vehicle_id.model}`,
-            customerId: rental.user_id?._id || 'Unknown',
+            customerId: rental.user_id?.id || 'Unknown',
             customerName: rental.user_id?.name || 'Khách hàng chưa xác định',
             customerPhone: rental.user_id?.phoneNumber || 'N/A',
             startDate: new Date(booking.start_at).toLocaleDateString('vi-VN'),

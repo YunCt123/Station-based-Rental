@@ -14,7 +14,6 @@ import {
 } from 'antd';
 import {
   CarOutlined,
-  EnvironmentOutlined,
   CalendarOutlined,
   CreditCardOutlined,
   ClockCircleOutlined,
@@ -627,18 +626,18 @@ const RentalDetailScreen: React.FC<RentalDetailScreenProps> = ({
                         <div style={{ borderLeft: '2px solid #d9d9d9', marginLeft: 10, paddingLeft: 12, marginTop: 4 }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                             <Text type="secondary">Giá cơ bản</Text>
-                            <Text>{formatCurrency(pricing_snapshot.base_price, pricing_snapshot.currency)}</Text>
+                            <Text>{formatCurrency(pricing_snapshot.base_price, 'VND')}</Text>
                           </div>
                           {pricing_snapshot.insurance_price > 0 && (
                             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                               <Text type="secondary">Bảo hiểm</Text>
-                              <Text>{formatCurrency(pricing_snapshot.insurance_price, pricing_snapshot.currency)}</Text>
+                              <Text>{formatCurrency(pricing_snapshot.insurance_price, 'VND')}</Text>
                             </div>
                           )}
                           {pricing_snapshot.taxes > 0 && (
                             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                               <Text type="secondary">Thuế & phí dịch vụ</Text>
-                              <Text>{formatCurrency(pricing_snapshot.taxes, pricing_snapshot.currency)}</Text>
+                              <Text>{formatCurrency(pricing_snapshot.taxes, 'VND')}</Text>
                             </div>
                           )}
                           <div style={{ 
@@ -650,7 +649,7 @@ const RentalDetailScreen: React.FC<RentalDetailScreenProps> = ({
                           }}>
                             <Text strong>Tổng giá thuê</Text>
                             <Text strong type="success">
-                              {formatCurrency(pricing_snapshot.total_price, pricing_snapshot.currency)}
+                              {formatCurrency(pricing_snapshot.total_price, 'VND')}
                             </Text>
                           </div>
                         </div>
@@ -658,41 +657,41 @@ const RentalDetailScreen: React.FC<RentalDetailScreenProps> = ({
                     </Text>
 
                     {/* Các phí phát sinh riêng lẻ – chỉ hiện khi > 0 */}
-                    {charges.cleaning_fee > 0 && (
+                    {/*charges?.cleaning_fee > 0 && (
                       <Text>
                         <Text strong>Phí vệ sinh:</Text>{' '}
                         <Text type="warning">
-                          {formatCurrency(charges.cleaning_fee, pricing_snapshot.currency)}
+                          {formatCurrency(charges.cleaning_fee)}
                         </Text>
                       </Text>
-                    )}
+                    )*/}
 
-                    {charges.damage_fee > 0 && (
+                    {/*charges?.damage_fee > 0 && (
                       <Text>
                         <Text strong>Phí hư hỏng:</Text>{' '}
                         <Text type="warning">
-                          {formatCurrency(charges.damage_fee, pricing_snapshot.currency)}
+                          {formatCurrency(charges.damage_fee)}
                         </Text>
                       </Text>
-                    )}
+                    )*/}
 
-                    {charges.late_fee > 0 && (
+                    {/*charges?.late_fee > 0 && (
                       <Text>
                         <Text strong>Phí trễ hạn:</Text>{' '}
                         <Text type="warning">
-                          {formatCurrency(charges.late_fee, pricing_snapshot.currency)}
+                          {formatCurrency(charges.late_fee)}
                         </Text>
                       </Text>
-                    )}
+                    )*/}
 
-                    {charges.other_fees > 0 && (
+                    {/*charges?.other_fees > 0 && (
                       <Text>
                         <Text strong>Phí khác:</Text>{' '}
                         <Text type="warning">
-                          {formatCurrency(charges.other_fees, pricing_snapshot.currency)}
+                          {formatCurrency(charges.other_fees)}
                         </Text>
                       </Text>
-                    )}
+                    )*/}
 
                     {/* === KHÔNG HIỂN THỊ extra_fees === */}
                     {/* Vì extra_fees = cleaning + damage + late + other */}
@@ -704,8 +703,8 @@ const RentalDetailScreen: React.FC<RentalDetailScreenProps> = ({
                       <Text strong>Tổng tiền:</Text>{' '}
                       <Text type="danger" strong>
                       {formatCurrency(
-                          pricing_snapshot.total_price + charges.extra_fees,
-                          pricing_snapshot.currency
+                          pricing_snapshot.total_price + (charges?.extra_fees || 0),
+                          'VND'
                         )}
                       </Text>
                     </Text>
@@ -715,7 +714,7 @@ const RentalDetailScreen: React.FC<RentalDetailScreenProps> = ({
                       <Text>
                         <Text strong>Tiền đặt cọc đã thu:</Text>{' '}
                         <Text type="secondary">
-                          {formatCurrency(pricing_snapshot.deposit, pricing_snapshot.currency)}
+                          {formatCurrency(pricing_snapshot.deposit, 'VND')}
                         </Text>
                       </Text>
                     )}
@@ -728,8 +727,8 @@ const RentalDetailScreen: React.FC<RentalDetailScreenProps> = ({
                         </Text>{' '}
                         <Text type="danger" strong>
                           {formatCurrency(
-                            (pricing_snapshot.total_price + charges.extra_fees) - (pricing_snapshot.deposit ?? 0),
-                            pricing_snapshot.currency
+                            (pricing_snapshot.total_price + (charges?.extra_fees || 0)) - (pricing_snapshot.deposit ?? 0),
+                            'VND'
                           )}
                         </Text>
                       </Text>

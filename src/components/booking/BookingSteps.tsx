@@ -5,9 +5,9 @@ const { Title } = Typography;
 
 // Define booking steps
 export const BOOKING_STEPS = [
-  { title: "Vehicle Selection", description: "Choose your car" },
-  { title: "Booking Details", description: "Enter your information" },
-  { title: "Payment", description: "Complete your booking" },
+  { title: "Chọn xe", description: "Chọn xe của bạn" },
+  { title: "Thông tin đặt xe", description: "Nhập thông tin của bạn" },
+  { title: "Thanh toán", description: "Hoàn tất đặt xe của bạn" },
 ];
 
 interface BookingStepsProps {
@@ -22,8 +22,8 @@ const BookingSteps: React.FC<BookingStepsProps> = ({ currentStep = 1 }) => {
         className="mb-8 !pt-15"
         items={BOOKING_STEPS}
       />
-      <Title level={2} className="text-center mb-8">
-        Booking Details
+      <Title level={2} className="text-center mb-8 mt-7">
+        Chi tiết đặt xe
       </Title>
     </>
   );

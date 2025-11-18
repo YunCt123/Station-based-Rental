@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
@@ -16,47 +15,431 @@ import {
 import {
   User,
   Shield,
-  Bell,
-  CreditCard,
   FileText,
-  Trash2,
   Globe,
+  Loader2,
+  CheckCircle,
+  AlertCircle,
+  Clock,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { useTranslation } from "@/contexts/TranslationContext";
+import { useUserProfile } from "@/hooks/useUserProfile";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useToast } from "@/hooks/use-toast";
+import { Toaster } from "@/components/ui/toaster";
+import DocumentUpload from "@/components/DocumentUpload";
+import { userService } from "@/services/userService";
 
 const Settings = () => {
   const { t, language, setLanguage } = useTranslation();
-  const [notifications, setNotifications] = useState({
+  const {
+    profile,
+    verificationStatus,
+    isLoading,
+    error,
+    updateProfile,
+    refreshProfile,
+  } = useUserProfile();
+
+  const { toast } = useToast();
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [_notifications, _setNotifications] = useState({
     emailBooking: true,
     emailPromotions: false,
     smsReminders: true,
     pushNotifications: true,
   });
 
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<
+    Record<string, string>
+  >({});
+  const [isUploadingDoc, setIsUploadingDoc] = useState(false);
+  const [imageVisibility, setImageVisibility] = useState({
+    driverLicense: false,
+    idCardFront: false,
+    idCardBack: false,
+    selfiePhoto: false,
+  });
+
+  const toggleImageVisibility = (documentType: keyof typeof imageVisibility) => {
+    setImageVisibility(prev => ({
+      ...prev,
+      [documentType]: !prev[documentType]
+    }));
+  };
+
+  const validateForm = (data: {
+    name?: string;
+    phone?: string;
+    dateOfBirth?: string;
+    licenseNumber?: string;
+    licenseExpiry?: string;
+    licenseClass?: string;
+  }) => {
+    const errors: Record<string, string> = {};
+
+    if (!data.name || data.name.trim() === "") {
+      errors.name = "Name is required";
+    }
+
+    if (
+      data.phone &&
+      data.phone.trim() !== "" &&
+      !/^[\d\s+\-()]+$/.test(data.phone)
+    ) {
+      errors.phone = "Invalid phone number format";
+    }
+
+    if (data.dateOfBirth && new Date(data.dateOfBirth) > new Date()) {
+      errors.dateOfBirth = "Date of birth cannot be in the future";
+    }
+
+    return errors;
+  };
+
+  const handleSaveProfile = async () => {
+    if (!profile) return;
+
+    try {
+      setIsUpdating(true);
+      setValidationErrors({});
+
+      // Get form values
+      const name = (document.getElementById("name") as HTMLInputElement)?.value;
+      const phone = (document.getElementById("phone") as HTMLInputElement)
+        ?.value;
+      const dateOfBirth = (
+        document.getElementById("dateOfBirth") as HTMLInputElement
+      )?.value;
+      const licenseNumber = (
+        document.getElementById("licenseNumber") as HTMLInputElement
+      )?.value;
+      const licenseExpiry = (
+        document.getElementById("licenseExpiry") as HTMLInputElement
+      )?.value;
+      const licenseClass = (
+        document.getElementById("licenseClass") as HTMLInputElement
+      )?.value;
+
+      // Validate form
+      const formData = {
+        name,
+        phone,
+        dateOfBirth,
+        licenseNumber,
+        licenseExpiry,
+        licenseClass,
+      };
+      const errors = validateForm(formData);
+
+      if (Object.keys(errors).length > 0) {
+        setValidationErrors(errors);
+        toast({
+          title: "Validation Error",
+          description: "Please fix the errors in the form",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Update profile - split name into firstName and lastName for backend
+      const nameParts = name.trim().split(" ");
+      const firstName = nameParts[0] || "";
+      const lastName = nameParts.slice(1).join(" ") || "";
+
+      await updateProfile({
+        firstName,
+        lastName,
+        phone,
+        dateOfBirth,
+        licenseNumber,
+        licenseExpiry,
+        licenseClass,
+      });
+
+      toast({
+        title: "Success",
+        description: "Profile updated successfully!",
+      });
+    } catch (err) {
+      console.error("💥 Failed to update profile:", err);
+      toast({
+        title: "Error",
+        description: "Failed to update profile. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const handleDocumentUpload = async (
+    file: File,
+    documentType: "Driver License" | "Card Front" | "Card Back" | "Selfie Photo"
+  ) => {
+    try {
+      setIsUploadingDoc(true);
+
+      // Validate file type
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+      if (!allowedTypes.includes(file.type)) {
+        throw new Error('Only JPEG and PNG files are allowed');
+      }
+
+      // Validate file size (max 5MB)
+      const maxSize = 5 * 1024 * 1024; // 5MB
+      if (file.size > maxSize) {
+        throw new Error('File size must be less than 5MB');
+      }
+
+      console.log(`📁 Uploading ${documentType}:`, {
+        fileName: file.name,
+        fileSize: file.size,
+        fileType: file.type
+      });
+
+      // Convert file to base64 data URL (keep the full data URI format)
+      const base64DataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          if (typeof reader.result === 'string') {
+            // Keep the full data URL format: data:image/jpeg;base64,xxxxx
+            resolve(reader.result);
+          } else {
+            reject(new Error('Failed to read file as base64'));
+          }
+        };
+        reader.onerror = () => reject(new Error('Failed to read file'));
+        reader.readAsDataURL(file);
+      });
+
+      console.log(`✅ Base64 data URL conversion complete:`, {
+        documentType,
+        dataUrlLength: base64DataUrl.length,
+        preview: base64DataUrl.substring(0, 50) + '...',
+        hasDataPrefix: base64DataUrl.startsWith('data:')
+      });
+
+      // Map document type to correct backend field name
+      const fieldMapping = {
+        "Driver License": "driverLicense",
+        "Card Front": "idCardFront", 
+        "Card Back": "idCardBack",
+        "Selfie Photo": "selfiePhoto"
+      };
+      
+      const fieldName = fieldMapping[documentType];
+      if (!fieldName) {
+        throw new Error(`Invalid document type: ${documentType}`);
+      }
+
+      // Upload full data URL to server
+      const uploadData = { [fieldName]: base64DataUrl };
+      console.log(`🔄 Uploading to backend with field name:`, fieldName, {
+        uploadDataKeys: Object.keys(uploadData),
+        fieldName
+      });
+      
+      await userService.uploadVerificationImages(uploadData);
+
+      console.log(`🚀 Upload successful for ${documentType}`);
+
+      // Refresh verification status
+      await refreshProfile();
+
+      toast({
+        title: "Success",
+        description: `${documentType} uploaded successfully!`,
+      });
+    } catch (error: unknown) {
+      console.error("Document upload error:", error);
+      
+      let errorMessage = "Failed to upload document. Please try again.";
+      const err = error as { message?: string; response?: { data?: { message?: string } } };
+      if (err.message) {
+        errorMessage = err.message;
+      } else if (err.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      }
+      
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setIsUploadingDoc(false);
+    }
+  };
+
+  const handleReplaceDocument = async (
+    file: File,
+    documentType: "Giấy phép lái xe" | "Căn cước công dân mặt trước" | "Căn cước công dân mặt sau" | "Ảnh chân dung"
+  ) => {
+    try {
+      console.log(`🔄 Starting replace for ${documentType}, setting isUploadingDoc to true`);
+      setIsUploadingDoc(true);
+
+      // Add a small delay to ensure state update is visible
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Validate file type
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+      if (!allowedTypes.includes(file.type)) {
+        throw new Error('Only JPEG and PNG files are allowed');
+      }
+
+      // Validate file size (max 5MB)
+      const maxSize = 5 * 1024 * 1024; // 5MB
+      if (file.size > maxSize) {
+        throw new Error('File size must be less than 5MB');
+      }
+
+      console.log(`� Replacing ${documentType}:`, {
+        fileName: file.name,
+        fileSize: file.size,
+        fileType: file.type,
+        isUploadingDoc: true // Should be true here
+      });
+
+      // Convert file to base64 data URL
+      const base64DataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          if (typeof reader.result === 'string') {
+            resolve(reader.result);
+          } else {
+            reject(new Error('Failed to read file as base64'));
+          }
+        };
+        reader.onerror = () => reject(new Error('Failed to read file'));
+        reader.readAsDataURL(file);
+      });
+
+      // Map document type to correct backend field name
+      const fieldMapping = {
+        "Giấy phép lái xe": "driverLicense",
+        "Căn cước công dân mặt trước": "idCardFront", 
+        "Căn cước công dân mặt sau": "idCardBack",
+        "Ảnh chân dung": "selfiePhoto"
+      };
+      
+      const fieldName = fieldMapping[documentType] as 'idCardFront' | 'idCardBack' | 'driverLicense' | 'selfiePhoto';
+      if (!fieldName) {
+        throw new Error(`Invalid document type: ${documentType}`);
+      }
+
+      console.log(`🚀 Calling API to replace ${documentType} with field ${fieldName}`);
+
+      // Use single document update API
+      await userService.updateSingleDocument(fieldName, base64DataUrl);
+
+      console.log(`✅ Replace API call successful for ${documentType}`);
+
+      // Refresh verification status
+      await refreshProfile();
+
+      toast({
+        title: "Success",
+        description: `${documentType} Thay thế thành công!!`,
+      });
+    } catch (error: unknown) {
+      console.error("Document replace error:", error);
+      
+      let errorMessage = "Failed to replace document. Please try again.";
+      const err = error as { message?: string; response?: { data?: { message?: string } } };
+      if (err.message) {
+        errorMessage = err.message;
+      } else if (err.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      }
+      
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      console.log(`🔄 Setting isUploadingDoc to false for ${documentType}`);
+      setIsUploadingDoc(false);
+    }
+  };
+
+  const getVerificationStatusIcon = () => {
+    if (!verificationStatus) return <Clock className="h-4 w-4 text-gray-500" />;
+
+    // Check if all required documents are uploaded
+    const hasAllDocuments = verificationStatus.hasImages?.driverLicense && 
+                           verificationStatus.hasImages?.idCardFront && 
+                           verificationStatus.hasImages?.idCardBack && 
+                           verificationStatus.hasImages?.selfiePhoto;
+
+    switch (verificationStatus.verificationStatus) {
+      case "APPROVED":
+        return <CheckCircle className="h-4 w-4 text-green-500" />;
+      case "REJECTED":
+        return <AlertCircle className="h-4 w-4 text-red-500" />;
+      default:
+        // Only show pending if ALL 4 documents uploaded (ignore BE PENDING status if incomplete)
+        if (hasAllDocuments) {
+          return <Clock className="h-4 w-4 text-yellow-500" />;
+        }
+        return <Clock className="h-4 w-4 text-gray-500" />;
+    }
+  };
+
+  const getVerificationStatusText = () => {
+    if (!verificationStatus) return "Chưa xác thực";
+
+    // Check if all required documents are uploaded
+    const hasAllDocuments = verificationStatus.hasImages?.driverLicense && 
+                           verificationStatus.hasImages?.idCardFront && 
+                           verificationStatus.hasImages?.idCardBack && 
+                           verificationStatus.hasImages?.selfiePhoto;
+
+    switch (verificationStatus.verificationStatus) {
+      case "APPROVED":
+        return "Đã xác thực";
+      case "REJECTED":
+        return "Xác thực bị từ chối";
+      default:
+        // Only show "Pending review" if ALL 4 documents uploaded (ignore BE PENDING status if incomplete)
+        if (hasAllDocuments) {
+          return "Đang chờ xem xét";
+        }
+        return "Chưa xác thực";
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="bg-gradient-hero py-16">
+      {/* <div className="bg-gradient-hero py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
+          <h1 className="text-4xl md:text-5xl font-bold text-black mb-4">
             {t("settings.title")}
           </h1>
-          <p className="text-xl text-white/90 mb-8 max-w-2xl mx-auto">
+          <p className="text-xl text-black/90 mb-8 max-w-2xl mx-auto">
             {t("settings.subtitle")}
           </p>
         </div>
-      </div>
+      </div> */}
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <Tabs defaultValue="profile" className="space-y-8">
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="profile">{t("settings.profile")}</TabsTrigger>
-            <TabsTrigger value="security">{t("settings.security")}</TabsTrigger>
-            <TabsTrigger value="notifications">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="profile">Hồ sơ</TabsTrigger>
+            {/* <TabsTrigger value="documents">Documents</TabsTrigger> */}
+            <TabsTrigger value="security">Bảo mật</TabsTrigger>
+            {/* <TabsTrigger value="notifications">
               {t("settings.notifications")}
-            </TabsTrigger>
-            <TabsTrigger value="billing">{t("settings.billing")}</TabsTrigger>
-            <TabsTrigger value="language">{t("settings.language")}</TabsTrigger>
+            </TabsTrigger> */}
+            <TabsTrigger value="billing">Thanh toán</TabsTrigger>
+            <TabsTrigger value="language">Ngôn ngữ</TabsTrigger>
           </TabsList>
 
           {/* Profile Tab */}
@@ -65,96 +448,567 @@ const Settings = () => {
               <CardHeader>
                 <CardTitle className="flex items-center">
                   <User className="h-5 w-5 mr-2" />
-                  {t("settings.personalInfo")}
+                  Hồ sơ của tôi
+                  <div className="ml-auto flex items-center space-x-2">
+                    {getVerificationStatusIcon()}
+                    <span className="text-sm font-normal">
+                      {getVerificationStatusText()}
+                    </span>
+                  </div>
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="firstName">{t("settings.firstName")}</Label>
-                    <Input
-                      id="firstName"
-                      defaultValue="John"
-                      className="text-black"
-                    />
+                {error && (
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
+                )}
+
+                {isLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin mr-2" />
+                    <span>Đang tải hồ sơ</span>
                   </div>
-                  <div>
-                    <Label htmlFor="lastName">{t("settings.lastName")}</Label>
-                    <Input
-                      id="lastName"
-                      defaultValue="Doe"
-                      className="text-black"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="email">{t("settings.email")}</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    defaultValue="john.doe@example.com"
-                    className="text-black"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="phone">{t("settings.phone")}</Label>
-                  <Input
-                    id="phone"
-                    type="tel"
-                    defaultValue="+84 901 234 567"
-                    className="text-black"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="dateOfBirth">
-                    {t("settings.dateOfBirth")}
-                  </Label>
-                  <Input
-                    id="dateOfBirth"
-                    type="date"
-                    defaultValue="1990-01-01"
-                    className="text-black"
-                  />
-                </div>
-
-                <Separator />
-
-                <div>
-                  <h3 className="text-lg font-semibold mb-4">
-                    {t("settings.driversLicense")}
-                  </h3>
-                  <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="licenseNumber">
-                        {t("settings.licenseNumber")}
-                      </Label>
-                      <Input
-                        id="licenseNumber"
-                        defaultValue="B1234567890"
-                        className="text-black"
-                      />
+                ) : profile ? (
+                  <>
+                    <div className="grid grid-cols-1 gap-4">
+                      <div>
+                        <Label htmlFor="name">Họ và tên</Label>
+                        <Input
+                          id="name"
+                          defaultValue={`${profile.firstName} ${profile.lastName}`.trim()}
+                          className={`text-black ${
+                            validationErrors.name ? "border-red-500" : ""
+                          }`}
+                        />
+                        {validationErrors.name && (
+                          <p className="text-sm text-red-500 mt-1">
+                            {validationErrors.name}
+                          </p>
+                        )}
+                      </div>
                     </div>
+
                     <div>
-                      <Label htmlFor="licenseExpiry">
-                        {t("settings.expiryDate")}
+                      <Label htmlFor="email">Email</Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        defaultValue={profile.email}
+                        className="text-black"
+                        disabled
+                      />
+                      <p className="text-sm text-gray-500 mt-1">
+                        Email không thể thay đổi
+                      </p>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="phone">Số điện thoại</Label>
+                      <Input
+                        id="phone"
+                        type="tel"
+                        defaultValue={profile.phone}
+                        className={`text-black ${
+                          validationErrors.phone ? "border-red-500" : ""
+                        }`}
+                        placeholder="Nhập số điện thoại"
+                      />
+                      {validationErrors.phone && (
+                        <p className="text-sm text-red-500 mt-1">
+                          {validationErrors.phone}
+                        </p>
+                      )}
+                    </div>
+
+                    <div>
+                      <Label htmlFor="dateOfBirth">
+                        Ngày tháng năm sinh
                       </Label>
                       <Input
-                        id="licenseExpiry"
+                        id="dateOfBirth"
                         type="date"
-                        defaultValue="2028-12-31"
-                        className="text-black"
+                        defaultValue={profile.dateOfBirth}
+                        className={`text-black ${
+                          validationErrors.dateOfBirth ? "border-red-500" : ""
+                        }`}
                       />
+                      {validationErrors.dateOfBirth && (
+                        <p className="text-sm text-red-500 mt-1">
+                          {validationErrors.dateOfBirth}
+                        </p>
+                      )}
                     </div>
-                  </div>
-                </div>
 
-                <Button>{t("settings.saveChanges")}</Button>
+                    <Separator />
+
+                    <div>
+                      {/* Document Upload/View Section */}
+                      <div className="space-y-4">
+                        <h4 className="font-medium">Xác thực tài liệu</h4>
+
+                        {verificationStatus?.verificationStatus ===
+                        "APPROVED" ? (
+                          // Show verified documents (read-only view)
+                          <div className="space-y-4">
+                            {/* <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                              <div className="flex items-center mb-3">
+                                <CheckCircle className="h-5 w-5 text-green-600 mr-2" />
+                                <span className="text-green-800 font-medium">
+                                  Your documents have been verified
+                                </span>
+                              </div>
+                              <p className="text-sm text-green-700">
+                                All your verification documents have been
+                                approved. You can now make bookings without
+                                restrictions.
+                              </p>
+                            </div> */}
+
+                            {/* Display verified documents */}
+                            {profile.driverLicense && (
+                              <Card className="mb-4">
+                                <CardHeader>
+                                  <CardTitle className="flex items-center justify-between text-sm">
+                                    <div className="flex items-center">
+                                      Giấy phép lái xe
+                                      <CheckCircle className="ml-2 h-4 w-4 text-green-600" />
+                                    </div>
+                                    <div className="flex items-center space-x-2">
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => toggleImageVisibility('driverLicense')}
+                                        className="p-2"
+                                      >
+                                        {imageVisibility.driverLicense ? (
+                                          <EyeOff className="w-4 h-4" />
+                                        ) : (
+                                          <Eye className="w-4 h-4" />
+                                        )}
+                                      </Button>
+                                    </div>
+                                  </CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                  {imageVisibility.driverLicense ? (
+                                    <div className="space-y-3">
+                                      <img
+                                        src={profile.driverLicense}
+                                        alt="Driver's License"
+                                        className="w-full max-w-md h-48 object-cover border rounded-lg"
+                                      />
+                                      <div>
+                                        <input
+                                          type="file"
+                                          id="replace-driver-license"
+                                          accept="image/*"
+                                          className="hidden"
+                                          onChange={(e) => {
+                                            const file = e.target.files?.[0];
+                                            if (file) {
+                                              handleReplaceDocument(file, "Giấy phép lái xe");
+                                            }
+                                          }}
+                                        />
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={() => document.getElementById('replace-driver-license')?.click()}
+                                          disabled={isUploadingDoc}
+                                        >
+                                          {isUploadingDoc ? "Đang thay thế..." : "Thay thế hình ảnh"}
+                                        </Button>
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <div className="w-full max-w-md h-48 bg-gray-100 border rounded-lg flex items-center justify-center">
+                                      <div className="text-center text-gray-500">
+                                        <Eye className="w-8 h-8 mx-auto mb-2" />
+                                        <p className="text-sm">Nhấn vào biểu tượng mắt để xem tài liệu</p>
+                                      </div>
+                                    </div>
+                                  )}
+                                </CardContent>
+                              </Card>
+                            )}
+
+                            {profile.idCardFront && (
+                              <Card className="mb-4">
+                                <CardHeader>
+                                  <CardTitle className="flex items-center justify-between text-sm">
+                                    <div className="flex items-center">
+                                      Căn cước công dân - Mặt trước
+                                      <CheckCircle className="ml-2 h-4 w-4 text-green-600" />
+                                    </div>
+                                    <div className="flex items-center space-x-2">
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => toggleImageVisibility('idCardFront')}
+                                        className="p-2"
+                                      >
+                                        {imageVisibility.idCardFront ? (
+                                          <EyeOff className="w-4 h-4" />
+                                        ) : (
+                                          <Eye className="w-4 h-4" />
+                                        )}
+                                      </Button>
+                                    </div>
+                                  </CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                  {imageVisibility.idCardFront ? (
+                                    <div className="space-y-3">
+                                      <img
+                                        src={profile.idCardFront}
+                                        alt="National ID Front"
+                                        className="w-full max-w-md h-48 object-cover border rounded-lg"
+                                      />
+                                      <div>
+                                        <input
+                                          type="file"
+                                          id="replace-id-card-front"
+                                          accept="image/*"
+                                          className="hidden"
+                                          onChange={(e) => {
+                                            const file = e.target.files?.[0];
+                                            if (file) {
+                                              handleReplaceDocument(file, "Căn cước công dân mặt trước");
+                                            }
+                                          }}
+                                        />
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={() => document.getElementById('replace-id-card-front')?.click()}
+                                          disabled={isUploadingDoc}
+                                        >
+                                          {isUploadingDoc ? "Đang thay thế..." : "Thay thế hình ảnh"}
+                                        </Button>
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <div className="w-full max-w-md h-48 bg-gray-100 border rounded-lg flex items-center justify-center">
+                                      <div className="text-center text-gray-500">
+                                        <Eye className="w-8 h-8 mx-auto mb-2" />
+                                        <p className="text-sm">Nhấn vào biểu tượng mắt để xem tài liệu</p>
+                                      </div>
+                                    </div>
+                                  )}
+                                </CardContent>
+                              </Card>
+                            )}
+
+                            {profile.idCardBack && (
+                              <Card className="mb-4">
+                                <CardHeader>
+                                  <CardTitle className="flex items-center justify-between text-sm">
+                                    <div className="flex items-center">
+                                      Căn cước công dân - Mặt sau
+                                      <CheckCircle className="ml-2 h-4 w-4 text-green-600" />
+                                    </div>
+                                    <div className="flex items-center space-x-2">
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => toggleImageVisibility('idCardBack')}
+                                        className="p-2"
+                                      >
+                                        {imageVisibility.idCardBack ? (
+                                          <EyeOff className="w-4 h-4" />
+                                        ) : (
+                                          <Eye className="w-4 h-4" />
+                                        )}
+                                      </Button>
+                                    </div>
+                                  </CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                  {imageVisibility.idCardBack ? (
+                                    <div className="space-y-3">
+                                      <img
+                                        src={profile.idCardBack}
+                                        alt="National ID Back"
+                                        className="w-full max-w-md h-48 object-cover border rounded-lg"
+                                      />
+                                      <div>
+                                        <input
+                                          type="file"
+                                          id="replace-id-card-back"
+                                          accept="image/*"
+                                          className="hidden"
+                                          onChange={(e) => {
+                                            const file = e.target.files?.[0];
+                                            if (file) {
+                                              handleReplaceDocument(file, "Căn cước công dân mặt sau");
+                                            }
+                                          }}
+                                        />
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={() => document.getElementById('replace-id-card-back')?.click()}
+                                          disabled={isUploadingDoc}
+                                        >
+                                          {isUploadingDoc ? "Replacing..." : "Replace Image"}
+                                        </Button>
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <div className="w-full max-w-md h-48 bg-gray-100 border rounded-lg flex items-center justify-center">
+                                      <div className="text-center text-gray-500">
+                                        <Eye className="w-8 h-8 mx-auto mb-2" />
+                                        <p className="text-sm">Nhấn vào biểu tượng mắt để xem tài liệu</p>
+                                      </div>
+                                    </div>
+                                  )}
+                                </CardContent>
+                              </Card>
+                            )}
+
+                            {profile.selfiePhoto && (
+                              <Card className="mb-4">
+                                <CardHeader>
+                                  <CardTitle className="flex items-center justify-between text-sm">
+                                    <div className="flex items-center">
+                                      Ảnh chân dung
+                                      <CheckCircle className="ml-2 h-4 w-4 text-green-600" />
+                                    </div>
+                                    <div className="flex items-center space-x-2">
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => toggleImageVisibility('selfiePhoto')}
+                                        className="p-2"
+                                      >
+                                        {imageVisibility.selfiePhoto ? (
+                                          <EyeOff className="w-4 h-4" />
+                                        ) : (
+                                          <Eye className="w-4 h-4" />
+                                        )}
+                                      </Button>
+                                    </div>
+                                  </CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                  {imageVisibility.selfiePhoto ? (
+                                    <div className="space-y-3">
+                                      <img
+                                        src={profile.selfiePhoto}
+                                        alt="Selfie Photo"
+                                        className="w-full max-w-md h-48 object-cover border rounded-lg"
+                                      />
+                                      <div>
+                                        <input
+                                          type="file"
+                                          id="replace-selfie-photo"
+                                          accept="image/*"
+                                          className="hidden"
+                                          onChange={(e) => {
+                                            const file = e.target.files?.[0];
+                                            if (file) {
+                                              handleReplaceDocument(file, "Ảnh chân dung");
+                                            }
+                                          }}
+                                        />
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={() => document.getElementById('replace-selfie-photo')?.click()}
+                                          disabled={isUploadingDoc}
+                                        >
+                                          {isUploadingDoc ? "Replacing..." : "Replace Image"}
+                                        </Button>
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <div className="w-full max-w-md h-48 bg-gray-100 border rounded-lg flex items-center justify-center">
+                                      <div className="text-center text-gray-500">
+                                        <Eye className="w-8 h-8 mx-auto mb-2" />
+                                        <p className="text-sm">Nhấn vào biểu tượng mắt để xem tài liệu</p>
+                                      </div>
+                                    </div>
+                                  )}
+                                </CardContent>
+                              </Card>
+                            )}
+                          </div>
+                        ) : (
+                          // Show upload forms (for pending/rejected/not started)
+                          <div className="space-y-4">
+                            {verificationStatus?.verificationStatus ===
+                              "REJECTED" && (
+                              <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+                                <div className="flex items-center mb-2">
+                                  <AlertCircle className="h-5 w-5 text-red-600 mr-2" />
+                                  <span className="text-red-800 font-medium">
+                                    Verification Rejected
+                                  </span>
+                                </div>
+                                <p className="text-sm text-red-700 mb-2">
+                                  {verificationStatus.rejectionReason ||
+                                    "Your documents were rejected. Please upload new documents."}
+                                </p>
+                                <p className="text-sm text-red-600">
+                                  Please upload new documents to complete
+                                  verification.
+                                </p>
+                              </div>
+                            )}
+
+                            {(() => {
+                              // Check if all required documents are uploaded
+                              const hasAllDocuments = verificationStatus?.hasImages?.driverLicense && 
+                                                     verificationStatus?.hasImages?.idCardFront && 
+                                                     verificationStatus?.hasImages?.idCardBack && 
+                                                     verificationStatus?.hasImages?.selfiePhoto;
+
+                              // Debug logging
+                              console.log('🔍 Verification status debug:', {
+                                verificationStatus: verificationStatus?.verificationStatus,
+                                hasImages: verificationStatus?.hasImages,
+                                hasAllDocuments,
+                                individual: {
+                                  driverLicense: verificationStatus?.hasImages?.driverLicense,
+                                  idCardFront: verificationStatus?.hasImages?.idCardFront,
+                                  idCardBack: verificationStatus?.hasImages?.idCardBack,
+                                  selfiePhoto: verificationStatus?.hasImages?.selfiePhoto
+                                }
+                              });
+
+                              // Show pending message ONLY if all 4 documents are uploaded (ignore BE status if incomplete)
+                              if (hasAllDocuments && verificationStatus?.verificationStatus !== "REJECTED") {
+                                return (
+                                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                                    <div className="flex items-center mb-2">
+                                      <Clock className="h-5 w-5 text-yellow-600 mr-2" />
+                                      <span className="text-yellow-800 font-medium">
+                                        Pending Review
+                                      </span>
+                                    </div>
+                                    <p className="text-sm text-yellow-700">
+                                      Your documents have been submitted and are under review. 
+                                      We'll notify you once the verification is complete.
+                                    </p>
+                                  </div>
+                                );
+                              }
+
+                              // Show not verified if no documents or incomplete (default state)
+                              if (!hasAllDocuments && 
+                                  !["APPROVED", "REJECTED", "PENDING"].includes(verificationStatus?.verificationStatus || "")) {
+                                return (
+                                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                                    <div className="flex items-center mb-2">
+                                      <Clock className="h-5 w-5 text-blue-600 mr-2" />
+                                      <span className="text-blue-800 font-medium">
+                                        Upload Required Documents
+                                      </span>
+                                    </div>
+                                    <p className="text-sm text-blue-700">
+                                      Please upload all 4 required documents to start the verification process:
+                                      <br />• Driver's License {verificationStatus?.hasImages?.driverLicense ? "✅" : "❌"}
+                                      <br />• National ID - Front {verificationStatus?.hasImages?.idCardFront ? "✅" : "❌"}
+                                      <br />• National ID - Back {verificationStatus?.hasImages?.idCardBack ? "✅" : "❌"}
+                                      <br />• Selfie Photo {verificationStatus?.hasImages?.selfiePhoto ? "✅" : "❌"}
+                                    </p>
+                                  </div>
+                                );
+                              }
+
+                              return null;
+                            })()}
+
+                            <DocumentUpload
+                              title="Driver's License"
+                              description="Please upload your driver's license"
+                              onUpload={(file) =>
+                                handleDocumentUpload(file, "Driver License")
+                              }
+                              isUploading={isUploadingDoc}
+                              existingImageUrl={
+                                verificationStatus?.hasImages?.driverLicense
+                                  ? profile.driverLicense
+                                  : undefined
+                              }
+                            />
+
+                            <DocumentUpload
+                              title="National ID - Front"
+                              description="Please upload the front side of your national ID card"
+                              onUpload={(file) =>
+                                handleDocumentUpload(file, "Card Front")
+                              }
+                              isUploading={isUploadingDoc}
+                              existingImageUrl={
+                                verificationStatus?.hasImages?.idCardFront
+                                  ? profile.idCardFront
+                                  : undefined
+                              }
+                            />
+
+                            <DocumentUpload
+                              title="National ID - Back"
+                              description="Please upload the back side of your national ID card"
+                              onUpload={(file) =>
+                                handleDocumentUpload(file, "Card Back")
+                              }
+                              isUploading={isUploadingDoc}
+                              existingImageUrl={
+                                verificationStatus?.hasImages?.idCardBack
+                                  ? profile.idCardBack
+                                  : undefined
+                              }
+                            />
+
+                            <DocumentUpload
+                              title="Selfie Photo"
+                              description="Please upload a clear selfie photo"
+                              onUpload={(file) =>
+                                handleDocumentUpload(file, "Selfie Photo")
+                              }
+                              isUploading={isUploadingDoc}
+                              existingImageUrl={
+                                verificationStatus?.hasImages?.selfiePhoto
+                                  ? profile.selfiePhoto
+                                  : undefined
+                              }
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <Button onClick={handleSaveProfile} disabled={isUpdating}>
+                      {isUpdating ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                          Đang lưu thay đổi...
+                        </>
+                      ) : (
+                        "Lưu thay đổi"
+                      )}
+                    </Button>
+                  </>
+                ) : (
+                  <Alert>
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>
+                      Failed to load profile data. Please try refreshing the
+                      page.
+                    </AlertDescription>
+                  </Alert>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
+
+          {/* Documents Tab */}
+          {/* <TabsContent value="documents"> */}
+            {/* <DriverLicense /> */}
+          {/* </TabsContent> */}
 
           {/* Security Tab */}
           <TabsContent value="security">
@@ -201,7 +1055,7 @@ const Settings = () => {
                 </CardContent>
               </Card>
 
-              <Card>
+              {/* <Card>
                 <CardHeader>
                   <CardTitle>{t("common.twoFactorAuthentication")}</CardTitle>
                 </CardHeader>
@@ -226,12 +1080,12 @@ const Settings = () => {
                     <Switch />
                   </div>
                 </CardContent>
-              </Card>
+              </Card> */}
             </div>
           </TabsContent>
 
           {/* Notifications Tab */}
-          <TabsContent value="notifications">
+          {/* <TabsContent value="notifications">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center">
@@ -321,12 +1175,12 @@ const Settings = () => {
                 <Button>Save Preferences</Button>
               </CardContent>
             </Card>
-          </TabsContent>
+          </TabsContent> */}
 
           {/* Billing Tab */}
           <TabsContent value="billing">
             <div className="space-y-6">
-              <Card>
+              {/* <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center">
                     <CreditCard className="h-5 w-5 mr-2" />
@@ -356,7 +1210,7 @@ const Settings = () => {
                     <Button variant="outline">Add New Payment Method</Button>
                   </div>
                 </CardContent>
-              </Card>
+              </Card> */}
 
               <Card>
                 <CardHeader>
@@ -441,7 +1295,7 @@ const Settings = () => {
 
                 <Separator />
 
-                <div>
+                {/* <div>
                   <h3 className="text-lg font-semibold mb-4">
                     Language Preferences
                   </h3>
@@ -469,7 +1323,7 @@ const Settings = () => {
                       <Switch defaultChecked={language === "vi"} />
                     </div>
                   </div>
-                </div>
+                </div> */}
 
                 <Button>{t("settings.saveChanges")}</Button>
               </CardContent>
@@ -477,6 +1331,7 @@ const Settings = () => {
           </TabsContent>
         </Tabs>
       </div>
+      <Toaster />
     </div>
   );
 };

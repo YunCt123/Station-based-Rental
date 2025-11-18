@@ -44,16 +44,15 @@ export const LazyDeliveryProcedures = lazy(
   () =>
     import("../../pages/dashboard/staff/delivery_procedures/DeliveryProcedures")
 );
-export const LazyVehicleInspection = lazy(
-  () =>
-    import("../../pages/dashboard/staff/delivery_procedures/VehicleInspection")
-);
+
 export const LazyIdentityVerification = lazy(
   () =>
     import(
       "../../pages/dashboard/staff/delivery_procedures/IdentityVerification"
     )
 );
+
+
 
 // Staff pages - vehicle management
 export const LazyVehicleReserved = lazy(

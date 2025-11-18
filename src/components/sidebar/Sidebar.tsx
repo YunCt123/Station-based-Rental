@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronLeftIcon, ChevronRightIcon, ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline';
+import { ChevronLeftIcon, ChevronRightIcon, ChevronDownIcon, ChevronUpIcon, ArrowLeftOnRectangleIcon } from '@heroicons/react/24/outline';
+import { useNavigate } from 'react-router-dom';
+import { clearAuthData } from '../../utils/auth';
 import type { SidebarProps, MenuItem, SidebarSection } from '../../types/sidebar';
 
 interface Sidebar extends SidebarProps {
@@ -10,6 +12,7 @@ interface Sidebar extends SidebarProps {
     role: string;
     avatar?: string;
   };
+  onLogout?: () => void;
 }
 
 export const Sidebar: React.FC<Sidebar> = ({
@@ -18,12 +21,14 @@ export const Sidebar: React.FC<Sidebar> = ({
   isCollapsed = false,
   onToggleCollapse,
   onNavigate,
+  onLogout,
   sections,
   logo,
   userInfo
 }) => {
   const [openSections, setOpenSections] = useState<string[]>([]);
   const [openMenuItems, setOpenMenuItems] = useState<string[]>([]);
+  const navigate = useNavigate();
 
   // Filter sections and menu items based on current role
   const filteredSections = sections.filter(section => 
@@ -97,6 +102,22 @@ export const Sidebar: React.FC<Sidebar> = ({
       setOpenSections(prev => prev.length === 0 ? [activeSection.id] : prev);
     }
   }, [currentPath, filteredSections]);
+
+  const handleLogout = () => {
+    // Sử dụng custom logout handler nếu có
+    if (onLogout) {
+      onLogout();
+    } else {
+      // Fallback to default logout logic
+      try {
+        clearAuthData();
+      } catch {
+        // ignore
+      }
+      onNavigate?.('/login');
+      navigate('/login', { replace: true });
+    }
+  };
 
   const renderMenuItem = (item: MenuItem, level: number = 0) => {
     const hasChildren = item.children && item.children.length > 0;
@@ -193,22 +214,35 @@ export const Sidebar: React.FC<Sidebar> = ({
         <div className="flex items-center justify-between">
           {!isCollapsed && logo && (
             <div className="flex-1">
+              <button onClick={() => onNavigate?.('/')} className="focus:outline-none">
               {logo}
+              </button>
             </div>
           )}
           
-          {onToggleCollapse && (
+          <div className="flex items-center space-x-2">
+            {onToggleCollapse && (
+              <button
+                onClick={onToggleCollapse}
+                className="p-2 rounded-lg hover:bg-blue-100 hover:text-blue-800 transition-all duration-200"
+              >
+                {isCollapsed ? (
+                  <ChevronRightIcon className="w-5 h-5 text-blue-600" />
+                ) : (
+                  <ChevronLeftIcon className="w-5 h-5 text-blue-600" />
+                )}
+              </button>
+            )}
+
+            {/* Logout button */}
             <button
-              onClick={onToggleCollapse}
-              className="p-2 rounded-lg hover:bg-blue-100 hover:text-blue-800 transition-all duration-200"
+              onClick={handleLogout}
+              title="Đăng xuất"
+              className="p-2 rounded-lg hover:bg-red-100 hover:text-red-700 transition-all duration-200"
             >
-              {isCollapsed ? (
-                <ChevronRightIcon className="w-5 h-5 text-blue-600" />
-              ) : (
-                <ChevronLeftIcon className="w-5 h-5 text-blue-600" />
-              )}
+              <ArrowLeftOnRectangleIcon className="w-5 h-5 text-red-600" />
             </button>
-          )}
+          </div>
         </div>
       </div>
 

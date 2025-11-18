@@ -1,9 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   MagnifyingGlassIcon,
   CreditCardIcon,
   CheckCircleIcon,
-  PrinterIcon,
   ClockIcon,
   UserIcon,
   TruckIcon,
@@ -11,13 +10,14 @@ import {
   CurrencyDollarIcon,
   XMarkIcon,
   ExclamationTriangleIcon,
-  BanknotesIcon,
-  QrCodeIcon,
-  DevicePhoneMobileIcon
+  ExclamationCircleIcon,
+  DevicePhoneMobileIcon,
+  BanknotesIcon
 } from '@heroicons/react/24/outline';
 import { Modal } from '../../../../components/Modal';
+import { rentalService } from '@/services/rentalService';
+import { QrCodeIcon, RefreshCwIcon } from 'lucide-react';
 
-// Types
 interface RentalRecord {
   id: string;
   bookingId: string;
@@ -46,6 +46,7 @@ interface PaymentMethod {
   name: string;
   icon: React.ReactNode;
   description: string;
+  disabled?: boolean;
 }
 
 const RentalPayment: React.FC = () => {
@@ -56,72 +57,11 @@ const RentalPayment: React.FC = () => {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [paymentNote, setPaymentNote] = useState('');
-
-  // Mock data - Replace with actual API call
-  const rentalRecords: RentalRecord[] = [
-    {
-      id: 'R001',
-      bookingId: 'BK2024001',
-      vehicleId: 'EV-001',
-      vehicleName: 'VinFast VF8',
-      customerId: 'C001',
-      customerName: 'Nguyễn Văn A',
-      customerPhone: '0901234567',
-      startDate: '2024-10-15',
-      endDate: '2024-10-20',
-      status: 'active',
-      rentalDays: 5,
-      dailyRate: 120,
-      totalAmount: 600,
-      paidAmount: 0,
-      remainingAmount: 600,
-      deposit: 200,
-      additionalCharges: [
-        { name: 'Bảo hiểm', amount: 50 }
-      ]
-    },
-    {
-      id: 'R002',
-      bookingId: 'BK2024002',
-      vehicleId: 'EV-005',
-      vehicleName: 'Tesla Model 3',
-      customerId: 'C002',
-      customerName: 'Trần Thị B',
-      customerPhone: '0912345678',
-      startDate: '2024-10-16',
-      endDate: '2024-10-18',
-      status: 'active',
-      rentalDays: 2,
-      dailyRate: 150,
-      totalAmount: 300,
-      paidAmount: 100,
-      remainingAmount: 200,
-      deposit: 300
-    },
-    {
-      id: 'R003',
-      bookingId: 'BK2024003',
-      vehicleId: 'EV-010',
-      vehicleName: 'BYD Seal',
-      customerId: 'C003',
-      customerName: 'Lê Văn C',
-      customerPhone: '0923456789',
-      startDate: '2024-10-14',
-      endDate: '2024-10-19',
-      status: 'overdue',
-      rentalDays: 5,
-      dailyRate: 100,
-      totalAmount: 500,
-      paidAmount: 0,
-      remainingAmount: 550, // Including late fee
-      deposit: 150,
-      additionalCharges: [
-        { name: 'Phí trả xe trễ', amount: 50 }
-      ]
-    }
-  ];
-
-  const paymentMethods: PaymentMethod[] = [
+  const [rentals, setRentals] = useState<RentalRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [_transactionRef, setTransactionRef] = useState<string>('');
+const paymentMethods: PaymentMethod[] = [
     {
       id: 'cash',
       name: 'Tiền mặt',
@@ -132,23 +72,96 @@ const RentalPayment: React.FC = () => {
       id: 'card',
       name: 'Thẻ ngân hàng',
       icon: <CreditCardIcon className="w-6 h-6" />,
-      description: 'Thanh toán bằng thẻ ATM/Credit'
+      description: 'Thanh toán bằng thẻ ATM/Credit',
+      disabled: true
     },
     {
       id: 'qr',
       name: 'QR Code',
       icon: <QrCodeIcon className="w-6 h-6" />,
-      description: 'Quét mã QR để thanh toán'
+      description: 'Quét mã QR để thanh toán',
+      disabled: true
     },
     {
       id: 'momo',
       name: 'Ví MoMo',
       icon: <DevicePhoneMobileIcon className="w-6 h-6" />,
-      description: 'Thanh toán qua ví MoMo'
+      description: 'Thanh toán qua ví MoMo',
+      disabled: true
     }
   ];
+  const fetchPendingReturns = async (search?: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await rentalService.getPendingReturns({
+        search: search || undefined,
+        limit: 20,
+        page: 1
+      });
+      if (response.success && response.data) {
+        const mappedRentals: RentalRecord[] = response.data.map((rental) => {
+          const booking = rental.booking_id;
+          const pricing = booking.pricing_snapshot;
+          const details = pricing.details || { days: 1, rentalType: 'daily' as const };
+          const depositPaid = pricing.deposit || 0;
+          let totalCharges = rental.charges.total;
+          
+          const additionalCharges: { name: string; amount: number }[] = [];
 
-  const filteredRentals = rentalRecords.filter(rental =>
+          if (rental.charges.cleaning_fee > 0) additionalCharges.push({ name: 'Phí vệ sinh', amount: rental.charges.cleaning_fee });
+          if (rental.charges.damage_fee > 0) additionalCharges.push({ name: 'Phí hư hỏng', amount: rental.charges.damage_fee });
+          if (rental.charges.late_fee > 0) additionalCharges.push({ name: 'Phí trễ', amount: rental.charges.late_fee });
+          if (rental.charges.other_fees > 0) additionalCharges.push({ name: 'Phí khác', amount: rental.charges.other_fees });
+
+          if (pricing.insurance_price && pricing.insurance_price > 0) {
+            additionalCharges.push({ name: 'Bảo hiểm', amount: pricing.insurance_price });
+            totalCharges += pricing.insurance_price;
+          }
+          if (pricing.taxes && pricing.taxes > 0) {
+            additionalCharges.push({ name: 'Thuế', amount: pricing.taxes });
+            totalCharges += pricing.taxes;
+          }
+
+          const remaining = totalCharges - depositPaid;
+
+          return {
+            id: rental._id,
+            bookingId: `BK${booking._id.slice(-6)}`,
+            vehicleId: rental.vehicle_id.licensePlate || `EV-${rental.vehicle_id.id?.slice(-4) || 'UNKNOWN'}`,
+            vehicleName: `${rental.vehicle_id.brand} ${rental.vehicle_id.model}`,
+            customerId: rental.user_id?.id || 'Unknown',
+            customerName: rental.user_id?.name || 'Khách hàng chưa xác định',
+            customerPhone: rental.user_id?.phoneNumber || 'N/A',
+            startDate: new Date(booking.start_at).toLocaleDateString('vi-VN'),
+            endDate: new Date(booking.end_at).toLocaleDateString('vi-VN'),
+            status: 'active' as const,
+            rentalDays: details.days || 1,
+            dailyRate: pricing.daily_rate || pricing.hourly_rate || 0,
+            totalAmount: totalCharges,
+            paidAmount: depositPaid,
+            remainingAmount: remaining,
+            deposit: depositPaid,
+            additionalCharges: additionalCharges.length > 0 ? additionalCharges : undefined
+          };
+        });
+        setRentals(mappedRentals);
+      } else {
+        setError('Không thể tải danh sách đơn thuê');
+      }
+    } catch (err) {
+      console.error('Failed to fetch pending returns:', err);
+      setError('Lỗi khi tải dữ liệu: ' + (err as Error).message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchPendingReturns(searchQuery);
+  }, [searchQuery]);
+
+  const filteredRentals = rentals.filter(rental =>
     rental.bookingId.toLowerCase().includes(searchQuery.toLowerCase()) ||
     rental.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
     rental.vehicleId.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -158,11 +171,19 @@ const RentalPayment: React.FC = () => {
   const handleSelectRental = (rental: RentalRecord) => {
     setSelectedRental(rental);
     setPaymentAmount(rental.remainingAmount.toString());
+    setSelectedPaymentMethod('');
+    setPaymentNote('');
   };
 
-  const handlePayment = () => {
+  const handlePayment = async () => {
     if (!selectedRental || !selectedPaymentMethod || !paymentAmount) {
       alert('Vui lòng điền đầy đủ thông tin thanh toán');
+      return;
+    }
+
+    // Only allow cash
+    if (selectedPaymentMethod !== 'cash') {
+      alert('Hiện tại chỉ hỗ trợ thanh toán bằng tiền mặt. Vui lòng chọn phương thức Tiền mặt.');
       return;
     }
 
@@ -172,17 +193,33 @@ const RentalPayment: React.FC = () => {
       return;
     }
 
-    // Here you would call the API to process payment
-    setShowPaymentModal(false);
-    setShowSuccessModal(true);
+    try {
+      // Call cash payment API
+      const response = await rentalService.paymentCash(selectedRental.id, {
+        amount,
+        note: paymentNote || undefined
+      });
+      if (response.success) {
+        setTransactionRef(response.data?.payment?.transaction_ref);
+        setShowPaymentModal(false);
+        setShowSuccessModal(true);
+        await fetchPendingReturns(searchQuery);
+        setSelectedRental(null);
+        setSelectedPaymentMethod('');
+        setPaymentAmount('');
+        setPaymentNote('');
+      } else {
+        alert('Thanh toán thất bại: ' + (response.data?.message || 'Lỗi không xác định'));
+      }
+    } catch (err) {
+      console.error('Payment error:', err);
+      alert('Thanh toán thất bại: ' + (err as Error).message);
+    }
   };
 
   const handleCloseSuccessModal = () => {
     setShowSuccessModal(false);
-    setSelectedRental(null);
-    setSelectedPaymentMethod('');
-    setPaymentAmount('');
-    setPaymentNote('');
+    setTransactionRef('');
   };
 
   const getStatusBadge = (status: string) => {
@@ -209,6 +246,10 @@ const RentalPayment: React.FC = () => {
       default:
         return status;
     }
+  };
+
+  const handleRefresh = () => {
+    fetchPendingReturns(searchQuery);
   };
 
   return (
@@ -242,12 +283,35 @@ const RentalPayment: React.FC = () => {
         {/* Rental Records List */}
         <div className="lg:col-span-2 space-y-4">
           <div className="bg-white rounded-lg shadow-sm p-4">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">
-              Danh sách đơn thuê cần thanh toán ({filteredRentals.length})
-            </h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-900">
+                Danh sách đơn thuê cần thanh toán ({filteredRentals.length})
+              </h2>
+              <button
+                onClick={handleRefresh}
+                className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700"
+              >
+                <RefreshCwIcon className="w-4 h-4" />
+                Làm mới
+              </button>
+            </div>
+            
+            {error && (
+              <div className="p-4 bg-red-50 border border-red-200 rounded-lg mb-4">
+                <div className="flex items-center gap-2 text-red-700">
+                  <ExclamationCircleIcon className="w-5 h-5" />
+                  <span>{error}</span>
+                </div>
+              </div>
+            )}
             
             <div className="space-y-3">
-              {filteredRentals.length === 0 ? (
+              {loading ? (
+                <div className="text-center py-12">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                  <p className="text-gray-500">Đang tải danh sách...</p>
+                </div>
+              ) : filteredRentals.length === 0 ? (
                 <div className="text-center py-12">
                   <TruckIcon className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                   <p className="text-gray-500">Không tìm thấy đơn thuê xe nào</p>
@@ -297,11 +361,11 @@ const RentalPayment: React.FC = () => {
                       <div className="text-right ml-4">
                         <div className="text-xs text-gray-500 mb-1">Còn lại</div>
                         <div className="text-2xl font-bold text-red-600">
-                          ${rental.remainingAmount}
+                          {rental.remainingAmount.toLocaleString("vi-VN")}đ
                         </div>
                         {rental.paidAmount > 0 && (
                           <div className="text-xs text-green-600 mt-1">
-                            Đã trả: ${rental.paidAmount}
+                            Đã trả: {rental.paidAmount.toLocaleString("vi-VN")}đ
                           </div>
                         )}
                       </div>
@@ -369,7 +433,7 @@ const RentalPayment: React.FC = () => {
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Giá/ngày:</span>
-                      <span className="font-medium">${selectedRental.dailyRate}</span>
+                      <span className="font-medium">{selectedRental.dailyRate.toLocaleString("vi-VN")}đ</span>
                     </div>
                   </div>
                 </div>
@@ -380,25 +444,25 @@ const RentalPayment: React.FC = () => {
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between text-gray-600">
                       <span>Phí thuê xe:</span>
-                      <span>${selectedRental.dailyRate * selectedRental.rentalDays}</span>
+                      <span>{(selectedRental.dailyRate * selectedRental.rentalDays).toLocaleString("vi-VN")}đ</span>
                     </div>
                     
                     {selectedRental.additionalCharges?.map((charge, index) => (
                       <div key={index} className="flex justify-between text-amber-600">
                         <span>{charge.name}:</span>
-                        <span>+${charge.amount}</span>
+                        <span>+{charge.amount.toLocaleString("vi-VN")}đ</span>
                       </div>
                     ))}
                     
                     <div className="flex justify-between text-gray-600">
                       <span>Đã thanh toán:</span>
-                      <span className="text-green-600">-${selectedRental.paidAmount}</span>
+                      <span className="text-green-600">-{selectedRental.paidAmount.toLocaleString("vi-VN")}đ</span>
                     </div>
                     
                     <div className="border-t border-gray-200 pt-2 mt-2">
                       <div className="flex justify-between text-lg font-bold">
                         <span>Còn phải trả:</span>
-                        <span className="text-red-600">${selectedRental.remainingAmount}</span>
+                        <span className="text-red-600">{selectedRental.remainingAmount.toLocaleString("vi-VN")}đ</span>
                       </div>
                     </div>
                   </div>
@@ -439,14 +503,14 @@ const RentalPayment: React.FC = () => {
             </div>
             <div className="flex items-center justify-between">
               <span className="text-sm text-gray-600">Số tiền cần thanh toán:</span>
-              <span className="text-2xl font-bold text-red-600">${selectedRental.remainingAmount}</span>
+              <span className="text-2xl font-bold text-red-600">{selectedRental.remainingAmount.toLocaleString("vi-VN")}đ</span>
             </div>
           </div>
 
           {/* Payment Amount */}
           <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Số tiền thanh toán ($)
+              Số tiền thanh toán (đ)
             </label>
             <input
               type="number"
@@ -460,13 +524,13 @@ const RentalPayment: React.FC = () => {
             />
             <div className="flex gap-2 mt-2">
               <button
-                onClick={() => setPaymentAmount((selectedRental.remainingAmount / 2).toFixed(2))}
+                onClick={() => setPaymentAmount((selectedRental.remainingAmount / 2).toLocaleString("vi-VN"))}
                 className="text-sm px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded"
               >
                 50%
               </button>
               <button
-                onClick={() => setPaymentAmount(selectedRental.remainingAmount.toString())}
+                onClick={() => setPaymentAmount(selectedRental.remainingAmount.toLocaleString("vi-VN"))}
                 className="text-sm px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded"
               >
                 Toàn bộ
@@ -483,20 +547,23 @@ const RentalPayment: React.FC = () => {
               {paymentMethods.map((method) => (
                 <div
                   key={method.id}
-                  onClick={() => setSelectedPaymentMethod(method.id)}
-                  className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                    selectedPaymentMethod === method.id
-                      ? 'border-blue-500 bg-blue-50'
-                      : 'border-gray-200 hover:border-blue-300'
+                  onClick={() => !method.disabled && setSelectedPaymentMethod(method.id)}
+                  className={`p-4 border-2 rounded-lg transition-all ${
+                    method.disabled
+                      ? 'border-gray-300 bg-gray-50 cursor-not-allowed opacity-60'
+                      : selectedPaymentMethod === method.id
+                      ? 'border-blue-500 bg-blue-50 cursor-pointer'
+                      : 'border-gray-200 hover:border-blue-300 cursor-pointer'
                   }`}
                 >
                   <div className="flex items-center gap-3 mb-2">
-                    <div className={`${selectedPaymentMethod === method.id ? 'text-blue-600' : 'text-gray-600'}`}>
+                    <div className={`${method.disabled ? 'text-gray-400' : selectedPaymentMethod === method.id ? 'text-blue-600' : 'text-gray-600'}`}>
                       {method.icon}
                     </div>
-                    <span className="font-medium text-gray-900">{method.name}</span>
+                    <span className={`font-medium ${method.disabled ? 'text-gray-500' : 'text-gray-900'}`}>{method.name}</span>
                   </div>
                   <p className="text-xs text-gray-600">{method.description}</p>
+                  {method.disabled && <p className="text-xs text-red-500 mt-1">Tạm thời không khả dụng</p>}
                 </div>
               ))}
             </div>
@@ -526,7 +593,7 @@ const RentalPayment: React.FC = () => {
             </button>
             <button
               onClick={handlePayment}
-              disabled={!selectedPaymentMethod || !paymentAmount}
+              disabled={!selectedPaymentMethod || selectedPaymentMethod !== 'cash' || !paymentAmount}
               className="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               <CheckCircleIcon className="w-5 h-5" />
@@ -549,32 +616,9 @@ const RentalPayment: React.FC = () => {
           </div>
         </div>
         <p className="text-gray-600 mb-6 text-center">
-          Giao dịch đã được xử lý thành công. Bạn có thể in hóa đơn hoặc đóng cửa sổ này.
+          Giao dịch đã được xử lý thành công. Bạn có thể đóng cửa sổ này.
         </p>
-        <div className="space-y-2 text-sm text-left bg-gray-50 p-4 rounded-lg mb-6">
-          <div className="flex justify-between">
-            <span className="text-gray-600">Mã giao dịch:</span>
-            <span className="font-medium">TX{Date.now()}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-gray-600">Số tiền:</span>
-            <span className="font-medium">${paymentAmount}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-gray-600">Phương thức:</span>
-            <span className="font-medium">
-              {paymentMethods.find(m => m.id === selectedPaymentMethod)?.name}
-            </span>
-          </div>
-        </div>
         <div className="flex gap-3">
-          <button
-            onClick={() => {/* Print receipt logic */}}
-            className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
-          >
-            <PrinterIcon className="w-5 h-5" />
-            In Hóa Đơn
-          </button>
           <button
             onClick={handleCloseSuccessModal}
             className="flex-1 bg-gray-600 text-white py-3 rounded-lg font-medium hover:bg-gray-700 transition-colors flex items-center justify-center gap-2"

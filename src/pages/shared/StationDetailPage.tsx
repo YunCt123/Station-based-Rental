@@ -1,39 +1,41 @@
-// src/pages/shared/StationDetailPage.tsx
+import { useState, useEffect } from "react";
+import { useParams, Link } from "react-router-dom";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import VehicleCard from "@/components/VehicleCard";
+import { LeafletMap } from "@/components/LeafletMap";
+import { LoadingWrapper, FadeIn, PageTransition } from "@/components/LoadingComponents";
+import { useTranslation } from "@/contexts/TranslationContext";
+import { useToast } from "@/hooks/use-toast";
+import { stationService, type Station } from "@/services/stationService";
+import type { Vehicle } from "@/types/vehicle";
+import {
+  MapPin,
+  Clock,
+  Star,
+  Zap,
+  Phone,
+  Wifi,
+  Coffee,
+  Car,
+  Navigation,
+  CheckCircle,
+  AlertCircle,
+  RefreshCw,
+} from "lucide-react";
 
-import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { getStationById, getStationVehicles } from '@/services/stationService'; // API services
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
-import VehicleCard from '@/components/VehicleCard'; // Import VehicleCard
-import type { Station } from '@/types/station'; // Station data type (frontend)
-import type { Vehicle } from '@/types/vehicle'; // Vehicle data type (frontend)
-import { MapPin, Zap, Star, Clock, Info, Car, Users, CalendarDays, Tag as TagIcon, Sun, Moon } from 'lucide-react';
-
-// Helper function to format status
-const formatStatus = (status: Station['status']) => {
-  switch (status) {
-    case 'active':
-      // TRANSLATED:
-      return { text: 'Active', color: 'bg-green-100 text-green-800' };
-    case 'inactive':
-      // TRANSLATED:
-      return { text: 'Inactive', color: 'bg-red-100 text-red-800' };
-    case 'maintenance':
-      // TRANSLATED:
-      return { text: 'Under Maintenance', color: 'bg-yellow-100 text-yellow-800' };
-    default:
-      return { text: status, color: 'bg-gray-100 text-gray-800' };
-  }
-};
-
-const StationDetailPage: React.FC = () => {
-  const { stationId } = useParams<{ stationId: string }>(); // Get ID from URL
-  const [stationData, setStationData] = useState<Station | null>(null);
-  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-  const [loadingStation, setLoadingStation] = useState(true);
-  const [loadingVehicles, setLoadingVehicles] = useState(true);
+const StationDetails = () => {
+  const { id } = useParams<{ id: string }>();
+  const { t } = useTranslation();
+  const { toast } = useToast();
+  
+  // State for API data
+  const [station, setStation] = useState<Station | null>(null);
+  const [stationVehicles, setStationVehicles] = useState<Vehicle[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingVehicles, setIsLoadingVehicles] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -52,12 +54,58 @@ const StationDetailPage: React.FC = () => {
       setStationData(null);
       setError(null);
       try {
-        const data = await getStationById(stationId);
-        setStationData(data);
-      } catch (err) {
-        console.error('Error loading station data:', err);
-        // TRANSLATED:
-        setError('Could not load station information. Please try again.');
+        setIsLoading(true);
+        setError(null);
+        
+        console.log('🏢 Fetching station data for ID:', id);
+        
+        // Test connection first
+        await stationService.testConnection();
+        
+        // Fetch station details
+        const stationData = await stationService.getStationById(id);
+        console.log('📊 Raw station data from API:', stationData);
+        console.log('🚗 Initial available vehicles:', stationData.availableVehicles);
+        console.log('🚗 Initial total vehicles:', stationData.totalVehicles);
+        
+        // Fetch real vehicle counts like in Stations.tsx
+        try {
+          console.log('🔍 Fetching real vehicle counts...');
+          
+          // Get total vehicle count for station
+          const allVehiclesData = await stationService.getStationVehicles(id);
+          const realTotalVehicles = allVehiclesData.count;
+          console.log('📊 Real total vehicles from API:', realTotalVehicles);
+          
+          // Get available vehicle count for station
+          const availableVehiclesData = await stationService.getStationVehicles(id, 'AVAILABLE');
+          const realAvailableVehicles = availableVehiclesData.count;
+          console.log('📊 Real available vehicles from API:', realAvailableVehicles);
+          
+          // Update station data with real counts
+          const updatedStationData = {
+            ...stationData,
+            totalVehicles: realTotalVehicles,
+            availableVehicles: realAvailableVehicles
+          };
+          
+          console.log('✅ Updated station data with real counts:', updatedStationData);
+          setStation(updatedStationData);
+          
+        } catch (vehicleError) {
+          console.warn('⚠️ Could not fetch real vehicle counts, using backend data:', vehicleError);
+          setStation(stationData);
+        }
+        
+      } catch (err: unknown) {
+        console.error('❌ Error fetching station:', err);
+        const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+        setError(`Failed to load station details: ${errorMessage}`);
+        toast({
+          title: "Error",
+          description: "Failed to load station details",
+          variant: "destructive",
+        });
       } finally {
         setLoadingStation(false);
       }
@@ -67,12 +115,24 @@ const StationDetailPage: React.FC = () => {
       setLoadingVehicles(true);
       setVehicles([]);
       try {
-        // Fetch AVAILABLE vehicles at the station
-        const vehicleData = await getStationVehicles(stationId, 'available'); // Filter by status 'available'
-        setVehicles(vehicleData.vehicles || []); // Get vehicles array from response
-      } catch (err) {
-        console.error('Error loading vehicle list:', err);
-        // Do not set error here to still show station info if only vehicles fail
+        setIsLoadingVehicles(true);
+        
+        console.log('🚗 Fetching vehicles for station:', id);
+        
+        // Get available vehicles at this station
+        const vehiclesData = await stationService.getStationVehicles(id, 'AVAILABLE');
+        setStationVehicles(vehiclesData.vehicles);
+        
+        console.log('✅ Station vehicles loaded:', vehiclesData.vehicles);
+        console.log('🔍 First vehicle ID:', vehiclesData.vehicles[0]?.id);
+        
+      } catch (err: unknown) {
+        console.error('❌ Error fetching station vehicles:', err);
+        toast({
+          title: "Warning",
+          description: "Failed to load vehicles at this station",
+          variant: "destructive",
+        });
       } finally {
         setLoadingVehicles(false);
       }
@@ -146,78 +206,139 @@ const StationDetailPage: React.FC = () => {
   const statusInfo = formatStatus(stationData.status);
 
   return (
-    <div className="container mx-auto p-4 md:p-8">
-      {/* Header Section */}
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-800">{stationData.name}</h1>
-        <div className="flex items-center gap-2 text-gray-500 mt-2">
-          <MapPin className="w-4 h-4" />
-          <span>{stationData.address}</span>
-          {stationData.city && <span>, {stationData.city}</span>}
-        </div>
-        <Badge className={`mt-2 ${statusInfo.color} font-medium`}>{statusInfo.text}</Badge>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* === Left Column: Image & Map === */}
-        <div className="lg:col-span-1 space-y-6">
-          {/* Image */}
-          <Card>
-            <CardContent className="p-0">
-               {stationData.image ? (
-                 <img
-                   src={stationData.image}
-                   alt={stationData.name}
-                   className="w-full h-64 object-cover rounded-t-lg"
-                   onError={(e) => {
-                       const target = e.target as HTMLImageElement;
-                       target.onerror = null;
-                       target.src = 'https://via.placeholder.com/600x400?text=EV+Station';
-                    }}
-                 />
-               ) : (
-                 <div className="w-full h-64 bg-gray-200 flex items-center justify-center rounded-t-lg">
-                   {/* TRANSLATED: */}
-                   <span className="text-gray-500">No image available</span>
-                 </div>
-               )}
-            </CardContent>
-          </Card>
-
-          {/* Map */}
-          <Card>
-            <CardHeader>
-              {/* TRANSLATED: */}
-              <CardTitle className="text-lg">Location on map</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="h-64 bg-gray-200 rounded-lg flex items-center justify-center">
-                <span className="text-gray-500">
-                  {/* TRANSLATED: */}
-                  [Map display area]
-                </span>
-                {/* <GoogleMaps lat={stationData.coordinates.lat} lng={stationData.coordinates.lng} /> */}
+    <PageTransition>
+      <div className="min-h-screen bg-background">
+        {/* Header */}
+        {/* <FadeIn>
+          <div className="bg-gradient-hero py-16">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="flex items-center gap-4 mb-4">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  asChild
+                  className="text-white hover:bg-white/20"
+                >
+                  <Link to="/stations">
+                    <ArrowLeft className="h-4 w-4 mr-2" />
+                    {t("nav.stations")}
+                  </Link>
+                </Button>
               </div>
-            </CardContent>
-          </Card>
-        </div>
+              <SlideIn direction="top" delay={200}>
+                <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
+                  {station.name}
+                </h1>
+                <p className="text-xl text-white/90 mb-6 max-w-2xl">
+                  {station.address}, {station.city}
+                </p>
+              </SlideIn>
+              <SlideIn direction="top" delay={300}>
+                <div className="flex flex-wrap justify-center lg:justify-start gap-4 text-white/80">
+                  <div className="flex items-center gap-2">
+                    <Zap className="h-5 w-5" />
+                    <span>Fast Charging</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <MapPin className="h-5 w-5" />
+                    <span>Premium Location</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-5 w-5" />
+                    <span>24/7 Available</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Car className="h-5 w-5" />
+                    <span>{station.availableVehicles} Vehicles Available</span>
+                  </div>
+                </div>
+              </SlideIn>
+            </div>
+          </div>
+        </FadeIn> */}
 
-        {/* === Right Column: Detailed Info === */}
-        <div className="lg:col-span-2 space-y-6">
-          <Card>
-            <CardHeader>
-              {/* TRANSLATED: */}
-              <CardTitle className="text-lg">Station Information</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-               {/* Rating & Fast Charging */}
-              <div className="flex justify-between items-center text-sm border-b pb-3 mb-3">
-                <div className="flex items-center gap-1 text-gray-700">
-                  <Star className={`w-5 h-5 ${stationData.rating > 0 ? 'text-yellow-400 fill-yellow-400' : 'text-gray-400'}`} />
-                  <span className="font-medium">
-                    {/* TRANSLATED: */}
-                    {stationData.rating > 0 ? `${stationData.rating.toFixed(1)} (${stationData.reviewCount} reviews)` : 'No reviews yet'}
-                  </span>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Station Information */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Station Image */}
+            <Card>
+              <img
+                src={station.image || "https://images.unsplash.com/photo-1571068316344-75bc76f77890?w=800&h=600&fit=crop&crop=center"}
+                alt={station.name}
+                className="w-full h-64 object-cover rounded-t-lg"
+                onError={(e) => {
+                  e.currentTarget.src = "https://images.unsplash.com/photo-1571068316344-75bc76f77890?w=800&h=600&fit=crop&crop=center";
+                }}
+              />
+            </Card>
+
+            {/* Station Details */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MapPin className="h-5 w-5" />
+                  {t("common.location")}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex items-center gap-2">
+                    <MapPin className="h-5 w-5 text-primary" />
+                    <div>
+                      <p className="font-medium">Address</p>
+                      <p className="text-sm text-muted-foreground">
+                        {station.address}, {station.city}
+                      </p>
+                    </div>
+                  </div>
+{/* 
+                  <div className="flex items-center gap-2">
+                    <Star className="h-5 w-5 text-yellow-500" />
+                    <div>
+                      <p className="font-medium">{t("common.rating")}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {station.rating.toFixed(1)} ★ ({station.reviewCount} {t("common.reviews")})
+                      </p>
+                    </div>
+                  </div> */}
+
+                  <div className="flex items-center gap-2">
+                    <Car className="h-5 w-5 text-primary" />
+                    <div>
+                      <p className="font-medium">
+                        {t("common.availableVehicles")}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {station.availableVehicles}/{station.totalVehicles} vehicles
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* <div className="flex items-center gap-2">
+                    <Zap className="h-5 w-5 text-green-600" />
+                    <div>
+                      <p className="font-medium">Charging Type</p>
+                      <p className="text-sm text-muted-foreground">
+                        {station.fastCharging
+                          ? "Fast Charging Available"
+                          : "Standard Charging"}
+                      </p>
+                    </div>
+                  </div> */}
+                </div>
+
+                <Separator />
+
+                {/* Operating Hours */}
+                <div>
+                  <h3 className="font-medium mb-3 flex items-center gap-2">
+                    <Clock className="h-4 w-4" />
+                    Operating Hours
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    {getOperatingHoursDisplay(station.operatingHours)}
+                  </p>
                 </div>
                  {stationData.fastCharging && (
                   <div className="flex items-center gap-1 text-blue-600 font-medium">
@@ -225,86 +346,207 @@ const StationDetailPage: React.FC = () => {
                     {/* TRANSLATED: */}
                     <span>Fast Charging Available</span>
                   </div>
-                 )}
-              </div>
+                </div>
+              </CardContent>
+            </Card>
 
-               {/* Slots & Vehicles */}
-              <div className="flex items-center gap-2">
-                <Users className="w-5 h-5 text-gray-500" />
-                {/* TRANSLATED: */}
-                <span className="font-medium">Capacity:</span>
-                {/* TRANSLATED: */}
-                <span>{stationData.totalSlots} slots</span>
-              </div>
-               <div className="flex items-center gap-2">
-                <Car className="w-5 h-5 text-gray-500" />
-                {/* TRANSLATED: */}
-                <span className="font-medium">Total Vehicles at Station:</span>
-                {/* TRANSLATED: */}
-                <span>{stationData.totalVehicles} vehicles</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Car className="w-5 h-5 text-green-500" />
-                {/* TRANSLATED: */}
-                <span className="font-medium">Available Vehicles:</span>
-                {/* TRANSLATED: */}
-                <span className="font-bold text-green-600">{stationData.availableVehicles} vehicles</span>
-              </div>
-               <div className="flex items-center gap-2">
-                <Info className="w-5 h-5 text-gray-500" />
-                {/* TRANSLATED: */}
-                <span className="font-medium">Utilization Rate:</span>
-                <span>{(stationData.utilizationRate * 100).toFixed(0)}%</span>
-              </div>
-
-               {/* Operating Hours */}
-               {(stationData.operatingHours?.weekday || stationData.operatingHours?.weekend || stationData.operatingHours?.holiday) && (
-                 <div className="pt-3 border-t">
-                    {/* TRANSLATED: */}
-                    <h4 className="font-semibold mb-2 flex items-center gap-2"><Clock className="w-5 h-5 text-gray-500" /> Operating Hours</h4>
-                    {/* TRANSLATED: */}
-                    {stationData.operatingHours.weekday && <p className="text-sm ml-7"><Sun className="w-4 h-4 inline mr-1 text-yellow-500"/> Weekdays: {stationData.operatingHours.weekday}</p>}
-                    {/* TRANSLATED: */}
-                    {stationData.operatingHours.weekend && <p className="text-sm ml-7"><Moon className="w-4 h-4 inline mr-1 text-indigo-500"/> Weekends: {stationData.operatingHours.weekend}</p>}
-                    {/* TRANSLATED: */}
-                    {stationData.operatingHours.holiday && <p className="text-sm ml-7"><CalendarDays className="w-4 h-4 inline mr-1 text-red-500"/> Holidays: {stationData.operatingHours.holiday}</p>}
-                 </div>
-               )}
-
-               {/* Amenities */}
-               {stationData.amenities && stationData.amenities.length > 0 && (
-                 <div className="pt-3 border-t">
-                    {/* TRANSLATED: */}
-                    <h4 className="font-semibold mb-2 flex items-center gap-2"><TagIcon className="w-5 h-5 text-gray-500" /> Amenities</h4>
-                    <div className="flex flex-wrap gap-2 ml-7">
-                       {stationData.amenities.map(amenity => (
-                         <Badge key={amenity} variant="secondary">{amenity}</Badge>
-                       ))}
+            {/* Available Vehicles */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle>{t("common.availableVehicles")}</CardTitle>
+                  {isLoadingVehicles && (
+                    <div className="flex items-center text-sm text-muted-foreground">
+                      <RefreshCw className="h-4 w-4 animate-spin mr-2" />
+                      Loading vehicles...
                     </div>
-                 </div>
-               )}
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent>
+                <LoadingWrapper
+                  isLoading={isLoadingVehicles}
+                  fallback={
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {[1, 2, 3, 4].map((i) => (
+                        <div key={i} className="h-64 bg-muted rounded-lg animate-pulse" />
+                      ))}
+                    </div>
+                  }
+                >
+                  {stationVehicles.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {stationVehicles.map((vehicle) => (
+                        <FadeIn key={vehicle.id} delay={100}>
+                          <VehicleCard vehicle={vehicle} />
+                        </FadeIn>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <Car className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                      <p className="text-muted-foreground">
+                        {t("common.noVehiclesFound")}
+                      </p>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Check back later or try another station
+                      </p>
+                    </div>
+                  )}
+                </LoadingWrapper>
+              </CardContent>
+            </Card>
+          </div>
 
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+          {/* Sidebar */}
+          <div className="space-y-6">
+            {/* Station Overview */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Car className="h-5 w-5" />
+                  Station Overview
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Availability Status */}
+                <div className="bg-gradient-to-r from-green-50 to-blue-50 p-4 rounded-lg border">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-gray-700">Available Now</span>
+                    <Badge variant="default" className="bg-green-600">
+                      {station.availableVehicles} Vehicles
+                    </Badge>
+                  </div>
+                  <div className="text-xs text-gray-600">
+                    {station.totalVehicles} total vehicles at this station
+                  </div>
+                </div>
 
-      {/* === Vehicle List Section === */}
-      <div className="mt-8">
-        {/* TRANSLATED: */}
-        <h2 className="text-2xl font-bold mb-4 text-gray-800">Available Vehicles at Station</h2>
-        {loadingVehicles ? (
-          // Skeleton for vehicle list
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-             {[1, 2, 3].map((i) => (
-               <div key={i} className="border rounded-lg overflow-hidden shadow-lg">
-                 <Skeleton className="h-48 w-full" />
-                 <div className="p-4 space-y-3">
-                   <Skeleton className="h-6 w-3/4" /> <Skeleton className="h-4 w-full" />
-                   <Skeleton className="h-4 w-1/2" /> <Skeleton className="h-10 w-full" />
-                 </div>
-               </div>
-             ))}
+                {/* Operating Status */}
+                <div className="flex items-center justify-between py-2">
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-gray-500" />
+                    <span className="text-sm">Operating Hours</span>
+                  </div>
+                  <Badge
+                    variant={
+                      getOperatingHoursDisplay(station.operatingHours).includes("24/7")
+                        ? "default"
+                        : "secondary"
+                    }
+                    className="text-xs"
+                  >
+                    {getOperatingHoursDisplay(station.operatingHours).includes("24/7") 
+                      ? "24/7" 
+                      : "Limited Hours"}
+                  </Badge>
+                </div>
+
+                {/* Charging Type */}
+                <div className="flex items-center justify-between py-2">
+                  <div className="flex items-center gap-2">
+                    <Zap className="h-4 w-4 text-yellow-500" />
+                    <span className="text-sm">Charging</span>
+                  </div>
+                  <Badge variant={station.fastCharging ? "default" : "secondary"} className="text-xs">
+                    {station.fastCharging ? "Fast Charging" : "Standard"}
+                  </Badge>
+                </div>
+
+                {/* Rating */}
+                {station.rating > 0 && (
+                  <div className="flex items-center justify-between py-2">
+                    <div className="flex items-center gap-2">
+                      <Star className="h-4 w-4 text-yellow-500" />
+                      <span className="text-sm">Rating</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span className="text-sm font-medium">{station.rating.toFixed(1)}</span>
+                      <span className="text-yellow-500">★</span>
+                      <span className="text-xs text-gray-500">({station.reviewCount})</span>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Quick Actions */}
+            <Card>
+              <CardHeader>
+                <CardTitle>{t("dashboard.quickActions")}</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {/* Primary Action - Book Now */}
+                {station.availableVehicles > 0 ? (
+                  <Button className="w-full" size="lg" asChild>
+                    <Link to={`/book?station=${station.id}`}>
+                      <Car className="h-4 w-4 mr-2" />
+                      Book Vehicle Now
+                    </Link>
+                  </Button>
+                ) : (
+                  <Button className="w-full" size="lg" disabled>
+                    <Car className="h-4 w-4 mr-2" />
+                    No Vehicles Available
+                  </Button>
+                )}
+
+                {/* Secondary Actions */}
+                <div className="grid grid-cols-2 gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => {
+                      const directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${station.coordinates.lat},${station.coordinates.lng}`;
+                      window.open(directionsUrl, '_blank');
+                    }}
+                  >
+                    <Navigation className="h-4 w-4 mr-1" />
+                    Directions
+                  </Button>
+                  <Button variant="outline" size="sm" asChild>
+                    <Link to="/contact">
+                      <Phone className="h-4 w-4 mr-1" />
+                      Contact
+                    </Link>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Map Preview */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MapPin className="h-5 w-5" />
+                  Map
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-hidden">
+                  <LeafletMap
+                    station={{
+                      id: station.id,
+                      name: station.name,
+                      address: station.address,
+                      city: station.city,
+                      coordinates: station.coordinates,
+                      availableVehicles: station.availableVehicles
+                    }}
+                    height="280px"
+                    showControls={true}
+                    showNearbyStations={true}
+                  />
+                </div>
+                {/* Address below map */}
+                <div className="mt-3 p-3 bg-gray-50 rounded-lg">
+                  <p className="text-sm font-medium text-gray-900">{station.name}</p>
+                  <p className="text-xs text-gray-600 mt-1">
+                    {station.address}, {station.city}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         ) : vehicles.length > 0 ? (
           // Display vehicle list

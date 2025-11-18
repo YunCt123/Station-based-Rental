@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import api from "./api";
-import type { Vehicle } from "@/types/vehicle";
+import type { Vehicle, BackendVehicle } from "@/types/vehicle";
 
 // Types for API responses
 export interface ApiResponse<T> {
@@ -156,15 +156,66 @@ function mapBackendStatusToFrontend(backendStatus: string): "active" | "inactive
   }
 }
 
+// Mapping function to convert backend vehicle data to frontend format
+function mapBackendVehicleToFrontend(backendVehicle: BackendVehicle): Vehicle {
+
+  
+  const mapped: Vehicle = {
+    id: backendVehicle._id || backendVehicle.id || "",
+    name: backendVehicle.name || "",
+    year: backendVehicle.year || new Date().getFullYear(),
+    brand: backendVehicle.brand || "Unknown",
+    model: backendVehicle.model || "",
+    type: (backendVehicle.type as Vehicle['type']) || "SUV",
+    image: backendVehicle.image || "https://images.unsplash.com/photo-1571068316344-75bc76f77890?w=800&h=600&fit=crop&crop=center",
+    batteryLevel: backendVehicle.batteryLevel || backendVehicle.battery_soc || 80,
+    location: backendVehicle.station_name || "Unknown Station",
+    stationId: backendVehicle.station_id,
+    availability: mapBackendVehicleStatus(backendVehicle.status),
+    pricePerHour: backendVehicle.pricePerHour || backendVehicle.pricing?.hourly || 50000,
+    pricePerDay: backendVehicle.pricePerDay || backendVehicle.pricing?.daily || 400000,
+    rating: backendVehicle.rating || 4.5,
+    reviewCount: backendVehicle.reviewCount || 0,
+    trips: backendVehicle.trips || 0,
+    range: backendVehicle.range || 300,
+    seats: backendVehicle.seats || 4,
+    features: backendVehicle.features || [],
+    condition: (backendVehicle.condition as Vehicle['condition']) || "good",
+    lastMaintenance: backendVehicle.lastMaintenance || new Date().toISOString(),
+    mileage: backendVehicle.mileage || backendVehicle.odo_km || 0,
+    fuelEfficiency: backendVehicle.fuelEfficiency || `${backendVehicle.consumption_wh_per_km || 150} Wh/km`,
+    inspectionDate: backendVehicle.inspectionDate || backendVehicle.inspection_due_at || new Date().toISOString(),
+    insuranceExpiry: backendVehicle.insuranceExpiry || backendVehicle.insurance_expiry_at || new Date().toISOString(),
+    description: backendVehicle.description || "",
+  };
+  
+  return mapped;
+}
+
+// Map backend vehicle status to frontend availability
+function mapBackendVehicleStatus(backendStatus: BackendVehicle['status']): Vehicle['availability'] {
+  switch (backendStatus) {
+    case 'AVAILABLE':
+      return 'available';
+    case 'RESERVED':
+    case 'RENTED':
+      return 'rented';
+    case 'MAINTENANCE':
+      return 'maintenance';
+    default:
+      return 'available';
+  }
+}
+
 export const stationService = {
   /**
    * Test connection to backend
    */
   async testConnection(): Promise<unknown> {
     try {
-      console.log('🔗 Testing station API connection...');
+
       const response = await api.get('/stations?limit=1');
-      console.log('Station API connection test successful:', response.data);
+
       return response.data;
     } catch (error) {
       console.error('Station API connection test failed:', error);
@@ -200,18 +251,15 @@ export const stationService = {
       if (options.sort) params.append('sort', options.sort);
       
       const url = `/stations?${params.toString()}`;
-      console.log('🚀 Making station API request to:', url);
-      console.log('🔍 Filters:', filters);
-      console.log('⚙️ Options:', options);
+
       
       const response = await api.get<ApiResponse<BackendStation[]>>(url);
       
-      console.log('✅ Station API Response:', response.data);
-      console.log('📊 Raw station data:', response.data.data);
+
       
       const stations = response.data.data.map(mapBackendStationToFrontend);
       
-      console.log('🔄 Mapped stations:', stations);
+
       
       return {
         stations,
@@ -244,8 +292,7 @@ export const stationService = {
       });
       
       const url = `/stations/nearby?${params.toString()}`;
-      console.log('🌍 Finding nearby stations:', url);
-      
+    
       const response = await api.get<ApiResponse<BackendStation[]>>(url);
       
       const stations = response.data.data.map(mapBackendStationToFrontend);
@@ -275,7 +322,7 @@ export const stationService = {
       if (includeVehicles) params.append('includeVehicles', 'true');
       
       const url = `/stations/${id}${params.toString() ? '?' + params.toString() : ''}`;
-      console.log('🎯 Getting station by ID:', url);
+
       
       const response = await api.get<ApiResponse<BackendStation>>(url);
       return mapBackendStationToFrontend(response.data.data);
@@ -291,7 +338,7 @@ export const stationService = {
    */
   async getStationsByCity(city: string): Promise<Station[]> {
     try {
-      console.log('🏙️ Getting stations by city:', city);
+
       
       const response = await api.get<ApiResponse<BackendStation[]>>(`/stations/city/${encodeURIComponent(city)}`);
       return response.data.data.map(mapBackendStationToFrontend);
@@ -315,14 +362,24 @@ export const stationService = {
       if (status) params.append('status', status);
       
       const url = `/stations/${stationId}/vehicles${params.toString() ? '?' + params.toString() : ''}`;
-      console.log('🚗 Getting station vehicles:', url);
+
       
       const response = await api.get<ApiResponse<{
         station: { id: string; name: string; address: string };
-        vehicles: Vehicle[];
+        vehicles: BackendVehicle[]; // Backend returns BackendVehicle[]
         count: number;
       }>>(url);
-      return response.data.data;
+      
+
+      
+      // Map backend vehicles to frontend format
+      const mappedVehicles = response.data.data.vehicles.map(mapBackendVehicleToFrontend);
+      
+      return {
+        station: response.data.data.station,
+        vehicles: mappedVehicles,
+        count: response.data.data.count
+      };
     } catch (error) {
       console.error('❌ Error getting station vehicles:', error);
       throw error;
@@ -335,7 +392,7 @@ export const stationService = {
    */
   async createStation(stationData: Partial<BackendStation>): Promise<Station> {
     try {
-      console.log('➕ Creating station:', stationData);
+
       
       const response = await api.post<ApiResponse<BackendStation>>('/stations', stationData);
       return mapBackendStationToFrontend(response.data.data);
@@ -351,7 +408,7 @@ export const stationService = {
    */
   async updateStation(id: string, updateData: Partial<BackendStation>): Promise<Station> {
     try {
-      console.log('📝 Updating station:', id, updateData);
+
       
       const response = await api.patch<ApiResponse<BackendStation>>(`/stations/${id}`, updateData);
       return mapBackendStationToFrontend(response.data.data);
@@ -367,7 +424,7 @@ export const stationService = {
    */
   async deleteStation(id: string): Promise<void> {
     try {
-      console.log('🗑️ Deleting station:', id);
+
       
       await api.delete(`/stations/${id}`);
     } catch (error) {

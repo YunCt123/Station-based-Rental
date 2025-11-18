@@ -1,18 +1,76 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   ExclamationTriangleIcon,
   PlusIcon,
   ClockIcon,
   CheckCircleIcon,
-  XMarkIcon,
   MagnifyingGlassIcon,
   DocumentTextIcon
 } from '@heroicons/react/24/outline';
 import {
-  ExclamationTriangleIcon as ExclamationTriangleSolidIcon,
   CheckCircleIcon as CheckCircleSolidIcon,
-  ClockIcon as ClockSolidIcon
+  ClockIcon as ClockSolidIcon,
 } from '@heroicons/react/24/solid';
+import { AddIncidentModal } from '@/components/dashboard/staff/manage_vehicles/AddIncidentModal';
+import { IncidentDetailsModal } from '@/components/dashboard/staff/manage_vehicles/IncidentDetailsModal';
+import { IssueResolutionModal } from '@/components/dashboard/staff/manage_vehicles/IssueResolutionModal';
+import { 
+  createIssue, 
+  updateIssue, 
+  getAllIssues,
+  addIssueResolution,
+  getPriorityColor,
+  getPriorityText,
+  type AddResolutionRequest,
+} from '@/services/issueService';
+import { toast } from 'sonner';
+
+interface APIIssueData {
+  _id?: string;
+  vehicle_id?: {
+    _id?: string;
+    name?: string;
+    model?: string;
+    licensePlate?: string;
+    brand?: string;
+    year?: number;
+  };
+  reporter_id?: {
+    _id?: string;
+    name?: string;
+    email?: string;
+    role?: string;
+  };
+  station_id?: {
+    _id?: string;
+    name?: string;
+    address?: string;
+  };
+  assigned_to?: string;
+  assigned_staff?: {
+    _id?: string;
+    name?: string;
+    email?: string;
+  };
+  title?: string;
+  description?: string;
+  status: 'OPEN' | 'IN_PROGRESS' | 'RESOLVED';
+  priority?: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+  photos?: string[];
+  resolution?: {
+    solution_description?: string;
+    resolution_actions?: string[];
+    resolved_by?: string;
+    resolved_at?: string;
+    resolution_notes?: string;
+    resolution_photos?: string[];
+    customer_satisfaction?: 'SATISFIED' | 'NEUTRAL' | 'UNSATISFIED' | 'NOT_RATED';
+    follow_up_required?: boolean;
+    estimated_cost?: number;
+    actual_cost?: number;
+  };
+  createdAt: string;
+}
 
 interface Incident {
   id: string;
@@ -23,130 +81,110 @@ interface Incident {
   reportedAt: string;
   title: string;
   description: string;
-  severity: 'low' | 'medium' | 'high' | 'critical';
-  status: 'reported' | 'in-progress' | 'resolved' | 'rejected';
+  status: 'OPEN' | 'IN_PROGRESS' | 'RESOLVED';
+  priority?: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
   assignedTo?: string;
-  resolvedAt?: string;
-  resolution?: string;
+  assignedStaff?: string;
   images: string[];
-  position: string;
+  stationName?: string;
+  resolution?: {
+    solutionDescription?: string;
+    resolutionActions?: string[];
+    resolvedBy?: string;
+    resolvedAt?: string;
+    resolutionNotes?: string;
+    resolutionPhotos?: string[];
+    customerSatisfaction?: string;
+    followUpRequired?: boolean;
+    estimatedCost?: number;
+    actualCost?: number;
+  };
 }
 
-const mockIncidents: Incident[] = [
-  {
-    id: 'INC001',
-    vehicleId: 'EV001',
-    vehicleModel: 'Tesla Model 3',
-    licensePlate: '30A-12345',
-    reportedBy: 'Nguyễn Văn A',
-    reportedAt: '2024-10-14 09:30',
-    title: 'Đèn pha trái không hoạt động',
-    description: 'Đèn pha bên trái xe Tesla không sáng khi bật đèn. Cần kiểm tra và thay thế bóng đèn.',
-    severity: 'medium',
-    status: 'in-progress',
-    assignedTo: 'Kỹ thuật viên Trần B',
-    images: ['https://via.placeholder.com/200x150?text=Headlight'],
-    position: 'Vị trí 1'
-  },
-  {
-    id: 'INC002',
-    vehicleId: 'EV003',
-    vehicleModel: 'BYD Seal',
-    licensePlate: '30C-11111',
-    reportedBy: 'Lê Thị C',
-    reportedAt: '2024-10-13 15:45',
-    title: 'Tiếng ồn lạ từ động cơ',
-    description: 'Xe phát ra tiếng ồn lạ khi khởi động và di chuyển. Có thể là vấn đề với động cơ điện.',
-    severity: 'high',
-    status: 'resolved',
-    assignedTo: 'Kỹ thuật viên Phạm D',
-    resolvedAt: '2024-10-14 08:00',
-    resolution: 'Đã kiểm tra và bôi trơn các bộ phận chuyển động. Tiếng ồn đã được khắc phục.',
-    images: ['https://via.placeholder.com/200x150?text=Engine'],
-    position: 'Vị trí 5'
-  },
-  {
-    id: 'INC003',
-    vehicleId: 'EV002',
-    vehicleModel: 'VinFast VF8',
-    licensePlate: '30B-67890',
-    reportedBy: 'Hoàng Văn E',
-    reportedAt: '2024-10-14 11:20',
-    title: 'Cửa xe không khóa được',
-    description: 'Cửa xe bên phải không thể khóa bằng remote. Khách hàng phải khóa thủ công.',
-    severity: 'low',
-    status: 'reported',
-    images: [],
-    position: 'Vị trí 3'
-  }
-];
-
 const IncidentReport: React.FC = () => {
-  const [incidents, setIncidents] = useState<Incident[]>(mockIncidents);
+  const [incidents, setIncidents] = useState<Incident[]>([]);
   const [showReportForm, setShowReportForm] = useState(false);
   const [selectedIncident, setSelectedIncident] = useState<Incident | null>(null);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [showResolutionModal, setShowResolutionModal] = useState(false);
+  const [resolutionIncident, setResolutionIncident] = useState<Incident | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
-  const [filterSeverity, setFilterSeverity] = useState<string>('all');
+  const [loading, setLoading] = useState(false);
 
-  // New incident form state
-  const [newIncident, setNewIncident] = useState({
-    vehicleId: '',
-    vehicleModel: '',
-    licensePlate: '',
-    title: '',
-    description: '',
-    severity: 'medium' as const,
-    position: '',
-    images: [] as string[]
-  });
+  // Fetch issues on component mount
+  useEffect(() => {
+    fetchIssues();
+  }, []);
 
-  const getSeverityColor = (severity: string) => {
-    switch (severity) {
-      case 'low': return 'bg-blue-100 text-blue-800';
-      case 'medium': return 'bg-yellow-100 text-yellow-800';
-      case 'high': return 'bg-orange-100 text-orange-800';
-      case 'critical': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+  const fetchIssues = async () => {
+    setLoading(true);
+    try {
+      const issues = await getAllIssues();
+      // Map API response to local Incident interface
+      const mappedIncidents: Incident[] = issues.map((issue: unknown) => {
+        const issueData = issue as APIIssueData;
+        return {
+          id: String(issueData._id || ''),
+          vehicleId: String(issueData.vehicle_id?._id || 'Unknown'),
+          vehicleModel: String(issueData.vehicle_id?.model || 'Unknown'),
+          licensePlate: String(issueData.vehicle_id?.licensePlate || 'Unknown'), 
+          reportedBy: String(issueData.reporter_id?.name || 'Unknown'),
+          reportedAt: new Date(issueData.createdAt).toLocaleString('vi-VN'),
+          title: String(issueData.title || 'No title'),
+          description: String(issueData.description || ''),
+          status: issueData.status,
+          priority: issueData.priority,
+          assignedTo: issueData.assigned_to,
+          assignedStaff: issueData.assigned_staff?.name,
+          images: Array.isArray(issueData.photos) ? issueData.photos : [],
+          stationName: String(issueData.station_id?.name || ''),
+          resolution: issueData.resolution ? {
+            solutionDescription: issueData.resolution.solution_description,
+            resolutionActions: issueData.resolution.resolution_actions,
+            resolvedBy: issueData.resolution.resolved_by,
+            resolvedAt: issueData.resolution.resolved_at,
+            resolutionNotes: issueData.resolution.resolution_notes,
+            resolutionPhotos: issueData.resolution.resolution_photos,
+            customerSatisfaction: issueData.resolution.customer_satisfaction,
+            followUpRequired: issueData.resolution.follow_up_required,
+            estimatedCost: issueData.resolution.estimated_cost,
+            actualCost: issueData.resolution.actual_cost,
+          } : undefined
+        };
+      });
+      setIncidents(mappedIncidents);
+    } catch (error: unknown) {
+      console.error('Error fetching issues:', error);
+      toast.error('Không thể tải danh sách sự cố');
+    } finally {
+      setLoading(false);
     }
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'reported': return 'bg-gray-100 text-gray-800';
-      case 'in-progress': return 'bg-blue-100 text-blue-800';
-      case 'resolved': return 'bg-green-100 text-green-800';
-      case 'rejected': return 'bg-red-100 text-red-800';
+      case 'OPEN': return 'bg-gray-100 text-gray-800';
+      case 'IN_PROGRESS': return 'bg-blue-100 text-blue-800';
+      case 'RESOLVED': return 'bg-green-100 text-green-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'reported': return <ClockSolidIcon className="w-4 h-4 text-gray-500" />;
-      case 'in-progress': return <ClockSolidIcon className="w-4 h-4 text-blue-500" />;
-      case 'resolved': return <CheckCircleSolidIcon className="w-4 h-4 text-green-500" />;
-      case 'rejected': return <XMarkIcon className="w-4 h-4 text-red-500" />;
+      case 'OPEN': return <ClockSolidIcon className="w-4 h-4 text-gray-500" />;
+      case 'IN_PROGRESS': return <ClockSolidIcon className="w-4 h-4 text-blue-500" />;
+      case 'RESOLVED': return <CheckCircleSolidIcon className="w-4 h-4 text-green-500" />;
       default: return <ClockSolidIcon className="w-4 h-4 text-gray-500" />;
-    }
-  };
-
-  const getSeverityText = (severity: string) => {
-    switch (severity) {
-      case 'low': return 'Thấp';
-      case 'medium': return 'Trung bình';
-      case 'high': return 'Cao';
-      case 'critical': return 'Nghiêm trọng';
-      default: return 'Không xác định';
     }
   };
 
   const getStatusText = (status: string) => {
     switch (status) {
-      case 'reported': return 'Đã báo cáo';
-      case 'in-progress': return 'Đang xử lý';
-      case 'resolved': return 'Đã giải quyết';
-      case 'rejected': return 'Từ chối';
+      case 'OPEN': return 'Đã báo cáo';
+      case 'IN_PROGRESS': return 'Đang xử lý';
+      case 'RESOLVED': return 'Đã giải quyết';
       default: return 'Không xác định';
     }
   };
@@ -158,55 +196,117 @@ const IncidentReport: React.FC = () => {
                          incident.reportedBy.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesStatus = filterStatus === 'all' || incident.status === filterStatus;
-    const matchesSeverity = filterSeverity === 'all' || incident.severity === filterSeverity;
     
-    return matchesSearch && matchesStatus && matchesSeverity;
+    return matchesSearch && matchesStatus;
   });
 
-  const handleSubmitReport = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    const incident: Incident = {
-      id: `INC${String(incidents.length + 1).padStart(3, '0')}`,
-      vehicleId: newIncident.vehicleId || 'EV999',
-      vehicleModel: newIncident.vehicleModel || 'Unknown',
-      licensePlate: newIncident.licensePlate || 'Unknown',
-      reportedBy: 'Nhân viên hiện tại',
-      reportedAt: new Date().toLocaleString('vi-VN'),
-      title: newIncident.title,
-      description: newIncident.description,
-      severity: newIncident.severity,
-      status: 'reported',
-      images: newIncident.images,
-      position: newIncident.position
-    };
+  const handleSubmitReport = async (incidentData: Omit<Incident, 'id' | 'reportedBy' | 'reportedAt' | 'status' | 'images'> & { images: string[] }) => {
+    try {
+      setLoading(true);
+      const newIssue = await createIssue({
+        vehicle_id: incidentData.vehicleId,
+        title: incidentData.title,
+        description: incidentData.description,
+        photos: incidentData.images
+      });
 
-    setIncidents([incident, ...incidents]);
-    setNewIncident({
-      vehicleId: '',
-      vehicleModel: '',
-      licensePlate: '',
-      title: '',
-      description: '',
-      severity: 'medium',
-      position: '',
-      images: []
-    });
-    setShowReportForm(false);
+      // Map the new issue to incident format
+      const issueData = newIssue as unknown as APIIssueData;
+      const newIncident: Incident = {
+        id: String(issueData._id || ''),
+        vehicleId: String(issueData.vehicle_id?._id || incidentData.vehicleId),
+        vehicleModel: String(issueData.vehicle_id?.model || incidentData.vehicleModel),
+        licensePlate: String(issueData.vehicle_id?.licensePlate || incidentData.licensePlate),
+        reportedBy: String(issueData.reporter_id?.name || 'Unknown'),
+        reportedAt: new Date(issueData.createdAt).toLocaleString('vi-VN'),
+        title: String(issueData.title || ''),
+        description: String(issueData.description || ''),
+        status: issueData.status,
+        images: Array.isArray(issueData.photos) ? issueData.photos : [],
+        stationName: String(issueData.station_id?.name || '')
+      };
+
+      setIncidents([newIncident, ...incidents]);
+      setShowReportForm(false);
+      toast.success('Báo cáo sự cố thành công!');
+    } catch (error: unknown) {
+      console.error('Error creating issue:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Không thể tạo báo cáo sự cố';
+      toast.error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const updateIncidentStatus = (incidentId: string, newStatus: Incident['status']) => {
-    setIncidents(incidents.map(incident => {
-      if (incident.id === incidentId) {
-        return {
-          ...incident,
-          status: newStatus,
-          resolvedAt: newStatus === 'resolved' ? new Date().toLocaleString('vi-VN') : incident.resolvedAt
-        };
+  const handleViewIncident = (incident: Incident) => {
+    setSelectedIncident(incident);
+    setShowDetailsModal(true);
+  };
+
+  const updateIncidentStatus = async (incidentId: string, newStatus: Incident['status']) => {
+    try {
+      setLoading(true);
+      await updateIssue(incidentId, { status: newStatus });
+      
+      // Update local state
+      setIncidents(incidents.map(incident => {
+        if (incident.id === incidentId) {
+          return {
+            ...incident,
+            status: newStatus
+          };
+        }
+        return incident;
+      }));
+
+      // Update selected incident if it's the current one
+      if (selectedIncident && selectedIncident.id === incidentId) {
+        setSelectedIncident({
+          ...selectedIncident,
+          status: newStatus
+        });
       }
-      return incident;
-    }));
+
+      toast.success('Cập nhật trạng thái thành công!');
+      
+      // Refresh issues list
+      await fetchIssues();
+    } catch (error: unknown) {
+      console.error('Error updating issue status:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Không thể cập nhật trạng thái';
+      toast.error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
   };
+
+  // ========== NEW RESOLUTION MANAGEMENT FUNCTIONS ==========
+
+
+  const handleAddResolution = async (incidentId: string, resolutionData: AddResolutionRequest) => {
+    try {
+      setLoading(true);
+      await addIssueResolution(incidentId, resolutionData);
+      toast.success('Thêm phương án giải quyết thành công!');
+      
+      // Close modal and refresh
+      setShowResolutionModal(false);
+      setResolutionIncident(null);
+      await fetchIssues();
+    } catch (error: unknown) {
+      console.error('Error adding resolution:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Không thể thêm phương án giải quyết';
+      toast.error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleOpenResolutionModal = (incident: Incident) => {
+    setResolutionIncident(incident);
+    setShowResolutionModal(true);
+  };
+
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
@@ -255,34 +355,21 @@ const IncidentReport: React.FC = () => {
               className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
               <option value="all">Tất cả trạng thái</option>
-              <option value="reported">Đã báo cáo</option>
-              <option value="in-progress">Đang xử lý</option>
-              <option value="resolved">Đã giải quyết</option>
-              <option value="rejected">Từ chối</option>
-            </select>
-
-            <select
-              value={filterSeverity}
-              onChange={(e) => setFilterSeverity(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            >
-              <option value="all">Tất cả mức độ</option>
-              <option value="low">Thấp</option>
-              <option value="medium">Trung bình</option>
-              <option value="high">Cao</option>
-              <option value="critical">Nghiêm trọng</option>
+              <option value="OPEN">Đã báo cáo</option>
+              <option value="IN_PROGRESS">Đang xử lý</option>
+              <option value="RESOLVED">Đã giải quyết</option>
             </select>
           </div>
         </div>
       </div>
 
       {/* Statistics */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Tổng sự cố</p>
-              <p className="text-2xl font-bold text-gray-900">{incidents.length}</p>
+              <p className="text-2xl font-bold text-gray-900">{String(incidents.length)}</p>
             </div>
             <DocumentTextIcon className="w-8 h-8 text-gray-500" />
           </div>
@@ -293,7 +380,7 @@ const IncidentReport: React.FC = () => {
             <div>
               <p className="text-sm font-medium text-gray-600">Đang xử lý</p>
               <p className="text-2xl font-bold text-blue-600">
-                {incidents.filter(i => i.status === 'in-progress').length}
+                {String(incidents.filter(i => i.status === 'IN_PROGRESS').length)}
               </p>
             </div>
             <ClockIcon className="w-8 h-8 text-blue-500" />
@@ -305,334 +392,196 @@ const IncidentReport: React.FC = () => {
             <div>
               <p className="text-sm font-medium text-gray-600">Đã giải quyết</p>
               <p className="text-2xl font-bold text-green-600">
-                {incidents.filter(i => i.status === 'resolved').length}
+                {String(incidents.filter(i => i.status === 'RESOLVED').length)}
               </p>
             </div>
             <CheckCircleIcon className="w-8 h-8 text-green-500" />
           </div>
         </div>
-
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Nghiêm trọng</p>
-              <p className="text-2xl font-bold text-red-600">
-                {incidents.filter(i => i.severity === 'critical' || i.severity === 'high').length}
-              </p>
-            </div>
-            <ExclamationTriangleSolidIcon className="w-8 h-8 text-red-500" />
-          </div>
-        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Incident List */}
-        <div className="lg:col-span-2">
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-            <div className="p-6 border-b border-gray-200">
-              <h2 className="text-xl font-semibold text-gray-900">
-                Danh sách sự cố ({filteredIncidents.length})
-              </h2>
-            </div>
+      {/* Incident List - Table Layout */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+        <div className="p-6 border-b border-gray-200">
+          <h2 className="text-xl font-semibold text-gray-900">
+            Danh sách sự cố ({String(filteredIncidents.length)})
+          </h2>
+        </div>
 
-            <div className="p-6">
-              <div className="space-y-4">
-                {filteredIncidents.map((incident) => (
-                  <div
-                    key={incident.id}
-                    onClick={() => setSelectedIncident(incident)}
-                    className={`cursor-pointer rounded-lg border-2 p-4 transition-all hover:shadow-md ${
-                      selectedIncident?.id === incident.id 
-                        ? 'border-blue-500 bg-blue-50' 
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                  >
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
+        <div className="overflow-x-auto">
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
+              <span className="ml-3 text-gray-600">Đang tải...</span>
+            </div>
+          ) : (
+            <>
+              <table className="w-full">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID xe / Biển số</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Loại xe / Model</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tiêu đề sự cố</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trạng thái</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Độ ưu tiên</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Người báo cáo</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Thời gian</th>
+                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {filteredIncidents.map((incident) => (
+                    <tr 
+                      key={incident.id}
+                      className="hover:bg-gray-50 transition-colors"
+                    >
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900">{String(incident.vehicleId)}</div>
+                        <div className="text-sm text-gray-500">{String(incident.licensePlate)}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{String(incident.vehicleModel)}</div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="text-sm font-medium text-gray-900">{String(incident.title)}</div>
+                        <div className="text-sm text-gray-500 line-clamp-1">{String(incident.description)}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center gap-2">
                           {getStatusIcon(incident.status)}
-                          <h3 className="text-lg font-semibold text-gray-900">{incident.title}</h3>
-                        </div>
-                        
-                        <div className="flex items-center gap-3 mb-2">
-                          <span className={`px-2 py-1 text-xs font-medium rounded ${getSeverityColor(incident.severity)}`}>
-                            {getSeverityText(incident.severity)}
-                          </span>
                           <span className={`px-2 py-1 text-xs font-medium rounded ${getStatusColor(incident.status)}`}>
                             {getStatusText(incident.status)}
                           </span>
                         </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {incident.priority ? (
+                          <span className={`px-2 py-1 text-xs font-medium rounded ${getPriorityColor(incident.priority)}`}>
+                            {getPriorityText(incident.priority)}
+                          </span>
+                        ) : (
+                          <span className="px-2 py-1 text-xs font-medium rounded bg-gray-100 text-gray-800">
+                            Chưa xác định
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{String(incident.reportedBy)}</div>
+                        <div className="text-sm text-gray-500">{String(incident.stationName || 'N/A')}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {String(incident.reportedAt)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+                        <div className="flex justify-center gap-2 flex-wrap">
+                          {/* Start Processing */}
+                          {incident.status === 'OPEN' && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                updateIncidentStatus(incident.id, 'IN_PROGRESS');
+                              }}
+                              className="px-3 py-1.5 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                            >
+                              Bắt đầu xử lý
+                            </button>
+                          )}
 
-                        <div className="grid grid-cols-2 gap-4 text-sm text-gray-600 mb-2">
-                          <div>Xe: <span className="font-medium text-gray-900">{incident.vehicleModel} - {incident.licensePlate}</span></div>
-                          <div>Người báo cáo: <span className="font-medium text-gray-900">{incident.reportedBy}</span></div>
-                          <div>Thời gian: <span className="font-medium text-gray-900">{incident.reportedAt}</span></div>
-                          <div>Vị trí: <span className="font-medium text-gray-900">{incident.position}</span></div>
+                          {/* Add Resolution - Available for OPEN and IN_PROGRESS */}
+                          {(incident.status === 'OPEN' || incident.status === 'IN_PROGRESS') && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleOpenResolutionModal(incident);
+                              }}
+                              className="px-3 py-1.5 text-xs bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors"
+                            >
+                              Thêm giải pháp
+                            </button>
+                          )}
+
+                          {/* Mark Complete */}
+                          {incident.status === 'IN_PROGRESS' && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                updateIncidentStatus(incident.id, 'RESOLVED');
+                              }}
+                              className="px-3 py-1.5 text-xs bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
+                            >
+                              Hoàn thành
+                            </button>
+                          )}
+
+                          {/* View Details */}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleViewIncident(incident);
+                            }}
+                            className="px-3 py-1.5 text-xs bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors"
+                          >
+                            Chi tiết
+                          </button>
                         </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
 
-                        <p className="text-sm text-gray-600 line-clamp-2">{incident.description}</p>
-                      </div>
-                    </div>
-
-                    {/* Quick Actions for staff */}
-                    {incident.status === 'reported' && (
-                      <div className="flex gap-2 mt-3 pt-3 border-t border-gray-200">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            updateIncidentStatus(incident.id, 'in-progress');
-                          }}
-                          className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
-                        >
-                          Bắt đầu xử lý
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            updateIncidentStatus(incident.id, 'rejected');
-                          }}
-                          className="px-3 py-1 text-xs bg-gray-600 text-white rounded hover:bg-gray-700"
-                        >
-                          Từ chối
-                        </button>
-                      </div>
-                    )}
-
-                    {incident.status === 'in-progress' && (
-                      <div className="flex gap-2 mt-3 pt-3 border-t border-gray-200">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            updateIncidentStatus(incident.id, 'resolved');
-                          }}
-                          className="px-3 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700"
-                        >
-                          Đánh dấu hoàn thành
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-
-              {filteredIncidents.length === 0 && (
+              {filteredIncidents.length === 0 && !loading && (
                 <div className="text-center py-8">
                   <ExclamationTriangleIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                   <p className="text-gray-600">Không tìm thấy sự cố nào phù hợp với bộ lọc.</p>
                 </div>
               )}
-            </div>
-          </div>
-        </div>
-
-        {/* Incident Details */}
-        <div className="lg:col-span-1">
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 sticky top-6">
-            {selectedIncident ? (
-              <>
-                <div className="p-6 border-b border-gray-200">
-                  <h3 className="text-lg font-semibold text-gray-900">Chi tiết sự cố</h3>
-                  <p className="text-sm text-gray-600">{selectedIncident.id}</p>
-                </div>
-
-                <div className="p-6 space-y-4">
-                  <div>
-                    <h4 className="text-sm font-medium text-gray-900 mb-2">{selectedIncident.title}</h4>
-                    <p className="text-sm text-gray-600">{selectedIncident.description}</p>
-                  </div>
-
-                  <div className="grid grid-cols-1 gap-3 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Xe:</span>
-                      <span className="font-medium">{selectedIncident.vehicleModel}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Biển số:</span>
-                      <span className="font-medium">{selectedIncident.licensePlate}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Người báo cáo:</span>
-                      <span className="font-medium">{selectedIncident.reportedBy}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Thời gian báo cáo:</span>
-                      <span className="font-medium">{selectedIncident.reportedAt}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Vị trí:</span>
-                      <span className="font-medium">{selectedIncident.position}</span>
-                    </div>
-                    {selectedIncident.assignedTo && (
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Phụ trách:</span>
-                        <span className="font-medium">{selectedIncident.assignedTo}</span>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex gap-2">
-                    <span className={`px-2 py-1 text-xs font-medium rounded ${getSeverityColor(selectedIncident.severity)}`}>
-                      {getSeverityText(selectedIncident.severity)}
-                    </span>
-                    <span className={`px-2 py-1 text-xs font-medium rounded ${getStatusColor(selectedIncident.status)}`}>
-                      {getStatusText(selectedIncident.status)}
-                    </span>
-                  </div>
-
-                  {selectedIncident.images.length > 0 && (
-                    <div>
-                      <h4 className="text-sm font-medium text-gray-900 mb-2">Hình ảnh</h4>
-                      <div className="grid grid-cols-2 gap-2">
-                        {selectedIncident.images.map((image, index) => (
-                          <img
-                            key={index}
-                            src={image}
-                            alt={`Incident ${index + 1}`}
-                            className="w-full h-20 object-cover rounded border"
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {selectedIncident.resolution && (
-                    <div>
-                      <h4 className="text-sm font-medium text-gray-900 mb-2">Giải pháp</h4>
-                      <p className="text-sm text-gray-600 bg-green-50 p-2 rounded">{selectedIncident.resolution}</p>
-                      {selectedIncident.resolvedAt && (
-                        <p className="text-xs text-gray-500 mt-1">Giải quyết lúc: {selectedIncident.resolvedAt}</p>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </>
-            ) : (
-              <div className="p-6 text-center">
-                <ExclamationTriangleIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-600">Chọn một sự cố để xem chi tiết</p>
-              </div>
-            )}
-          </div>
+            </>
+          )}
         </div>
       </div>
 
-      {/* Report Form Modal */}
-      {showReportForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900">Báo cáo sự cố mới</h3>
-            </div>
+      {/* Add Incident Modal */}
+      <AddIncidentModal
+        isOpen={showReportForm}
+        onClose={() => setShowReportForm(false)}
+        onSubmit={handleSubmitReport}
+      />
 
-            <form onSubmit={handleSubmitReport} className="p-6 space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Model xe
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    value={newIncident.vehicleModel}
-                    onChange={(e) => setNewIncident({ ...newIncident, vehicleModel: e.target.value })}
-                    placeholder="VD: Tesla Model 3"
-                  />
-                </div>
+      {/* Incident Details Modal */}
+      {selectedIncident && (
+        <IncidentDetailsModal
+          incident={selectedIncident}
+          isOpen={showDetailsModal}
+          onClose={() => {
+            setShowDetailsModal(false);
+            setSelectedIncident(null);
+          }}
+          onUpdateStatus={updateIncidentStatus}
+        />
+      )}
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Biển số xe
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    value={newIncident.licensePlate}
-                    onChange={(e) => setNewIncident({ ...newIncident, licensePlate: e.target.value })}
-                    placeholder="VD: 30A-12345"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Tiêu đề sự cố
-                </label>
-                <input
-                  type="text"
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  value={newIncident.title}
-                  onChange={(e) => setNewIncident({ ...newIncident, title: e.target.value })}
-                  placeholder="Mô tả ngắn gọn về sự cố"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Mô tả chi tiết
-                </label>
-                <textarea
-                  required
-                  rows={4}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  value={newIncident.description}
-                  onChange={(e) => setNewIncident({ ...newIncident, description: e.target.value })}
-                  placeholder="Mô tả chi tiết về sự cố, triệu chứng, thời điểm xảy ra..."
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Mức độ nghiêm trọng
-                  </label>
-                  <select
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    value={newIncident.severity}
-                    onChange={(e) => setNewIncident({ ...newIncident, severity: e.target.value as any })}
-                  >
-                    <option value="low">Thấp</option>
-                    <option value="medium">Trung bình</option>
-                    <option value="high">Cao</option>
-                    <option value="critical">Nghiêm trọng</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Vị trí
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    value={newIncident.position}
-                    onChange={(e) => setNewIncident({ ...newIncident, position: e.target.value })}
-                    placeholder="VD: Trạm A - Vị trí 1"
-                  />
-                </div>
-              </div>
-
-              <div className="flex gap-3 pt-4">
-                <button
-                  type="submit"
-                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-                >
-                  Gửi báo cáo
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowReportForm(false)}
-                  className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
-                >
-                  Hủy
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+      {/* Issue Resolution Modal */}
+      {resolutionIncident && (
+        <IssueResolutionModal
+          isOpen={showResolutionModal}
+          onClose={() => {
+            setShowResolutionModal(false);
+            setResolutionIncident(null);
+          }}
+          onSubmit={(resolutionData) => handleAddResolution(resolutionIncident.id, resolutionData)}
+          issue={{
+            id: resolutionIncident.id,
+            title: resolutionIncident.title,
+            description: resolutionIncident.description,
+            vehicleModel: resolutionIncident.vehicleModel,
+            licensePlate: resolutionIncident.licensePlate,
+            reportedBy: resolutionIncident.reportedBy,
+            priority: resolutionIncident.priority,
+            status: resolutionIncident.status
+          }}
+          loading={loading}
+        />
       )}
     </div>
   );

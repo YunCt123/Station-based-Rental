@@ -60,6 +60,7 @@ const RentalPayment: React.FC = () => {
   const [rentals, setRentals] = useState<RentalRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [_transactionRef, setTransactionRef] = useState<string>('');
 const paymentMethods: PaymentMethod[] = [
     {

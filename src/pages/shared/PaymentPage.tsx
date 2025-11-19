@@ -8,6 +8,8 @@ import {
 } from "@ant-design/icons";
 import { bookingService } from "../../services/bookingService";
 import type { Booking, Payment } from "../../services/bookingService";
+import payosLogo from "../../assets/payos-logo.jpg";
+import vnpayLogo from "../../assets/vnpay-logo.png";
 
 const { Title, Text, Paragraph } = Typography;
 const { Step } = Steps;
@@ -136,7 +138,7 @@ const PaymentPage: React.FC = () => {
   // Load booking data function
   const loadBookingData = useCallback(async () => {
     if (!bookingId) {
-      message.error('Booking ID is required');
+      message.error('Yêu cầu mã đặt chỗ');
       navigate('/vehicles');
       return;
     }
@@ -169,7 +171,7 @@ const PaymentPage: React.FC = () => {
 
     } catch (error) {
       console.error('Error loading payment data:', error);
-      message.error('Failed to load booking information');
+      message.error('Không thể tải thông tin đặt chỗ');
       navigate('/vehicles');
     } finally {
       setLoading(false);
@@ -210,20 +212,20 @@ const PaymentPage: React.FC = () => {
   // Handle PayOS payment creation
   const handlePayOSPayment = async () => {
     if (!booking || !booking.pricing_snapshot) {
-      message.error('Booking information is not available');
+      message.error('Thông tin đặt chỗ không có sẵn');
       return;
     }
 
     // Prevent multiple clicks
     if (creating) {
-      message.warning('Payment is already being processed...');
+      message.warning('Thanh toán đang được xử lý...');
       return;
     }
 
     // Prevent rapid successive payments (5 second cooldown)
     const now = Date.now();
     if (now - lastPaymentAttempt < 5000) {
-      message.warning('Please wait before making another payment attempt...');
+      message.warning('Vui lòng đợi trước khi thực hiện thanh toán khác...');
       return;
     }
 
@@ -282,11 +284,11 @@ const PaymentPage: React.FC = () => {
           return;
         }
         
-        message.error('Payment URL not received from server. Please try again.');
+        message.error('URL thanh toán không nhận được từ máy chủ. Vui lòng thử lại.');
         return;
       }
       
-      message.success('Redirecting to PayOS payment...');
+      message.success('Đang chuyển hướng đến thanh toán PayOS...');
       
       // Redirect to PayOS payment URL
       console.log('🔄 Redirecting to:', paymentResponse.paymentUrl);
@@ -294,7 +296,7 @@ const PaymentPage: React.FC = () => {
       
     } catch (error) {
       console.error('Payment creation error:', error);
-      message.error('Failed to create payment. Please try again.');
+      message.error('Không thể tạo thanh toán. Vui lòng thử lại.');
     } finally {
       setCreating(false);
     }
@@ -303,20 +305,20 @@ const PaymentPage: React.FC = () => {
   // Handle VNPAY payment (fallback)
   const handleVNPayPayment = async () => {
     if (!booking || !booking.pricing_snapshot) {
-      message.error('Booking information is not available');
+      message.error('Thông tin đặt chỗ không có sẵn');
       return;
     }
 
     // Prevent multiple clicks
     if (creating) {
-      message.warning('Payment is already being processed...');
+      message.warning('Thanh toán đang được xử lý...');
       return;
     }
 
     // Prevent rapid successive payments (5 second cooldown)
     const now = Date.now();
     if (now - lastPaymentAttempt < 5000) {
-      message.warning('Please wait before making another payment attempt...');
+      message.warning('Vui lòng đợi trước khi thực hiện thanh toán khác...');
       return;
     }
 
@@ -384,11 +386,11 @@ const PaymentPage: React.FC = () => {
       
       if (!paymentUrl || typeof paymentUrl !== 'string') {
         console.error('❌ No VNPAY payment URL found in response!');
-        message.error('Payment URL not received from server. Please try again.');
+        message.error('URL thanh toán không nhận được từ máy chủ. Vui lòng thử lại.');
         return;
       }
       
-      message.success('Redirecting to VNPAY payment...');
+      message.success('Đang chuyển hướng đến thanh toán VNPAY...');
       
       // Redirect to VNPAY payment URL
       console.log('🔄 Redirecting to VNPAY:', paymentUrl);
@@ -396,7 +398,7 @@ const PaymentPage: React.FC = () => {
       
     } catch (error) {
       console.error('Payment creation error:', error);
-      message.error('Failed to create payment. Please try again.');
+      message.error('Không thể tạo thanh toán. Vui lòng thử lại.');
     } finally {
       setCreating(false);
     }
@@ -481,7 +483,7 @@ const PaymentPage: React.FC = () => {
             <Title level={3}>Không tìm thấy đặt chỗ</Title>
             <Paragraph>Đặt chỗ mà bạn đang tìm kiếm không thể được tìm thấy.</Paragraph>
             <Button type="primary" onClick={() => navigate('/vehicles')}>
-              Quay lại xe
+              Quay lại chọn xe
             </Button>
           </div>
         </Card>
@@ -494,7 +496,7 @@ const PaymentPage: React.FC = () => {
       {/* Header */}
       <div className="mb-6">
         <div className="flex justify-between items-center mb-2">
-          <Title level={2}>Payment</Title>
+          <Title level={2}>Thanh toán</Title>
           <Button 
             onClick={loadBookingData}
             loading={loading}
@@ -504,7 +506,7 @@ const PaymentPage: React.FC = () => {
           </Button>
         </div>
         <Text type="secondary">
-          Complete your booking • Booking ID: {booking._id}
+          Hoàn thành đặt chỗ của bạn • Mã đặt chỗ: {booking._id}
         </Text>
         
         {/* Helpful message about payment errors */}
@@ -520,45 +522,45 @@ const PaymentPage: React.FC = () => {
       <div className="mb-6">
         <Steps current={2} status="process">
           <Step 
-            title="Vehicle Selection" 
-            description="Choose your car"
+            title="Chọn xe" 
+            description="Chọn xe của bạn"
             status="finish"
           />
           <Step 
-            title="Booking Details" 
-            description="Enter your information"
+            title="Chi tiết đặt chỗ" 
+            description="Nhập thông tin của bạn"
             status="finish"
           />
           <Step 
-            title="Payment" 
-            description="Complete your booking"
+            title="Thanh toán" 
+            description="Hoàn thành đặt chỗ"
             status="process"
           />
         </Steps>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Payment Section */}
-        <div className="md:col-span-2">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Payment Section (narrower on lg to give more space to summary) */}
+        <div className="lg:col-span-1">
           {/* Payment Status */}
           {renderPaymentStatus()}
 
           {/* Payment Methods */}
           {booking.status === 'HELD' && (
-            <Card title="Choose Payment Method" className="mb-4">
+            <Card title="Chọn phương thức thanh toán" className="mb-4">
               <div className="space-y-4">
                 {/* PayOS Payment */}
                 <div className="p-4 border border-gray-200 rounded-lg hover:border-blue-400 cursor-pointer">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="w-12 h-8 bg-blue-600 rounded flex items-center justify-center">
-                        <Text className="text-white font-bold text-xs">PayOS</Text>
+                      <div className="w-16 h-10 flex items-center justify-center">
+                        <img src={payosLogo} alt="PayOS" className="w-16 h-10 object-contain" />
                       </div>
                       <div>
                         <Text className="font-semibold">PayOS</Text>
                         <br />
                         <Text className="text-sm text-gray-500">
-                          Secure payment via PayOS gateway
+                          Thanh toán bảo mật qua cổng PayOS
                         </Text>
                       </div>
                     </div>
@@ -568,7 +570,7 @@ const PaymentPage: React.FC = () => {
                       onClick={handlePayOSPayment}
                       className="bg-blue-600 hover:bg-blue-700"
                     >
-                      Pay Now
+                      Thanh toán ngay
                     </Button>
                   </div>
                 </div>
@@ -577,14 +579,14 @@ const PaymentPage: React.FC = () => {
                 <div className="p-4 border border-gray-200 rounded-lg hover:border-red-400 cursor-pointer">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="w-12 h-8 bg-red-600 rounded flex items-center justify-center">
-                        <Text className="text-white font-bold text-xs">VNPAY</Text>
+                      <div className="w-16 h-10 flex items-center justify-center">
+                        <img src={vnpayLogo} alt="VNPAY" className="w-16 h-10 object-contain" />
                       </div>
                       <div>
                         <Text className="font-semibold">VNPAY</Text>
                         <br />
                         <Text className="text-sm text-gray-500">
-                          Vietnam payment gateway (Sandbox)
+                          Cổng thanh toán Việt Nam (Sandbox)
                         </Text>
                       </div>
                     </div>
@@ -593,7 +595,7 @@ const PaymentPage: React.FC = () => {
                       onClick={handleVNPayPayment}
                       className="border-red-600 text-red-600 hover:bg-red-50"
                     >
-                      Pay Now
+                      Thanh toán ngay
                     </Button>
                   </div>
                 </div>
@@ -602,11 +604,11 @@ const PaymentPage: React.FC = () => {
               {/* Payment Info */}
               <Divider />
               <div className="text-sm text-gray-600">
-                <Text>🔒 Your payment is secured with 256-bit SSL encryption</Text>
+                <Text>- Thanh toán của bạn được bảo mật với mã hóa SSL 256-bit</Text>
+                <br /> 
+                <Text>- Chấp nhận tất cả các thẻ tín dụng và ghi nợ chính</Text>
                 <br />
-                <Text>💳 All major credit and debit cards accepted</Text>
-                <br />
-                <Text>⚡ Instant payment confirmation</Text>
+                <Text>-  Xác nhận thanh toán tức thì</Text>
               </div>
             </Card>
           )}
@@ -617,13 +619,13 @@ const PaymentPage: React.FC = () => {
               <div className="text-center p-4">
                 <CheckCircleOutlined className="text-green-600 text-4xl mb-3" />
                 <Title level={4} className="text-green-800">
-                  Payment Successful!
+                  Thanh toán thành công!
                 </Title>
                 <Paragraph className="text-green-600">
-                  Your booking has been confirmed. You can now proceed to vehicle pickup.
+                  Đặt chỗ của bạn đã được xác nhận. Bạn có thể tiến hành đến nhận xe.
                 </Paragraph>
                 <Button type="primary" size="large" onClick={() => navigate('/dashboard/bookings')}>
-                  View My Bookings
+                  Xem đặt chỗ của tôi
                 </Button>
               </div>
             </Card>
@@ -634,31 +636,31 @@ const PaymentPage: React.FC = () => {
               <div className="text-center p-4">
                 <ExclamationCircleOutlined className="text-red-600 text-4xl mb-3" />
                 <Title level={4} className="text-red-800">
-                  Booking Expired
+                  Đặt chỗ đã hết hạn
                 </Title>
                 <Paragraph className="text-red-600">
-                  This booking has expired. Please create a new booking.
+                  Đặt chỗ này đã hết hạn. Vui lòng tạo đặt chỗ mới.
                 </Paragraph>
                 <Button type="primary" size="large" onClick={() => navigate('/vehicles')}>
-                  Book Again
+                  Đặt lại
                 </Button>
               </div>
             </Card>
           )}
         </div>
 
-        {/* Order Summary */}
-        <div className="md:col-span-1">
-          <Card title="Order Summary" className="sticky top-4">
+  {/* Order Summary (wider on lg) */}
+  <div className="md:col-span-1 lg:col-span-1">
+          <Card title="Tóm tắt đơn hàng" className="sticky top-4">
             {/* Vehicle Info */}
             <div className="mb-4">
               {booking.vehicle_snapshot && (
                 <>
-                  <Text className="font-semibold">{booking.vehicle_snapshot.name}</Text>
+                  <Text className="font-semibold"> Tên Xe: {booking.vehicle_snapshot.name}</Text>
                   <br />
-                  <Text className="text-sm text-gray-500">
-                    • {booking.vehicle_snapshot.type} <br/>
-                    • {booking.vehicle_snapshot.brand}
+                  <Text className="text-sm text-gray-500 underline">
+                    Loại xe: {booking.vehicle_snapshot.type} <br/>
+                    Thương hiệu: {booking.vehicle_snapshot.brand}
                   </Text>
                 </>
               )}
@@ -668,26 +670,34 @@ const PaymentPage: React.FC = () => {
 
             {/* Booking Details */}
             <div className="space-y-2 mb-4">
-              <div className="flex justify-between">
-                <Text className="text-sm">Pickup:</Text>
+               <div className="flex justify-between">
+                <Text className="text-sm">Hình thức thuê:</Text>
                 <Text className="text-sm">
-                  {new Date(booking.start_at).toLocaleDateString()}
+                  {booking.pricing_snapshot?.details?.rentalType === 'daily' ? 'Theo ngày' : 'Theo giờ'}
                 </Text>
               </div>
               <div className="flex justify-between">
-                <Text className="text-sm">Return:</Text>
+                <Text className="text-sm">Nhận xe:</Text>
                 <Text className="text-sm">
-                  {new Date(booking.end_at).toLocaleDateString()}
+                  {new Date(booking.start_at).toLocaleDateString('vi-VN')}
                 </Text>
               </div>
               <div className="flex justify-between">
-                <Text className="text-sm">Status:</Text>
+                <Text className="text-sm">Trả xe:</Text>
+                <Text className="text-sm">
+                  {new Date(booking.end_at).toLocaleDateString('vi-VN')}
+                </Text>
+              </div>
+              <div className="flex justify-between">
+                <Text className="text-sm">Trạng thái:</Text>
                 <Tag color={
                   booking.status === 'HELD' ? 'orange' :
                   booking.status === 'CONFIRMED' ? 'green' :
                   booking.status === 'CANCELLED' ? 'red' : 'default'
                 }>
-                  {booking.status}
+                  {booking.status === 'HELD' ? 'Đang giữ chỗ' :
+                   booking.status === 'CONFIRMED' ? 'Đã xác nhận' :
+                   booking.status === 'CANCELLED' ? 'Đã hủy' : booking.status}
                 </Tag>
               </div>
             </div>
@@ -698,26 +708,26 @@ const PaymentPage: React.FC = () => {
             {booking.pricing_snapshot && (
               <div className="space-y-2">
                 <div className="flex justify-between">
-                  <Text>Daily Rate:</Text>
+                  <Text>Giá theo ngày:</Text>
                   <Text>{(() => {
                     // Display VND directly
                     const dailyRate = booking.pricing_snapshot.daily_rate || 0;
-                    return new Intl.NumberFormat('vi-VN').format(dailyRate) + ' VND';
-                  })()}/day</Text>
+                    return new Intl.NumberFormat('vi-VN').format(dailyRate) + 'đ';
+                  })()}/ngày</Text>
                 </div>
                 {booking.pricing_snapshot.hourly_rate && (
                   <div className="flex justify-between">
-                    <Text>Hourly Rate:</Text>
+                    <Text>Giá theo giờ:</Text>
                     <Text>{(() => {
                       // Display VND directly
                       const hourlyRate = booking.pricing_snapshot.hourly_rate;
-                      return new Intl.NumberFormat('vi-VN').format(hourlyRate) + ' VND';
-                    })()}/hour</Text>
+                      return new Intl.NumberFormat('vi-VN').format(hourlyRate) + 'đ';
+                    })()}/giờ</Text>
                   </div>
                 )}
                 
                 <Divider className="my-2" />
-                <Text strong>Booking Summary</Text>
+                <Text strong>Tóm tắt đặt chỗ</Text>
                 
                 {(() => {
                   // ✅ Use calculated pricing from state or fallback
@@ -731,39 +741,46 @@ const PaymentPage: React.FC = () => {
                     deposit: booking.pricing_snapshot?.deposit || 0
                   };
                   
+                  const rentalTypeText = pricing.rentalType === 'daily' ? 'theo ngày' : 'theo giờ';
+                  
                   return (
                     <>
                       <div className="flex justify-between">
-                        <Text>Base Price ({pricing.hours}h{pricing.rentalType === 'daily' ? ` = ${Math.ceil(pricing.hours/24)}d` : ''}):</Text>
-                        <Text>${pricing.basePrice}</Text>
+                        <Text>Giá cơ bản ({pricing.hours}h{pricing.rentalType === 'daily' ? ` = ${Math.ceil(pricing.hours/24)}d` : ''}) - {rentalTypeText}:</Text>
+                        <Text>{pricing.basePrice.toLocaleString('vi-VN')}đ</Text>
                       </div>
                       
                       <div className="flex justify-between">
-                        <Text>Taxes (10%):</Text>
-                        <Text>${pricing.taxes}</Text>
+                        <Text>Thuế (10%):</Text>
+                        <Text>{pricing.taxes.toLocaleString('vi-VN')}đ</Text>
                       </div>
                       
                       {((pricing.insurance > 0) || booking.insurance_option) && (
                         <div className="flex justify-between">
-                          <Text>Insurance:</Text>
-                          <Text>${pricing.insurance}</Text>
+                          <Text>Bảo hiểm:</Text>
+                          <Text>{pricing.insurance.toLocaleString('vi-VN')}đ</Text>
                         </div>
                       )}
                       
                       <Divider className="my-2" />
                       <div className="flex justify-between font-semibold">
-                        <Text strong>Total:</Text>
-                        <Text strong>${pricing.totalPrice}</Text>
+                        <Text strong>Tổng cộng:</Text>
+                        <Text strong>{pricing.totalPrice.toLocaleString('vi-VN')}đ</Text>
                       </div>
-                      <div className="flex justify-between text-green-600">
-                        <Text className="text-green-600">Required Deposit:</Text>
-                        <Text strong className="text-green-600">${pricing.deposit}</Text>
+                     
+                      <div className="flex justify-between text-green-600 bg-green-100 p-2 rounded">
+                        <Text className="text-green-600">Tiền cọc yêu cầu:</Text>
+                        <Text strong className="text-green-600">{pricing.deposit.toLocaleString('vi-VN')}đ</Text>
+                      </div>
+                       <div className="flex justify-between text-green-600 bg-yellow-100 p-2 rounded">
+                        <Text className="text-green-600">Tiền còn lại (Dự kiến):</Text>
+                        <Text strong className="text-green-600">{(pricing.totalPrice - pricing.deposit).toLocaleString('vi-VN')}đ</Text>
                       </div>
                     </>
                   );
                 })()}
                 <div className="text-xs text-gray-500 mt-2">
-                  * Remaining balance will be charged at return time
+                  * Số tiền còn lại sẽ được tính phí khi trả xe ( Các khoản phí bổ sung có thể áp dụng)
                 </div>
               </div>
             )}
@@ -775,8 +792,8 @@ const PaymentPage: React.FC = () => {
                 <div className="text-center p-3 bg-yellow-50 rounded-lg">
                   <ClockCircleOutlined className="text-yellow-600 mr-2" />
                   <Text className="text-yellow-800 text-sm">
-                    Booking expires at:{" "}
-                    {new Date(booking.hold_expires_at).toLocaleString()}
+                    Đặt chỗ hết hạn lúc:{" "}
+                    {new Date(booking.hold_expires_at).toLocaleString('vi-VN')}
                   </Text>
                 </div>
               </>

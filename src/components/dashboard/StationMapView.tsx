@@ -32,6 +32,7 @@ export const StationMapView: React.FC<StationMapViewProps> = ({
     }
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const getUtilizationRate = (station: any) => {
     return (station.currentVehicles / station.capacity) * 100;
   };

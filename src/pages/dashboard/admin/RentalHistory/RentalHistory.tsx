@@ -1,48 +1,134 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { getRentals, findRental, addRental, updateRental, deleteRental, resetRentals } from '../../../../data/rentalsStore';
-import type { Rental as RentalType } from '../../../../data/rentalsStore';
-import { DeleteOutlined, EyeOutlined, EditOutlined, PlusOutlined } from "@ant-design/icons";
-import { Button, Input, Modal, Select, InputNumber } from 'antd';
-// Use Rental type from the store for consistent shape
-type Rental = RentalType;
+import { EyeOutlined, ReloadOutlined } from "@ant-design/icons";
+import { Button, Input, Modal, Table, Tag, message, Space, Descriptions, Image } from 'antd';
+import { rentalService } from '../../../../services/rentalService';
+import { bookingService } from '../../../../services/bookingService';
+import type { StationRental } from '../../../../services/rentalService';
+import type { Booking } from '../../../../services/bookingService';
 
-const formatDate = (iso?: string) => iso ? new Date(iso).toLocaleString('vi-VN') : '-';
+const formatDate = (iso?: string) => iso ? new Date(iso).toLocaleString('vi-VN', {
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+  hour: '2-digit',
+  minute: '2-digit'
+}) : '-';
+
+const formatCurrency = (amount: number, currency: string = 'VND') => {
+  return new Intl.NumberFormat('vi-VN', {
+    style: 'currency',
+    currency: currency
+  }).format(amount);
+};
+
+// Helper function to safely get nested value
+const getNestedValue = (obj: any, path: string, defaultValue: any = null) => {
+  try {
+    return path.split('.').reduce((current, key) => current?.[key], obj) ?? defaultValue;
+  } catch {
+    return defaultValue;
+  }
+};
+
+// Helper to extract ID from object or string
+const extractId = (value: any): string => {
+  if (!value) return '';
+  if (typeof value === 'string') return value;
+  if (value._id) return value._id.toString();
+  if (value.$oid) return value.$oid;
+  return String(value);
+};
+
+// Helper to check if object is populated
+const isPopulated = (value: any): boolean => {
+  return value && typeof value === 'object' && '_id' in value;
+};
+
+// Helper to get booking info
+const getBookingInfo = (rental: StationRental) => {
+  const bookingId = rental.booking_id;
+  
+  if (isPopulated(bookingId)) {
+    const booking = bookingId as Booking;
+    return {
+      start_at: booking.start_at,
+      end_at: booking.end_at,
+      total_amount: booking.total_amount,
+      deposit_amount: booking.deposit_amount,
+      status: booking.status
+    };
+  }
+  
+  // Fallback to pickup/return times
+  return {
+    start_at: rental.pickup?.at,
+    end_at: rental.return?.at || rental.pickup?.at,
+    total_amount: rental.pricing_snapshot?.total_price || 0,
+    deposit_amount: rental.pricing_snapshot?.deposit || 0,
+    status: 'UNKNOWN'
+  };
+};
 
 const RentalHistory: React.FC = () => {
-
   const [query, setQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | Rental['status']>('all');
-  const [allRentals, setAllRentals] = useState(() => getRentals());
+  const [statusFilter, setStatusFilter] = useState<'all' | StationRental['status']>('all');
+  const [allRentals, setAllRentals] = useState<StationRental[]>([]);
+  const [loading, setLoading] = useState(false);
   const [viewVisible, setViewVisible] = useState(false);
-  const [selected, setSelected] = useState<Rental | null>(null);
-  const [formVisible, setFormVisible] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [formValues, setFormValues] = useState<Partial<Rental>>({});
+  const [selected, setSelected] = useState<StationRental | null>(null);
+
+  // Fetch rentals from API
+  const fetchRentals = async () => {
+    try {
+      setLoading(true);
+      console.log('🔄 Fetching all rentals...');
+      const data = await rentalService.getAllRentals({ limit: 100 });
+      console.log('✅ Rentals fetched:', data.length);
+      
+      if (data.length > 0) {
+        console.log('📊 Sample rental:', data[0]);
+        console.log('📅 Booking info:', getBookingInfo(data[0]));
+      }
+      
+      setAllRentals(data);
+    } catch (error) {
+      console.error('❌ Failed to fetch rentals:', error);
+      message.error('Không thể tải danh sách lịch sử thuê xe');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    setAllRentals(getRentals());
+    fetchRentals();
   }, []);
 
-  // Apply filters to the rental list
+  // Apply filters
   const filteredList = allRentals.filter(rental => {
-    // Filter by search query
-    const matchesQuery = query === '' || 
-      rental.name?.toLowerCase().includes(query.toLowerCase()) ||
-      rental.customerId?.toLowerCase().includes(query.toLowerCase()) ||
-      rental.vehicleId?.toLowerCase().includes(query.toLowerCase());
+    const userName = getNestedValue(rental, 'user_id.name', '').toLowerCase();
+    const userEmail = getNestedValue(rental, 'user_id.email', '').toLowerCase();
+    const userPhone = getNestedValue(rental, 'user_id.phoneNumber', '').toLowerCase();
+    const vehicleName = getNestedValue(rental, 'vehicle_id.name', '').toLowerCase();
+    const vehiclePlate = getNestedValue(rental, 'vehicle_id.licensePlate', '').toLowerCase();
     
-    // Filter by status
+    const searchLower = query.toLowerCase();
+    const matchesQuery = query === '' || 
+      userName.includes(searchLower) ||
+      userEmail.includes(searchLower) ||
+      userPhone.includes(searchLower) ||
+      vehicleName.includes(searchLower) ||
+      vehiclePlate.includes(searchLower) ||
+      extractId(rental._id).includes(searchLower);
+    
     const matchesStatus = statusFilter === 'all' || rental.status === statusFilter;
     
     return matchesQuery && matchesStatus;
   });
 
-  const openView = (id: string) => {
-    const r = findRental(id);
-    if (!r) return;
-    setSelected(r);
+  const openView = (rental: StationRental) => {
+    console.log('🔍 Opening rental detail:', rental);
+    setSelected(rental);
     setViewVisible(true);
   };
 
@@ -51,243 +137,446 @@ const RentalHistory: React.FC = () => {
     setSelected(null);
   };
 
-  const openAdd = () => {
-    setIsEditing(false);
-    setEditingId(null);
-    setFormValues({
-      name: '',
-      customerId: undefined,
-      vehicleId: '',
-      startAt: new Date().toISOString(),
-      endAt: undefined,
-      status: 'ongoing',
-      priceCents: 0,
-      notes: '',
-    });
-    setFormVisible(true);
-  };
-
-  const openEdit = (id: string) => {
-    const r = findRental(id);
-    if (!r) return;
-    setIsEditing(true);
-    setEditingId(id);
-    setFormValues({ ...r });
-    setFormVisible(true);
-  };
-
-  const closeForm = () => {
-    setFormVisible(false);
-    setIsEditing(false);
-    setEditingId(null);
-    setFormValues({});
-  };
-
-  const handleFormChange = (field: keyof Rental, value: any) => {
-    setFormValues(prev => ({ ...(prev as any), [field]: value }));
-  };
-
-  const submitForm = () => {
-    const payload: any = {
-      name: String(formValues.name || ''),
-      customerId: formValues.customerId,
-      vehicleId: String(formValues.vehicleId || ''),
-      startAt: String(formValues.startAt || new Date().toISOString()),
-      endAt: formValues.endAt ? String(formValues.endAt) : undefined,
-      status: (formValues.status as Rental['status']) || 'ongoing',
-      priceCents: Number(formValues.priceCents || 0),
-      notes: String(formValues.notes || ''),
+  // Get status tag
+  const getStatusTag = (status: string) => {
+    const configs: Record<string, { color: string; text: string }> = {
+      'CONFIRMED': { color: 'orange', text: 'Chờ nhận xe' },
+      'ONGOING': { color: 'blue', text: 'Đang thuê' },
+      'RETURN_PENDING': { color: 'gold', text: 'Chờ thanh toán' },
+      'COMPLETED': { color: 'green', text: 'Hoàn thành' },
+      'DISPUTED': { color: 'red', text: 'Tranh chấp' },
+      'REJECTED': { color: 'red', text: 'Bị từ chối' },
+      'CANCELLED': { color: 'default', text: 'Đã hủy' }
     };
-
-    if (isEditing && editingId) {
-      updateRental(editingId, payload);
-    } else {
-      addRental(payload);
-    }
-    setAllRentals(getRentals());
-    closeForm();
+    const config = configs[status] || { color: 'default', text: status };
+    return <Tag color={config.color}>{config.text}</Tag>;
   };
 
-  const handleDelete = (id: string) => {
-    Modal.confirm({
-      title: 'Xác nhận xoá',
-      content: 'Bạn có chắc muốn xoá bản ghi này không?',
-      onOk() {
-        deleteRental(id);
-        setAllRentals(getRentals());
+  // Table columns
+  const columns = [
+    {
+      title: 'Mã thuê',
+      dataIndex: '_id',
+      key: '_id',
+      width: 120,
+      render: (id: string | any) => {
+        const idStr = extractId(id);
+        return (
+          <span className="font-mono text-xs">{idStr.slice(-8) || 'N/A'}</span>
+        );
       }
-    });
-  };
+    },
+    {
+      title: 'Khách hàng',
+      key: 'customer',
+      width: 200,
+      render: (_: unknown, record: StationRental) => {
+        const userId = record.user_id;
+        const isUserPopulated = isPopulated(userId);
+        
+        if (isUserPopulated) {
+          const user = userId as any;
+          return (
+            <div>
+              <div className="font-medium">{user.name || 'Không rõ'}</div>
+              <div className="text-xs text-gray-500">{user.phoneNumber || '-'}</div>
+            </div>
+          );
+        } else {
+          return (
+            <div>
+              <div className="font-medium text-gray-400">ID: {extractId(userId).slice(-8)}</div>
+              <div className="text-xs text-gray-400">Chưa load thông tin</div>
+            </div>
+          );
+        }
+      }
+    },
+    {
+      title: 'Xe',
+      key: 'vehicle',
+      width: 200,
+      render: (_: unknown, record: StationRental) => {
+        const vehicleId = record.vehicle_id;
+        const isVehiclePopulated = isPopulated(vehicleId);
+        
+        if (isVehiclePopulated) {
+          const vehicle = vehicleId as any;
+          return (
+            <div className="flex items-center gap-2">
+              {vehicle.image && (
+                <Image
+                  src={vehicle.image}
+                  alt={vehicle.name}
+                  width={40}
+                  height={40}
+                  className="rounded object-cover"
+                  preview={false}
+                />
+              )}
+              <div>
+                <div className="font-medium">{vehicle.name || 'Không rõ'}</div>
+                <div className="text-xs text-gray-500">{vehicle.licensePlate || '-'}</div>
+              </div>
+            </div>
+          );
+        } else {
+          return (
+            <div className="text-gray-400">
+              <div className="font-medium">ID: {extractId(vehicleId).slice(-8)}</div>
+              <div className="text-xs">Chưa load thông tin</div>
+            </div>
+          );
+        }
+      }
+    },
+    {
+      title: 'Trạm',
+      key: 'station',
+      width: 150,
+      render: (_: unknown, record: StationRental) => {
+        const stationId = record.station_id;
+        const isStationPopulated = isPopulated(stationId);
+        
+        if (isStationPopulated) {
+          const station = stationId as any;
+          return <span>{station.name}</span>;
+        } else {
+          return <span className="text-gray-400">ID: {extractId(stationId).slice(-8)}</span>;
+        }
+      }
+    },
+    {
+      title: 'Thời gian thuê',
+      key: 'duration',
+      width: 180,
+      render: (_: unknown, record: StationRental) => {
+        const bookingInfo = getBookingInfo(record);
+        
+        return (
+          <div className="text-xs">
+            <div>Bắt đầu: {formatDate(bookingInfo.start_at)}</div>
+            <div>Kết thúc: {formatDate(bookingInfo.end_at)}</div>
+          </div>
+        );
+      }
+    },
+    {
+      title: 'Trạng thái',
+      dataIndex: 'status',
+      key: 'status',
+      width: 120,
+      render: (status: string) => getStatusTag(status || 'CONFIRMED')
+    },
+    {
+      title: 'Tổng tiền',
+      key: 'total',
+      width: 120,
+      render: (_: unknown, record: StationRental) => {
+        const total = record.charges?.total || record.pricing_snapshot?.total_price || 0;
+        const currency = record.pricing_snapshot?.currency || 'VND';
+        return (
+          <span className="font-semibold">
+            {formatCurrency(total, currency)}
+          </span>
+        );
+      }
+    },
+    {
+      title: 'Thao tác',
+      key: 'actions',
+      width: 100,
+      fixed: 'right' as const,
+      render: (_: unknown, record: StationRental) => (
+        <Button
+          type="text"
+          icon={<EyeOutlined />}
+          onClick={() => openView(record)}
+        >
+          Xem
+        </Button>
+      )
+    }
+  ];
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <Button type="text" className="px-0">
-          <Link to="/admin/dashboard" className="text-sm">← Back to dashboard</Link>
+          <Link to="/admin/dashboard" className="text-sm">← Quay lại dashboard</Link>
         </Button>
-
       </div>
 
       <div className="bg-white rounded-lg shadow p-6">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h1 className="text-2xl font-semibold text-gray-900">Lịch sử thuê</h1>
-            <p className="text-sm text-gray-500">Xem lịch sử đặt/thuê xe theo khách hàng và trạng thái</p>
+            <h1 className="text-2xl font-semibold text-gray-900">Lịch sử thuê xe</h1>
+            <p className="text-sm text-gray-500">
+              Xem tất cả lịch sử thuê xe của khách hàng ({filteredList.length} bản ghi)
+            </p>
           </div>
           
-          <div className="flex items-center space-x-3">
+          <Space>
             <Input.Search
-              placeholder="Tìm theo tên, email hoặc số điện thoại"
+              placeholder="Tìm theo tên, SĐT, email, xe..."
               allowClear
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              onSearch={(val) => setQuery(val)}
-              style={{ width: 360 }}
+              style={{ width: 300 }}
             />
-            <select className="border rounded-md px-2 py-2" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as any)}>
-              <option value="all">Tất cả</option>
-              <option value="completed">Hoàn thành</option>
-              <option value="ongoing">Đang chạy</option>
-              <option value="cancelled">Đã huỷ</option>
-            </select>
-            <button onClick={openAdd} className="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white rounded-md text-sm">
-              <PlusOutlined className="w-4 h-4 mr-2" /> Thêm khách hàng
-            </button>
-            <button 
-              onClick={() => {
-                resetRentals();
-                setAllRentals(getRentals());
-              }}
-              className="inline-flex items-center px-3 py-1.5 bg-red-600 text-white rounded-md text-sm"
+            <select 
+              className="border rounded-md px-3 py-2" 
+              value={statusFilter} 
+              onChange={(e) => setStatusFilter(e.target.value as any)}
             >
-              Reset Data
-            </button>
-          </div>
+              <option value="all">Tất cả trạng thái</option>
+              <option value="CONFIRMED">Chờ nhận xe</option>
+              <option value="ONGOING">Đang thuê</option>
+              <option value="RETURN_PENDING">Chờ thanh toán</option>
+              <option value="COMPLETED">Hoàn thành</option>
+              <option value="DISPUTED">Tranh chấp</option>
+              <option value="REJECTED">Bị từ chối</option>
+            </select>
+            <Button 
+              icon={<ReloadOutlined />}
+              onClick={fetchRentals}
+              loading={loading}
+            >
+              Làm mới
+            </Button>
+          </Space>
         </div>
 
+        <Table
+          columns={columns}
+          dataSource={filteredList}
+          rowKey={(record) => extractId(record._id)}
+          loading={loading}
+          pagination={{
+            pageSize: 10,
+            showSizeChanger: true,
+            showTotal: (total) => `Tổng ${total} bản ghi`
+          }}
+          scroll={{ x: 1200 }}
+        />
 
-        <div className="overflow-x-auto">
-          
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-200">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-800 uppercase tracking-wider">ID</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-800 uppercase tracking-wider">Tên khách hàng</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-800 uppercase tracking-wider">Xe</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-800 uppercase tracking-wider">Bắt đầu</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-800 uppercase tracking-wider">Kết thúc</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-800 uppercase tracking-wider">Trạng thái</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-800 uppercase tracking-wider">Giá thuê</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-800 uppercase tracking-wider"></th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {filteredList.map((r: RentalType) => {
-                return (
-                  <tr key={r.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{r.id}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{r.name}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{r.vehicleId}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatDate(r.startAt)}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatDate(r.endAt)}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    <span className={`px-2 py-0.5 rounded-full text-xs ${r.status === 'completed' ? 'bg-green-100 text-green-800' : r.status === 'ongoing' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'}`}>
-                        {r.status === 'completed' ? 'Hoàn thành' : r.status === 'ongoing' ? 'Đang chạy' : r.status === 'cancelled' ? 'Đã huỷ' : 'cancelled'}
+        {/* View Detail Modal */}
+        <Modal 
+          visible={viewVisible} 
+          title="Chi tiết thuê xe" 
+          onCancel={closeView}
+          width={800}
+          footer={[
+            <Button key="close" onClick={closeView}>Đóng</Button>
+          ]}
+        >
+          {selected && (() => {
+            const bookingInfo = getBookingInfo(selected);
+            
+            return (
+              <div className="space-y-4">
+                {/* Booking Info */}
+                <Descriptions title="Thông tin đặt xe" bordered size="small">
+                  <Descriptions.Item label="Mã booking">
+                    <span className="font-mono">{extractId(selected.booking_id)}</span>
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Trạng thái booking" span={2}>
+                    {isPopulated(selected.booking_id) && 
+                      getStatusTag((selected.booking_id as Booking).status)}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Giá trị booking">
+                    {formatCurrency(bookingInfo.total_amount, selected.pricing_snapshot?.currency)}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Tiền cọc" span={2}>
+                    {formatCurrency(bookingInfo.deposit_amount, selected.pricing_snapshot?.currency)}
+                  </Descriptions.Item>
+                </Descriptions>
+
+                {/* Customer Info */}
+                <Descriptions title="Thông tin khách hàng" bordered size="small">
+                  <Descriptions.Item label="Tên" span={2}>
+                    {getNestedValue(selected, 'user_id.name', 
+                      `ID: ${extractId(selected.user_id)}`)}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="SĐT">
+                    {getNestedValue(selected, 'user_id.phoneNumber', '-')}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Email" span={3}>
+                    {getNestedValue(selected, 'user_id.email', '-')}
+                  </Descriptions.Item>
+                </Descriptions>
+
+                {/* Vehicle Info */}
+                <Descriptions title="Thông tin xe" bordered size="small">
+                  <Descriptions.Item label="Xe" span={3}>
+                    <div className="flex items-center gap-2">
+                      {getNestedValue(selected, 'vehicle_id.image') && (
+                        <Image
+                          src={selected.vehicle_id.image}
+                          width={60}
+                          height={60}
+                          className="rounded"
+                        />
+                      )}
+                      <div>
+                        <div className="font-medium">
+                          {getNestedValue(selected, 'vehicle_id.name', 
+                            `ID: ${extractId(selected.vehicle_id)}`)}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          {getNestedValue(selected, 'vehicle_id.brand', '')} {getNestedValue(selected, 'vehicle_id.model', '')}
+                        </div>
+                      </div>
+                    </div>
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Biển số">
+                    {getNestedValue(selected, 'vehicle_id.licensePlate', '-')}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Loại xe" span={2}>
+                    {getNestedValue(selected, 'vehicle_id.type', '-')}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Pin hiện tại">
+                    {getNestedValue(selected, 'vehicle_id.batteryLevel', 0)}%
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Pin khi nhận" span={2}>
+                    {selected.pickup?.soc ? Math.round(selected.pickup.soc * 100) : 0}%
+                  </Descriptions.Item>
+                </Descriptions>
+
+                {/* Rental Info */}
+                <Descriptions title="Thông tin thuê" bordered size="small">
+                  <Descriptions.Item label="Mã thuê" span={3}>
+                    <span className="font-mono">{extractId(selected._id)}</span>
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Trạm" span={3}>
+                    {getNestedValue(selected, 'station_id.name', `ID: ${extractId(selected.station_id)}`)}
+                    {getNestedValue(selected, 'station_id.address') && 
+                      ` - ${selected.station_id.address}`}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Bắt đầu">
+                    {formatDate(bookingInfo.start_at)}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Kết thúc">
+                    {formatDate(bookingInfo.end_at)}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Trạng thái">
+                    {getStatusTag(selected.status)}
+                  </Descriptions.Item>
+                  {selected.pickup?.at && (
+                    <Descriptions.Item label="Đã nhận xe" span={3}>
+                      {formatDate(selected.pickup.at)}
+                    </Descriptions.Item>
+                  )}
+                  {selected.return?.at && (
+                    <Descriptions.Item label="Đã trả xe" span={3}>
+                      {formatDate(selected.return.at)}
+                    </Descriptions.Item>
+                  )}
+                  {selected.pickup?.notes && (
+                    <Descriptions.Item label="Ghi chú nhận xe" span={3}>
+                      {selected.pickup.notes}
+                    </Descriptions.Item>
+                  )}
+                </Descriptions>
+
+                {/* Pricing Info */}
+                <Descriptions title="Thông tin thanh toán" bordered size="small">
+                  <Descriptions.Item label="Phí thuê">
+                    {formatCurrency(
+                      selected.charges?.rental_fee || 0, 
+                      selected.pricing_snapshot?.currency
+                    )}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Phí trễ hạn">
+                    {formatCurrency(
+                      selected.charges?.late_fee || 0, 
+                      selected.pricing_snapshot?.currency
+                    )}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Phí hư hỏng">
+                    {formatCurrency(
+                      selected.charges?.damage_fee || 0, 
+                      selected.pricing_snapshot?.currency
+                    )}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Phí vệ sinh">
+                    {formatCurrency(
+                      selected.charges?.cleaning_fee || 0, 
+                      selected.pricing_snapshot?.currency
+                    )}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Tiền đặt cọc" span={2}>
+                    {formatCurrency(
+                      selected.pricing_snapshot?.deposit || 0, 
+                      selected.pricing_snapshot?.currency
+                    )}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Tổng cộng" span={3}>
+                    <span className="font-bold text-lg text-green-600">
+                      {formatCurrency(
+                        selected.charges?.total || selected.pricing_snapshot?.total_price || 0,
+                        selected.pricing_snapshot?.currency
+                      )}
                     </span>
-                      {/* <span className={`px-2 py-0.5 rounded-full text-xs ${r.status === 'completed' ? 'bg-green-100 text-green-800' : r.status === 'ongoing' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'}`}>
-                      {r.status}
-                    </span> */}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{r.priceCents}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-right">
-                      <Button
-                        type="text"
-                        onClick={() => openView(r.id)}
-                        className="inline-flex items-center text-sm !text-blue-700 mr-4 hover:text-blue-600"
-                      >
-                        <EyeOutlined className="mr-2 text-xl" />
-                      </Button>
-                      <Button
-                        type="text"
-                        onClick={() => openEdit(r.id)}
-                        className="inline-flex items-center text-sm text-gray-600 mr-4"
+                  </Descriptions.Item>
+                </Descriptions>
 
-                      >
-                        <EditOutlined className="text-xl" />
-                      </Button>
-                      <Button
-                        type="text"
-                        className="inline-flex items-center text-sm text-red-600"
-                        onClick={() => handleDelete(r.id)}
-                      >
-                        <DeleteOutlined className="mr-7 !text-red-600 text-xl" />
-                      </Button>
-                    </td>
-
-
-                  </tr>
-                );
-              })}
-              {filteredList.length === 0 && (
-                <tr>
-                  <td colSpan={8} className="px-6 py-8 text-center text-sm text-gray-500">Không tìm thấy bản ghi.</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-        {/* View Modal */}
-        <Modal visible={viewVisible} title="Chi tiết thuê" onCancel={closeView} footer={[<Button key="close" onClick={closeView}>Đóng</Button>]}>
-          {selected ? (
-            <div className="space-y-2">
-              <div><strong>ID:</strong> {selected.id}</div>
-              <div><strong>Tên khách hàng:</strong> {selected.name}</div>
-              <div><strong>Customer ID:</strong> {selected.customerId || '-'}</div>
-              <div><strong>Xe:</strong> {selected.vehicleId}</div>
-              <div><strong>Bắt đầu:</strong> {formatDate(selected.startAt)}</div>
-              <div><strong>Kết thúc:</strong> {formatDate(selected.endAt)}</div>
-              <div><strong>Trạng thái:</strong> {selected.status}</div>
-              <div><strong>Giá thuê:</strong> {selected.priceCents}</div>
-              <div><strong>Ghi chú:</strong> {selected.notes || '-'}</div>
-            </div>
-          ) : null}
-        </Modal>
-
-        {/* Add / Edit Modal */}
-        <Modal visible={formVisible} title={isEditing ? 'Chỉnh sửa thuê' : 'Thêm thuê'} onCancel={closeForm} onOk={submitForm} okText="Lưu">
-          <div className="space-y-3">
-            <div>
-              <label className="block text-sm text-gray-700">Tên khách hàng</label>
-              <Input value={formValues.name as string || ''} onChange={(e) => handleFormChange('name', e.target.value)} />
-            </div>
-            <div>
-              <label className="block text-sm text-gray-700">Mã xe</label>
-              <Input value={formValues.vehicleId as string || ''} onChange={(e) => handleFormChange('vehicleId', e.target.value)} />
-            </div>
-            <div>
-              <label className="block text-sm text-gray-700">Bắt đầu (ISO)</label>
-              <Input value={formValues.startAt as string || ''} onChange={(e) => handleFormChange('startAt', e.target.value)} />
-            </div>
-            <div>
-              <label className="block text-sm text-gray-700">Kết thúc (ISO)</label>
-              <Input value={formValues.endAt as string || ''} onChange={(e) => handleFormChange('endAt', e.target.value)} />
-            </div>
-            <div>
-              <label className="block text-sm text-gray-700">Trạng thái</label>
-              <Select value={formValues.status || 'ongoing'} onChange={(val) => handleFormChange('status', val as Rental['status'])} style={{ width: '100%' }}>
-                <Select.Option value="completed">Hoàn thành</Select.Option>
-                <Select.Option value="ongoing">Đang chạy</Select.Option>
-                <Select.Option value="cancelled">Đã huỷ</Select.Option>
-              </Select>
-            </div>
-            <div>
-              <label className="block text-sm text-gray-700">Giá thuê (cents)</label>
-              <InputNumber style={{ width: '100%' }} value={formValues.priceCents as number || 0} onChange={(val) => handleFormChange('priceCents', val)} />
-            </div>
-            <div>
-              <label className="block text-sm text-gray-700">Ghi chú</label>
-              <Input.TextArea rows={3} value={formValues.notes as string || ''} onChange={(e) => handleFormChange('notes', e.target.value)} />
-            </div>
-          </div>
+                {/* Photos */}
+                {((selected.pickup?.photos && selected.pickup.photos.length > 0) || 
+                  (selected.return?.photos && selected.return.photos.length > 0)) && (
+                  <div>
+                    <h3 className="font-semibold mb-2">Hình ảnh</h3>
+                    <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+                      {selected.pickup?.photos && selected.pickup.photos.length > 0 && (
+                        <div>
+                          <div className="text-sm font-medium mb-2">Ảnh nhận xe:</div>
+                          <Image.PreviewGroup>
+                            <Space>
+                              {selected.pickup.photos.slice(0, 4).map((photo: any, idx: number) => {
+                                const photoUrl = typeof photo === 'string' ? photo : photo.url;
+                                return (
+                                  <Image
+                                    key={idx}
+                                    src={photoUrl}
+                                    width={100}
+                                    height={100}
+                                    className="rounded object-cover"
+                                    fallback="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
+                                  />
+                                );
+                              })}
+                            </Space>
+                          </Image.PreviewGroup>
+                        </div>
+                      )}
+                      {selected.return?.photos && selected.return.photos.length > 0 && (
+                        <div>
+                          <div className="text-sm font-medium mb-2">Ảnh trả xe:</div>
+                          <Image.PreviewGroup>
+                            <Space>
+                              {selected.return.photos.slice(0, 4).map((photo: any, idx: number) => {
+                                const photoUrl = typeof photo === 'string' ? photo : photo.url;
+                                return (
+                                  <Image
+                                    key={idx}
+                                    src={photoUrl}
+                                    width={100}
+                                    height={100}
+                                    className="rounded object-cover"
+                                    fallback="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
+                                  />
+                                );
+                              })}
+                            </Space>
+                          </Image.PreviewGroup>
+                        </div>
+                      )}
+                    </Space>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
         </Modal>
       </div>
     </div>
@@ -295,4 +584,3 @@ const RentalHistory: React.FC = () => {
 };
 
 export default RentalHistory;
-

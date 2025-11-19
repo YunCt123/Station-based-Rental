@@ -203,28 +203,34 @@ const StationManagement: React.FC = () => {
     setIsDetailModalVisible(true);
   };
 
-  const handleFormSubmit = async (values: StationFormValues) => {
+  const handleFormSubmit = async (values: any) => {
     try {
+      console.log('Received form values:', JSON.stringify(values, null, 2));
+      
+      // StationFormModal returns geo.coordinates array [lng, lat]
+      if (!values.geo || !values.geo.coordinates || values.geo.coordinates.length !== 2) {
+        console.error('Missing or invalid geo.coordinates in values:', values);
+        message.error('Thiếu thông tin tọa độ');
+        return;
+      }
+      
+      const stationData = {
+        name: values.name,
+        address: values.address,
+        city: values.city,
+        geo: values.geo,  // { coordinates: [lng, lat] }
+        capacity: values.capacity,
+        operatingHours: values.operatingHours,
+        amenities: values.amenities || [],
+        contactInfo: values.contactInfo || { phone: '', email: '' },
+        image: values.image,
+        description: values.description
+      };
+      
+      console.log('Sending to API:', JSON.stringify(stationData, null, 2));
+      
       if (editingStation) {
-        const response = await adminStationService.updateStation(editingStation._id, {
-          name: values.name,
-          address: values.address,
-          city: values.city,
-          coordinates: {
-            lat: values.latitude,
-            lng: values.longitude
-          },
-          capacity: values.capacity,
-          operatingHours: {
-            open: values.openTime,
-            close: values.closeTime
-          },
-          amenities: values.amenities,
-          contactInfo: {
-            phone: values.phone,
-            email: values.email
-          }
-        });
+        const response = await adminStationService.updateStation(editingStation._id, stationData as any);
         
         if (response.success) {
           message.success('Cập nhật trạm thành công');
@@ -232,25 +238,7 @@ const StationManagement: React.FC = () => {
           message.error('Cập nhật trạm thất bại');
         }
       } else {
-        const response = await adminStationService.createStation({
-          name: values.name,
-          address: values.address,
-          city: values.city,
-          coordinates: {
-            lat: values.latitude,
-            lng: values.longitude
-          },
-          capacity: values.capacity,
-          operatingHours: {
-            open: values.openTime,
-            close: values.closeTime
-          },
-          amenities: values.amenities,
-          contactInfo: {
-            phone: values.phone,
-            email: values.email
-          }
-        });
+        const response = await adminStationService.createStation(stationData as any);
         
         if (response.success) {
           message.success('Tạo trạm mới thành công');
@@ -262,9 +250,10 @@ const StationManagement: React.FC = () => {
       setIsFormModalVisible(false);
       setEditingStation(null);
       loadStations();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving station:', error);
-      message.error(editingStation ? 'Cập nhật trạm thất bại' : 'Tạo trạm mới thất bại');
+      const errorMessage = error?.message || (editingStation ? 'Cập nhật trạm thất bại' : 'Tạo trạm mới thất bại');
+      message.error(errorMessage);
     }
   };
 

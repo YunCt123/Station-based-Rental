@@ -143,16 +143,51 @@ export const adminStationService = {
   // Create new station
   async createStation(stationData: CreateStationRequest): Promise<StationResponse> {
     try {
-      // Transform coordinates to geo format for backend
-      const transformedData = {
-        ...stationData,
-        geo: {
-          type: 'Point',
-          coordinates: [stationData.coordinates.lng, stationData.coordinates.lat]
-        }
+      // Backend expects body.geo.coordinates as array [lng, lat]
+      // But validation middleware checks body.coordinates first
+      const requestBody: any = {
+        name: stationData.name,
+        address: stationData.address,
+        city: stationData.city,
+        totalSlots: stationData.capacity || 10,
+        amenities: stationData.amenities || []
       };
       
-      const response = await api.post('/stations', transformedData);
+      // Extract coordinates from either format
+      let lng: number, lat: number;
+      
+      if ((stationData as any).geo && (stationData as any).geo.coordinates) {
+        // Format: geo.coordinates = [lng, lat]
+        [lng, lat] = (stationData as any).geo.coordinates;
+      } else if (stationData.coordinates && stationData.coordinates.lat && stationData.coordinates.lng) {
+        // Format: coordinates = { lat, lng }
+        lng = stationData.coordinates.lng;
+        lat = stationData.coordinates.lat;
+      } else {
+        console.error('Missing coordinates in stationData:', stationData);
+        throw new Error('Coordinates (lat, lng) are required');
+      }
+      
+      // Send BOTH formats to satisfy validation middleware AND controller
+      requestBody.coordinates = { lat, lng };  // For validation middleware
+      requestBody.geo = {
+        type: 'Point',           // GeoJSON type (required)
+        coordinates: [lng, lat]  // For controller (GeoJSON format: [longitude, latitude])
+      };
+      
+      // Add operating hours if provided
+      if (stationData.operatingHours) {
+        requestBody.operatingHours = {
+          mon_fri: `${stationData.operatingHours.open || '06:00'} - ${stationData.operatingHours.close || '22:00'}`
+        };
+      }
+      
+      // Add optional fields
+      if ((stationData as any).image) requestBody.image = (stationData as any).image;
+      if ((stationData as any).description) requestBody.description = (stationData as any).description;
+      
+      console.log('Creating station with data:', requestBody);
+      const response = await api.post('/stations', requestBody);
       return response.data;
     } catch (error) {
       console.error('Error creating station:', error);
@@ -163,20 +198,40 @@ export const adminStationService = {
   // Update station
   async updateStation(id: string, stationData: UpdateStationRequest): Promise<StationResponse> {
     try {
-      let transformedData = { ...stationData };
+      const transformedData: any = {};
       
-      // Transform coordinates if provided
-      if (stationData.coordinates) {
-        transformedData = {
-          ...stationData,
-          geo: {
-            type: 'Point',
-            coordinates: [stationData.coordinates.lng!, stationData.coordinates.lat!]
-          }
-        } as any;
-        delete (transformedData as any).coordinates;
+      // Only include fields that are provided
+      if (stationData.name) transformedData.name = stationData.name;
+      if (stationData.address) transformedData.address = stationData.address;
+      if (stationData.city) transformedData.city = stationData.city;
+      if (stationData.capacity) transformedData.totalSlots = stationData.capacity;
+      if (stationData.amenities) transformedData.amenities = stationData.amenities;
+      if (stationData.isActive !== undefined) {
+        transformedData.status = stationData.isActive ? 'ACTIVE' : 'INACTIVE';
       }
       
+      // Transform coordinates if provided - backend expects geo.coordinates = [lng, lat]
+      // Check if geo is already provided (from StationManagement)
+      if ((stationData as any).geo && (stationData as any).geo.coordinates) {
+        transformedData.geo = (stationData as any).geo;
+      } else if (stationData.coordinates && stationData.coordinates.lat && stationData.coordinates.lng) {
+        transformedData.geo = {
+          coordinates: [stationData.coordinates.lng, stationData.coordinates.lat]
+        };
+      }
+      
+      // Transform operating hours if provided
+      if (stationData.operatingHours) {
+        transformedData.operatingHours = {
+          mon_fri: `${stationData.operatingHours.open || '06:00'} - ${stationData.operatingHours.close || '22:00'}`
+        };
+      }
+      
+      // Add optional fields
+      if ((stationData as any).image) transformedData.image = (stationData as any).image;
+      if ((stationData as any).description) transformedData.description = (stationData as any).description;
+      
+      console.log('Updating station with data:', transformedData);
       const response = await api.patch(`/stations/${id}`, transformedData);
       return response.data;
     } catch (error) {

@@ -10,7 +10,6 @@ import {
   Col,
   Switch,
   Divider,
-  TimePicker,
   Checkbox
 } from 'antd';
 // import dayjs from 'dayjs';
@@ -82,30 +81,65 @@ const StationFormModal: React.FC<StationFormModalProps> = ({
     try {
       const values = await form.validateFields();
       
+      console.log('Form values before transformation:', values);
+      
+      // Check if lat/lng exist
+      if (values.lat === undefined || values.lat === null || values.lng === undefined || values.lng === null) {
+        Modal.error({
+          title: 'Thiếu tọa độ',
+          content: 'Vui lòng nhập đầy đủ vĩ độ (Latitude) và kinh độ (Longitude)'
+        });
+        return;
+      }
+      
+      // Ensure coordinates are numbers
+      const lat = typeof values.lat === 'number' ? values.lat : parseFloat(String(values.lat));
+      const lng = typeof values.lng === 'number' ? values.lng : parseFloat(String(values.lng));
+      
+      // Validate coordinates
+      if (isNaN(lat) || isNaN(lng)) {
+        console.error('Invalid coordinates:', { lat: values.lat, lng: values.lng });
+        Modal.error({
+          title: 'Lỗi tọa độ',
+          content: 'Vui lòng nhập đúng giá trị vĩ độ và kinh độ (phải là số)'
+        });
+        return;
+      }
+      
+      // Validate coordinate ranges
+      if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+        Modal.error({
+          title: 'Tọa độ không hợp lệ',
+          content: 'Vĩ độ phải từ -90 đến 90, Kinh độ phải từ -180 đến 180'
+        });
+        return;
+      }
+      
       // Transform form data to backend format
+      // Backend expects geo.coordinates = [lng, lat] (GeoJSON format)
       const transformedValues = {
         name: values.name,
         address: values.address,
         city: values.city,
-        coordinates: {
-          lat: values.lat,
-          lng: values.lng
+        geo: {
+          coordinates: [lng, lat]  // [longitude, latitude] - GeoJSON standard
         },
-        capacity: values.totalSlots,
+        capacity: values.totalSlots || 10,
         operatingHours: {
-          open: values.mon_fri_open,
-          close: values.mon_fri_close
+          open: values.mon_fri_open || '06:00',
+          close: values.mon_fri_close || '22:00'
         },
         amenities: values.amenities || [],
         contactInfo: {
-          phone: values.phone,
-          email: values.email
+          phone: values.phone || '',
+          email: values.email || ''
         },
-        image: values.image,
-        description: values.description,
+        image: values.image || '',
+        description: values.description || '',
         ...(isEditing && { isActive: values.status === 'ACTIVE' })
       };
       
+      console.log('Submitting station data:', transformedValues);
       await onSubmit(transformedValues);
     } catch (error) {
       console.error('Validation failed:', error);
@@ -335,9 +369,8 @@ const StationFormModal: React.FC<StationFormModalProps> = ({
               name="mon_fri_open"
               label="Thứ 2-6: Giờ mở"
             >
-              <TimePicker 
+              <Input 
                 style={{ width: '100%' }}
-                format="HH:mm"
                 placeholder="06:00"
               />
             </Form.Item>
@@ -348,9 +381,8 @@ const StationFormModal: React.FC<StationFormModalProps> = ({
               name="mon_fri_close"
               label="Thứ 2-6: Giờ đóng"
             >
-              <TimePicker 
+              <Input 
                 style={{ width: '100%' }}
-                format="HH:mm"
                 placeholder="22:00"
               />
             </Form.Item>
@@ -361,9 +393,8 @@ const StationFormModal: React.FC<StationFormModalProps> = ({
               name="weekend_open"
               label="Cuối tuần: Giờ mở"
             >
-              <TimePicker 
+              <Input 
                 style={{ width: '100%' }}
-                format="HH:mm"
                 placeholder="08:00"
               />
             </Form.Item>
@@ -374,9 +405,8 @@ const StationFormModal: React.FC<StationFormModalProps> = ({
               name="weekend_close"
               label="Cuối tuần: Giờ đóng"
             >
-              <TimePicker 
+              <Input 
                 style={{ width: '100%' }}
-                format="HH:mm"
                 placeholder="20:00"
               />
             </Form.Item>

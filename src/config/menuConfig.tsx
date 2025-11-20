@@ -227,18 +227,18 @@ export const getMenuSections = (): SidebarSection[] => [
         id: 'staff-management',
         title: 'Quản lý nhân viên',
         icon: <UserGroupIcon className="w-5 h-5" />,
-        path: '/admin/staff',
+        path: '/admin/staff/list',
         roles: [UserRole.ADMIN],
-        children: [
-          {
-            id: 'staff-list',
-            title: 'Danh sách nhân viên',
-            icon: <UserIcon className="w-4 h-4" />,
-            path: '/admin/staff/list',
-            roles: [UserRole.ADMIN]
-          },
+        // children: [
+        //   {
+        //     id: 'staff-list',
+        //     title: 'Danh sách nhân viên',
+        //     icon: <UserIcon className="w-4 h-4" />,
+        //     path: '/admin/staff/list',
+        //     roles: [UserRole.ADMIN]
+        //   },
           
-        ]
+        // ]
       }
     ]
   },

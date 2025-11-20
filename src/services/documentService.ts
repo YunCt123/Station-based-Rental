@@ -32,6 +32,8 @@ export interface PendingDocument {
   role: string;
   isVerified: boolean;
   verificationStatus: 'PENDING' | 'APPROVED' | 'REJECTED';
+  // Time when user submitted verification documents (may be more recent than createdAt)
+  verificationSubmittedAt?: string;
   
   // Verification images
   idCardFront?: string;

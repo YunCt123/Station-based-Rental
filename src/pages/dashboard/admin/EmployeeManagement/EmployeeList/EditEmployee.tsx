@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Form, Input, Select } from 'antd';
+import { Form, Input, Select, Tooltip } from 'antd';
 import type { Employee } from '../../../../../data/employeesStore';
 
 type Props = {
@@ -9,7 +9,7 @@ type Props = {
   saving?: boolean;
 };
 
-const EditEmployee: React.FC<Props> = ({ employee, onCancel, onSave }) => {
+const EditEmployee: React.FC<Props> = ({ employee, onCancel, onSave, saving }) => {
   const [form] = Form.useForm();
 
   useEffect(() => {
@@ -17,8 +17,8 @@ const EditEmployee: React.FC<Props> = ({ employee, onCancel, onSave }) => {
       name: employee?.name || '',
       email: employee?.email || '',
       phone: employee?.phone || '',
-      role: employee?.role || 'staff',
-      status: employee?.status || 'active',
+      role: employee?.role || '',
+      status: employee?.status || '',
     });
   }, [employee]);
 
@@ -35,29 +35,37 @@ const EditEmployee: React.FC<Props> = ({ employee, onCancel, onSave }) => {
         <Input />
       </Form.Item>
       <Form.Item name="email" label="Email">
-        <Input />
+        <Tooltip title="Không thể cập nhật email tại đây">
+          <Input disabled value={employee?.email || ''} />
+        </Tooltip>
       </Form.Item>
       <Form.Item name="phone" label="Số điện thoại">
         <Input />
       </Form.Item>
       <Form.Item name="role" label="Vai trò">
-        <Select>
-          <Select.Option value="admin">Admin</Select.Option>
-          <Select.Option value="manager">Manager</Select.Option>
-          <Select.Option value="staff">Staff</Select.Option>
-          <Select.Option value="support">Support</Select.Option>
-        </Select>
+        <Tooltip title="Chưa hỗ trợ cập nhật vai trò tại đây">
+          <Select disabled defaultValue={employee?.role || ''}>
+            <Select.Option value="admin">Admin</Select.Option>
+            <Select.Option value="manager">Manager</Select.Option>
+            <Select.Option value="staff">Staff</Select.Option>
+            <Select.Option value="support">Support</Select.Option>
+          </Select>
+        </Tooltip>
       </Form.Item>
       <Form.Item name="status" label="Trạng thái">
-        <Select>
-          <Select.Option value="active">Active</Select.Option>
-          <Select.Option value="inactive">Inactive</Select.Option>
-          <Select.Option value="suspended">Suspended</Select.Option>
-        </Select>
+        <Tooltip title="Trạng thái hiển thị, chưa hỗ trợ cập nhật">
+          <Select disabled defaultValue={employee?.status || ''}>
+            <Select.Option value="active">Active</Select.Option>
+            <Select.Option value="inactive">Inactive</Select.Option>
+            <Select.Option value="suspended">Suspended</Select.Option>
+          </Select>
+        </Tooltip>
       </Form.Item>
       <div className="flex justify-end space-x-2 mt-4">
         <button type="button" className="px-3 py-1.5 border rounded-md" onClick={onCancel}>Hủy</button>
-        <button type="button" className="px-3 py-1.5 bg-blue-600 text-white rounded-md" onClick={submit}>Lưu</button>
+        <button type="button" className="px-3 py-1.5 bg-blue-600 text-white rounded-md" onClick={submit} disabled={!!saving}>
+          {saving ? 'Đang lưu...' : 'Lưu'}
+        </button>
       </div>
     </Form>
   );

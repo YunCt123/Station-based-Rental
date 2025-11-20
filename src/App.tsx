@@ -65,6 +65,7 @@ import {
 import Verification from "./pages/dashboard/staff/customer_verification/Verification";
 import CustomerManagement from "./pages/dashboard/admin/CustomerManagement/CustomerManagement";
 import RentalHistory from "./pages/dashboard/admin/RentalHistory/RentalHistory";
+import RentalDetail from "./pages/dashboard/admin/RentalHistory/RentalDetail";
 import EmployeeManagement from "./pages/dashboard/admin/EmployeeManagement/EmployeeList/EmployeeManagement";
 import VehicleManagement from "./pages/dashboard/admin/VehicleManagement/VehicleManagement";
 import StationManagement from "./pages/dashboard/admin/StationManagement/StationManagement";
@@ -428,6 +429,18 @@ function App() {
                     <ProtectedRoute user={user} requireAuth={true} allowedRoles={["admin"]}>
                       <DashboardLayout>
                         <RentalHistory />
+                      </DashboardLayout>
+                    </ProtectedRoute>
+                  }
+                />
+
+                <Route
+                  path="/admin/customers/history/:rentalId"
+                  element={
+                    <ProtectedRoute user={user} requireAuth={true} allowedRoles={["admin"]}>
+                      <DashboardLayout>
+                        {/* Direct import to keep it simple; alternatively lazy load */}
+                        <RentalDetail />
                       </DashboardLayout>
                     </ProtectedRoute>
                   }

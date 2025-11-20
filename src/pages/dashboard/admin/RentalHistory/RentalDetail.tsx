@@ -91,7 +91,7 @@ const RentalDetail: React.FC = () => {
             <KeyRow label="Tên xe" value={data.vehicle_id?.name} />
             <KeyRow label="Hãng" value={data.vehicle_id?.brand} />
             <KeyRow label="Dòng xe" value={data.vehicle_id?.model} />
-            <KeyRow label="Năm" value={data.vehicle_id?.year} />
+            {/* <KeyRow label="Năm" value={data.vehicle_id?.year} /> */}
             <KeyRow label="Loại" value={data.vehicle_id?.type} />
             <KeyRow label="Số ghế" value={data.vehicle_id?.seats} />
             <KeyRow label="ODO (km)" value={data.vehicle_id?.odo_km} />

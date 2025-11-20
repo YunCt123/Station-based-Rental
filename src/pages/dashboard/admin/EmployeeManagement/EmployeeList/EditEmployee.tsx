@@ -17,8 +17,8 @@ const EditEmployee: React.FC<Props> = ({ employee, onCancel, onSave, saving }) =
       name: employee?.name || '',
       email: employee?.email || '',
       phone: employee?.phone || '',
-      role: employee?.role || 'staff',
-      status: employee?.status || 'active',
+      role: employee?.role || '',
+      status: employee?.status || '',
     });
   }, [employee]);
 
@@ -36,7 +36,7 @@ const EditEmployee: React.FC<Props> = ({ employee, onCancel, onSave, saving }) =
       </Form.Item>
       <Form.Item name="email" label="Email">
         <Tooltip title="Không thể cập nhật email tại đây">
-          <Input disabled />
+          <Input disabled value={employee?.email || ''} />
         </Tooltip>
       </Form.Item>
       <Form.Item name="phone" label="Số điện thoại">
@@ -44,7 +44,7 @@ const EditEmployee: React.FC<Props> = ({ employee, onCancel, onSave, saving }) =
       </Form.Item>
       <Form.Item name="role" label="Vai trò">
         <Tooltip title="Chưa hỗ trợ cập nhật vai trò tại đây">
-          <Select disabled>
+          <Select disabled defaultValue={employee?.role || ''}>
             <Select.Option value="admin">Admin</Select.Option>
             <Select.Option value="manager">Manager</Select.Option>
             <Select.Option value="staff">Staff</Select.Option>
@@ -54,7 +54,7 @@ const EditEmployee: React.FC<Props> = ({ employee, onCancel, onSave, saving }) =
       </Form.Item>
       <Form.Item name="status" label="Trạng thái">
         <Tooltip title="Trạng thái hiển thị, chưa hỗ trợ cập nhật">
-          <Select disabled>
+          <Select disabled defaultValue={employee?.status || ''}>
             <Select.Option value="active">Active</Select.Option>
             <Select.Option value="inactive">Inactive</Select.Option>
             <Select.Option value="suspended">Suspended</Select.Option>

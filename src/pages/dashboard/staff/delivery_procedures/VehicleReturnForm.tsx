@@ -240,7 +240,7 @@ const VehicleReturnForm: React.FC<VehicleReturnFormProps> = ({
         
         if (photoUrl) {
           console.log('✅ Return photo uploaded:', photoUrl);
-          message.success('Tải ảnh thành công!');
+          message.success(`Tải ảnh "${file.name}" thành công!`);
           return photoUrl;
         } else {
           throw new Error('No photo URL found in response');
@@ -287,26 +287,26 @@ const VehicleReturnForm: React.FC<VehicleReturnFormProps> = ({
         message.success('Kiểm tra trả xe thành công! Chờ khách hàng thanh toán cuối.');
         
         // Show charges information
-        const { charges } = response.data.data;
-        if (charges) {
-          const rentalFee = charges.rental_fee?.toLocaleString() || '0';
-          const extraFees = charges.extra_fees?.toLocaleString() || '0';
-          const total = charges.total?.toLocaleString() || '0';
+        // const { charges } = response.data.data;
+        // if (charges) {
+        //   const rentalFee = charges.rental_fee?.toLocaleString() || '0';
+        //   const extraFees = charges.extra_fees?.toLocaleString() || '0';
+        //   const total = charges.total?.toLocaleString() || '0';
           
-          message.info({
-            content: (
-              <div>
-                <div><strong>Phí thuê xe:</strong> {rentalFee} VND</div>
-                <div><strong>Phí phát sinh:</strong> {extraFees} VND</div>
-                <div><strong>Tổng cộng:</strong> {total} VND</div>
-                <div style={{ marginTop: 8, fontWeight: 'bold' }}>
-                  Trạng thái: Chờ khách hàng thanh toán cuối
-                </div>
-              </div>
-            ),
-            duration: 10
-          });
-        }
+        //   message.info({
+        //     content: (
+        //       <div>
+        //         <div><strong>Phí thuê xe:</strong> {rentalFee} VND</div>
+        //         <div><strong>Phí phát sinh:</strong> {extraFees} VND</div>
+        //         <div><strong>Tổng cộng:</strong> {total} VND</div>
+        //         <div style={{ marginTop: 8, fontWeight: 'bold' }}>
+        //           Trạng thái: Chờ khách hàng thanh toán cuối
+        //         </div>
+        //       </div>
+        //     ),
+        //     duration: 10
+        //   });
+        // }
         
         return response.data;
       } else {

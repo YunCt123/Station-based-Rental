@@ -106,7 +106,6 @@ const BookingPage: React.FC = () => {
       localStorage.setItem('user', JSON.stringify(mappedUser));
       setUser(mappedUser);
       
-      message.success('Làm mới dữ liệu người dùng thành công');
     } catch (error) {
       console.error('❌ [BookingPage] Không thể làm mới dữ liệu người dùng:', error);
       message.error('Không thể làm mới dữ liệu người dùng. Vui lòng thử đăng nhập lại.');
@@ -237,7 +236,6 @@ const BookingPage: React.FC = () => {
   // ---- Submit ----
   const handleFinish = async (values: Record<string, any>) => {
     if (!user) {
-      message.error("Vui lòng đăng nhập để đặt xe");
       navigate("/login", { state: { from: location.pathname } });
       return;
     }
@@ -260,10 +258,6 @@ const BookingPage: React.FC = () => {
         console.log('🔍 [BookingPage] Vehicle data:', activeCheck.activeRental.vehicle_id);
         console.log('🔍 [BookingPage] Booking data:', activeCheck.activeRental.booking_id);
         
-        message.error({
-          content: activeCheck.statusMessage || 'Bạn đã có đơn thuê xe khác đang hoạt động',
-          duration: 8
-        });
         
         // Show rental info and redirect option
         setShowActiveRentalWarning(true);
@@ -308,7 +302,7 @@ const BookingPage: React.FC = () => {
       
       const booking = await bookingService.createBooking(bookingRequest);
 
-      message.success("Đặt xe thành công! Đang chuyển đến thanh toán...");
+      message.success("Đặt xe thành công! Vui lòng tiếp tục thanh toán.");
       navigate(`/payment?bookingId=${booking._id}`);
     } catch (error: unknown) {
       console.error("Lỗi tạo đặt xe:", error);
@@ -316,12 +310,6 @@ const BookingPage: React.FC = () => {
       
       // 🚫 Handle 409 Conflict (User has active rental) - Fallback if frontend check missed it
       if (e?.response?.status === 409) {
-        console.warn('🚫 [BookingPage] 409 Conflict from backend - User has active rental');
-        message.error({
-          content: 'Bạn đã có đơn thuê xe khác đang hoạt động. Không thể tạo đơn thuê mới.',
-          duration: 8
-        });
-        
         // Refresh active rental data and show warning modal
         await checkActive();
         setShowActiveRentalWarning(true);
@@ -602,7 +590,6 @@ const BookingPage: React.FC = () => {
       >
         <div className="space-y-4">
           <Alert
-            message="Mỗi khách hàng chỉ được phép có một đơn thuê xe đang hoạt động"
             description={
               activeRental ? (
                 <div className="mt-2">

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React from 'react';
 import { Card, Space, Typography, Tag, Empty, Collapse } from 'antd';
 import {
@@ -9,7 +10,6 @@ import {
   MobileOutlined,
   QrcodeOutlined,
   BankOutlined,
-  DollarOutlined
 } from '@ant-design/icons';
 import type { Payment, Rental } from '../../services/customerService';
 
@@ -41,8 +41,7 @@ const PaymentHistory: React.FC<PaymentHistoryProps> = ({ payments, pricingSnapsh
     case "VNPAY":
       return (
         <Space>
-          <QrcodeOutlined style={{ fontSize: 22 }} />
-          <div>VNPAY</div>
+          <div>Chuyển khoản</div>
         </Space>
       );
 
@@ -57,7 +56,6 @@ const PaymentHistory: React.FC<PaymentHistoryProps> = ({ payments, pricingSnapsh
     case "CASH":
       return (
         <Space>
-          <DollarOutlined style={{ fontSize: 22 }} />
           <div>Tiền mặt</div>
         </Space>
       );

@@ -1075,21 +1075,21 @@ const RentalDetailScreen: React.FC<RentalDetailScreenProps> = ({
           <Col xs={24}>
             <Card title="Ảnh từ chối nhận xe" className="reject-photos-card">
               <Row gutter={[8, 8]}>
-                {pickup.rejected.photos.map((photo, idx) => (
-                  <Col key={idx} xs={12} sm={8} md={6} lg={4}>
-                    <Image
-                      width="100%"
-                      height={120}
-                      src={getPhotoUrl(photo)}
-                      style={{
-                        objectFit: "cover",
-                        borderRadius: 4,
-                        border: "2px solid #ff4d4f",
-                      }}
-                      fallback="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMIAAADDCAYAAADQvc6U"
-                    />
-                  </Col>
-                ))}
+          {pickup.rejected.photos.map((photo, idx) => (
+            <Col key={idx} xs={12} sm={8} md={6} lg={4}>
+              <Image
+                width="100%"
+                height={120}
+                src={getPhotoUrl(photo)}
+                style={{
+            objectFit: "cover",
+            borderRadius: 4,
+            border: "2px solid #ff4d4f",
+                }}
+                fallback="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMIAAADDCAYAAADQvc6U"
+              />
+            </Col>
+          ))}
               </Row>
             </Card>
           </Col>
@@ -1098,20 +1098,26 @@ const RentalDetailScreen: React.FC<RentalDetailScreenProps> = ({
           pickup.photos.length > 0 && (
             <Col xs={24}>
               <Card title="Ảnh nhận xe">
-                <Row gutter={[8, 8]}>
-                  {pickup.photos.map((photo, idx) => (
-                    <Col key={idx} xs={12} sm={8} md={6} lg={4}>
-                      <Image
-                        width="100%"
-                        height={120}
-                        src={getPhotoUrl(photo)}
-                        style={{ objectFit: "cover", borderRadius: 4 }}
-                        fallback="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMIAAADDCAYAAADQvc6U"
-                      />
-                    </Col>
-                  ))}
-                </Row>
+          <Row gutter={[8, 8]}>
+            {pickup.photos.map((photo, idx) => (
+              <Col key={idx} xs={12} sm={8} md={6} lg={4}>
+                <Image
+            width="100%"
+            height={120}
+            src={getPhotoUrl(photo)}
+            style={{ objectFit: "cover", borderRadius: 4 }}
+            fallback="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMIAAADDCAYAAADQvc6U"
+                />
+              </Col>
+            ))}
+          </Row>
               </Card>
+              {pickup.notes && (
+          <div style={{ marginTop: 12, backgroundColor: "#fafafa", padding: 12, borderRadius: 6 }}>
+            <Text strong>Ghi chú từ nhân viên khi giao xe: </Text>
+            <Text>{pickup.notes}</Text>
+          </div>
+              )}
             </Col>
           )
         )}

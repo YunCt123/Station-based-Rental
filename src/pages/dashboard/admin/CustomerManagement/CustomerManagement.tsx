@@ -5,7 +5,7 @@ import { Button, Input, Modal, Spin, Alert } from "antd";
 import NewCustomer from './NewCustomer.tsx';
 import EditCustomer from './EditCustomer.tsx';
 import CustomerDetailsModal from './CustomerDetailsModal.tsx';
-import { DeleteOutlined,PlusOutlined, EyeOutlined,EditOutlined ,UserOutlined, ReloadOutlined } from "@ant-design/icons";
+import { DeleteOutlined, EyeOutlined,EditOutlined ,UserOutlined, ReloadOutlined } from "@ant-design/icons";
 import DeleteCustomer from './DeleteCustomer.tsx';
 import userService, { type UserProfile } from "../../../../services/userService.ts";
 
@@ -137,9 +137,9 @@ export const CustomerManagement: React.FC = () => {
                       Làm mới
                     </Button>
 
-                     <button onClick={() => setCreateOpen(true)} className="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white rounded-md text-sm">
+                     {/* <button onClick={() => setCreateOpen(true)} className="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white rounded-md text-sm">
                       <PlusOutlined className="w-4 h-4 mr-2" /> Thêm khách hàng
-                    </button> 
+                    </button>  */}
                   </div>
                 </div>
                 {/* Stats cards */}

@@ -31,20 +31,6 @@ import { adminStationService } from '../../../../services/adminStationService';
 
 const { Option } = Select;
 
-// Form values interface
-interface StationFormValues {
-  name: string;
-  address: string;
-  city: string;
-  latitude: number;
-  longitude: number;
-  capacity: number;
-  openTime: string;
-  closeTime: string;
-  amenities: string[];
-  phone: string;
-  email: string;
-}
 
 // Temporary interface - will be replaced with actual API interface
 interface Station {

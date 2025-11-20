@@ -172,6 +172,9 @@ export interface PendingReturnRental {
 
 export interface StationRental {
   _id: string;
+  // Some callers expect top-level start_at / end_at — keep as optional aliases
+  start_at?: string;
+  end_at?: string;
   booking_id: {
     _id: string;
     start_at: string;
@@ -193,6 +196,7 @@ export interface StationRental {
     type: string;
     licensePlate: string;
     image: string;
+    seats?: number;
     batteryLevel?: number;
     odo_km?: number;
   };
@@ -621,7 +625,7 @@ export const rentalService = {
     page?: number;
     limit?: number;
     status?: string;
-  }): Promise<ApiResponse<Rental[]>> {
+  }): Promise<ApiResponse<StationRental[]>> {
     try {
       console.log('[RentalService] Getting admin rentals with params:', params);
       
@@ -632,7 +636,7 @@ export const rentalService = {
       // Request populated data
       queryParams.append('populate', 'user_id,vehicle_id,station_id,booking_id');
       
-      const response = await api.get<ApiResponse<Rental[]>>(
+      const response = await api.get<ApiResponse<StationRental[]>>(
         `/rentals/all?${queryParams.toString()}`
       );
       

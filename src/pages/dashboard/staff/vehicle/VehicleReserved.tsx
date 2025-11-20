@@ -67,7 +67,7 @@ const VehicleReserved = () => {
         const rentals = await rentalService.getStationRentals(selectedStation, 'ONGOING');
         
         // Filter out bookings that already have corresponding rentals
-        const rentalBookingIds = rentals.map(rental => rental.booking_id);
+        const rentalBookingIds = rentals.map(rental => typeof rental.booking_id === 'string' ? rental.booking_id : (rental.booking_id as any)?._id);
         const pendingBookings = bookings.filter(booking => !rentalBookingIds.includes(booking._id));
         
         setConfirmedBookings(pendingBookings);

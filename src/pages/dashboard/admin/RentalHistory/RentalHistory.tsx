@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import { EyeOutlined, ReloadOutlined } from "@ant-design/icons";
 import { Button, Input, Modal, Table, Tag, message, Space, Descriptions, Image } from 'antd';
 import { rentalService } from '../../../../services/rentalService';
-import { bookingService } from '../../../../services/bookingService';
 import type { StationRental } from '../../../../services/rentalService';
 import type { Booking } from '../../../../services/bookingService';
 
@@ -51,11 +50,12 @@ const getBookingInfo = (rental: StationRental) => {
   
   if (isPopulated(bookingId)) {
     const booking = bookingId as Booking;
+    const pricing = booking.pricing_snapshot as any;
     return {
       start_at: booking.start_at,
       end_at: booking.end_at,
-      total_amount: booking.total_amount,
-      deposit_amount: booking.deposit_amount,
+      total_amount: pricing?.total_price ?? pricing?.totalPrice ?? 0,
+      deposit_amount: pricing?.deposit ?? pricing?.deposit_amount ?? 0,
       status: booking.status
     };
   }
@@ -83,7 +83,7 @@ const RentalHistory: React.FC = () => {
     try {
       setLoading(true);
       console.log('🔄 Fetching all rentals...');
-      const data = await rentalService.getAllRentals({ limit: 100 });
+      const data = await rentalService.getAllRentals();
       console.log('✅ Rentals fetched:', data.length);
       
       if (data.length > 0) {

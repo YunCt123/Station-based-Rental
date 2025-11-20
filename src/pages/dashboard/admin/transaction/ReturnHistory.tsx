@@ -119,8 +119,8 @@ const transformRentalToReturn = (rental: StationRental): ReturnTransaction | nul
     const interiorCondition = needsCleaning ? 'minor_damage' : 'good';
     
     // Get staff name from return info
-    const staffName = typeof rental.return?.staff_id === 'object' && rental.return?.staff_id !== null
-      ? (rental.return.staff_id as any).name || 'N/A'
+    const staffName = typeof (rental.return as any)?.staff_id === 'object' && (rental.return as any)?.staff_id !== null
+      ? ((rental.return as any).staff_id as any).name || 'N/A'
       : 'N/A';
     
     const brand = (vehicle as any).brand || '';

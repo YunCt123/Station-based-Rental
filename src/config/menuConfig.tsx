@@ -1,5 +1,4 @@
 import {
-  MapPinIcon,
   TruckIcon,
   UserGroupIcon,
   CreditCardIcon,

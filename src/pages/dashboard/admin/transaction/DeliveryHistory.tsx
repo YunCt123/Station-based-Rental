@@ -230,100 +230,7 @@ export const DeliveryHistory: React.FC = () => {
     fetchDeliveries();
   }, [pagination.page, statusFilter]);
 
-  // Mock data fallback (keeping original mock data structure)
-  const mockDeliveryTransactions: DeliveryTransaction[] = useMemo(
-    () => [
-      {
-        id: "DV-2024-001",
-        transactionDate: "2024-10-15 09:30:00",
-        vehicleId: "VH-E001",
-        vehicleName: "Honda Lead",
-        vehicleImage: "/vehicles/honda-lead.jpg",
-        customerName: "Nguyễn Văn A",
-        customerPhone: "0901234567",
-        customerEmail: "nguyenvana@email.com",
-        licenseNumber: "123456789",
-        fromStation: "Trạm Quận 1",
-        toStation: "Trạm Quận 3",
-        staffName: "Trần Thị B",
-        deliveryTime: "2024-10-15 10:00:00",
-        returnDueTime: "2024-10-17 10:00:00",
-        status: "completed",
-        rentalType: "daily",
-        rentalDuration: "2 ngày",
-        totalCost: 200000,
-        depositAmount: 500000,
-        paymentMethod: "card",
-        paymentStatus: "paid",
-        documents: {
-          contract: true,
-          license: true,
-          insurance: true,
-          inspection: true,
-        },
-        notes: "Giao xe thành công, khách hàng hài lòng.",
-      },
-      {
-        id: "DV-2024-002",
-        transactionDate: "2024-10-15 14:20:00",
-        vehicleId: "VH-E002",
-        vehicleName: "Yamaha Janus",
-        vehicleImage: "/vehicles/yamaha-janus.jpg",
-        customerName: "Lê Thị C",
-        customerPhone: "0912345678",
-        customerEmail: "lethic@email.com",
-        licenseNumber: "987654321",
-        fromStation: "Trạm Quận 2",
-        staffName: "Phạm Văn D",
-        deliveryTime: "2024-10-15 15:00:00",
-        returnDueTime: "2024-10-15 21:00:00",
-        status: "delayed",
-        rentalType: "hourly",
-        rentalDuration: "6 giờ",
-        totalCost: 120000,
-        depositAmount: 300000,
-        paymentMethod: "cash",
-        paymentStatus: "partial",
-        documents: {
-          contract: true,
-          license: true,
-          insurance: false,
-          inspection: true,
-        },
-      },
-      {
-        id: "DV-2024-003",
-        transactionDate: "2024-10-14 16:45:00",
-        vehicleId: "VH-E003",
-        vehicleName: "Honda Vision",
-        vehicleImage: "/vehicles/honda-vision.jpg",
-        customerName: "Võ Minh E",
-        customerPhone: "0923456789",
-        customerEmail: "vominhe@email.com",
-        licenseNumber: "456789123",
-        fromStation: "Trạm Quận 7",
-        toStation: "Trạm Quận 1",
-        staffName: "Nguyễn Thị F",
-        deliveryTime: "2024-10-14 17:30:00",
-        returnDueTime: "2024-10-21 17:30:00",
-        status: "overdue",
-        rentalType: "weekly",
-        rentalDuration: "1 tuần",
-        totalCost: 700000,
-        depositAmount: 1000000,
-        paymentMethod: "online",
-        paymentStatus: "pending",
-        documents: {
-          contract: true,
-          license: true,
-          insurance: true,
-          inspection: false,
-        },
-        notes: "Khách hàng yêu cầu gia hạn thêm 2 ngày.",
-      },
-    ],
-    []
-  );
+  // (removed unused mock data fallback)
 
   // Filter options
   const statusOptions: FilterOption[] = [
@@ -502,8 +409,10 @@ export const DeliveryHistory: React.FC = () => {
           </div>
         </div>
       )}
+
     </div>
   );
 };
 
 export default DeliveryHistory;
+  

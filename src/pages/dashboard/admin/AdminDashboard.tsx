@@ -129,20 +129,21 @@ const AdminDashboard: React.FC = () => {
 
         // Add rentals activities
         const recentRentals = rentals.filter(rental => 
-          new Date(rental.start_at) >= oneWeekAgo
+          new Date(rental.booking_id?.start_at || rental.start_at || rental.createdAt) >= oneWeekAgo
         );
         recentRentals.forEach(rental => {
-          const customerName = rental.user_id?.name || 'Khách hàng';
-          const vehicleName = rental.vehicle_id?.name || 'Xe không xác định';
-          const stationName = rental.station_id?.name || 'Trạm không xác định';
+          const customerName = (rental as any).user_id?.name || 'Khách hàng';
+          const vehicleName = (rental as any).vehicle_id?.name || 'Xe không xác định';
+          const stationName = (rental as any).station_id?.name || 'Trạm không xác định';
+          const eventTime = rental.booking_id?.start_at || rental.start_at || rental.createdAt;
           
           activities.push({
             id: `rental-${rental._id}`,
             type: 'rental',
             message: `${customerName} thuê xe ${vehicleName} tại ${stationName}`,
-            time: getRelativeTime(new Date(rental.start_at)),
+            time: getRelativeTime(new Date(eventTime)),
             status: 'success',
-            timestamp: new Date(rental.start_at)
+            timestamp: new Date(eventTime)
           });
         });
 

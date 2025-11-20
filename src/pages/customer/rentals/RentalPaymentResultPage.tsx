@@ -88,7 +88,7 @@ const RentalPaymentResultPage: React.FC = () => {
 
         // 4. Determine final result
         const isVnpaySuccess = rawParams.vnp_ResponseCode === "00";
-        const isBackendSuccess = callbackResult.status === "SUCCESS" || callbackResult.message === "ok";
+        const isBackendSuccess = callbackResult.status === "SUCCESS";
         
         console.log("[Rental FE] isVnpaySuccess:", isVnpaySuccess);
         console.log("[Rental FE] isBackendSuccess:", isBackendSuccess);
@@ -96,9 +96,9 @@ const RentalPaymentResultPage: React.FC = () => {
         const finalSuccess = isBackendSuccess && isVnpaySuccess;
 
         // Optional: Fetch updated rental details
-        let rentalData: Rental | null = null;
+        let rentalData: Rental | undefined = undefined;
         try {
-          rentalData = await customerService.getRentalById(rentalId);
+          rentalData = await customerService.getRentalDetail(rentalId);
         } catch (fetchError) {
           console.warn("[Rental FE] Failed to fetch rental details:", fetchError);
         }
@@ -108,7 +108,7 @@ const RentalPaymentResultPage: React.FC = () => {
           title: finalSuccess ? "Thanh toán hoàn tất!" : "Thanh toán thất bại",
           subTitle: finalSuccess
             ? `Thuê xe ${rentalId} đã được hoàn tất. Bạn có thể xem chi tiết dưới đây.`
-            : `Mã VNPay: ${rawParams.vnp_ResponseCode} ${rawParams.vnp_ResponseCode === "00" ? "(Thành công từ VNPAY nhưng lỗi backend)" : "(Lỗi từ VNPAY)"} - Backend: ${callbackResult.status || callbackResult.message}`,
+            : `Mã VNPay: ${rawParams.vnp_ResponseCode} ${rawParams.vnp_ResponseCode === "00" ? "(Thành công từ VNPAY nhưng lỗi backend)" : "(Lỗi từ VNPAY)"} - Backend: ${callbackResult.status}`,
           rentalId,
           rental: rentalData,
         });

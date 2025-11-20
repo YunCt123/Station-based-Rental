@@ -42,7 +42,8 @@ interface RegisterProps {
   onRegister: (userData: User) => void;
 }
 
-const Register = ({ onRegister }: RegisterProps) => {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const Register = ({ onRegister: _onRegister }: RegisterProps) => {
   const { t } = useTranslation();
   const [formData, setFormData] = useState({
     name: "",

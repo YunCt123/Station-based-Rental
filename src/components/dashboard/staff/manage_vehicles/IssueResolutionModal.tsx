@@ -6,8 +6,6 @@ import {
   WrenchScrewdriverIcon,
   CurrencyDollarIcon,
   DocumentTextIcon,
-  PhotoIcon,
-  UserIcon
 } from '@heroicons/react/24/outline';
 import { CheckCircleIcon as CheckCircleSolidIcon } from '@heroicons/react/24/solid';
 import type { AddResolutionRequest, Priority, CustomerSatisfaction } from '@/services/issueService';

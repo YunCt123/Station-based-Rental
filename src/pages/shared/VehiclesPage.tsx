@@ -32,7 +32,7 @@ import { useTranslation } from "@/contexts/TranslationContext";
 import HeroCarousel from "@/components/HeroCarousel";
 
 const Vehicles = () => {
-  const { t, language } = useTranslation();
+  const { language } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
 
   // State for vehicles data

@@ -26,11 +26,12 @@ export type BackendVehicleStatus = 'AVAILABLE' | 'RESERVED' | 'RENTED' | 'MAINTE
 // Frontend Vehicle interface (main vehicle data structure)
 export interface Vehicle {
   id: string;
+  _id?: string;
   name: string;
   year: number;
   brand: string;
   model: string;
-  type: VehicleType;
+  type: VehicleType | string;
   image: string;
   batteryLevel: number;
   location: string;
@@ -59,6 +60,7 @@ export interface BackendVehicle {
   _id: string;
   id?: string;
   name: string;
+  lock_version?: number;
   year: number;
   brand?: string;
   model?: string;
@@ -69,6 +71,7 @@ export interface BackendVehicle {
   status: BackendVehicleStatus;
   batteryLevel?: number;
   battery_soc?: number;
+  battery_kWh?: number;
   range?: number;
   seats?: number;
   pricePerHour?: number;
@@ -84,7 +87,6 @@ export interface BackendVehicle {
   features?: string[];
   condition?: string;
   lastMaintenance?: string;
-  mileage?: number;
   odo_km?: number;
   fuelEfficiency?: string;
   consumption_wh_per_km?: number;

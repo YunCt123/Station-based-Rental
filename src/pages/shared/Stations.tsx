@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MapPin, Clock, Zap, AlertCircle } from "lucide-react";
+import { MapPin, Clock, Zap, AlertCircle, BatteryCharging } from "lucide-react";
 import { Link } from "react-router-dom";
 import { stationService, type Station } from "@/services/stationService";
 import {
@@ -26,57 +26,73 @@ const Stations = () => {
       try {
         setError(null);
         setIsLoading(true);
-        
-        console.log('🏢 Đang lấy danh sách trạm từ API...');
-        
-        // Test connection first
-        await stationService.testConnection();
-        console.log('🔗 Kết nối API trạm thành công');
-        
-        // Get active stations
-        const response = await stationService.getActiveStations({}, {
-          limit: 50,
-          sort: 'name'
-        });
-        
-        console.log('✅ Lấy danh sách trạm thành công:', response.stations);
-        
-        // Fetch real vehicle counts for each station
+
+        console.log("🏢 Đang lấy danh sách trạm từ API...");
+
+        // Test connection (nếu có route test)
+        try {
+          await stationService.testConnection();
+          console.log("🔗 Kết nối API trạm thành công");
+        } catch (testErr) {
+          console.warn("⚠️ stationService.testConnection thất bại:", testErr);
+        }
+
+        // Lấy danh sách trạm đang active
+        const response = await stationService.getActiveStations(
+          {},
+          {
+            limit: 50,
+            sort: "name",
+          }
+        );
+
+        console.log("✅ Lấy danh sách trạm thành công:", response.stations);
+
+        // Lấy lại số lượng xe thật cho từng trạm
         const stationsWithRealCounts = await Promise.all(
           response.stations.map(async (station) => {
             try {
-              // Get total vehicle count for station
-              const allVehiclesData = await stationService.getStationVehicles(station.id);
+              const allVehiclesData = await stationService.getStationVehicles(
+                station.id
+              );
               const totalVehicles = allVehiclesData.count;
-              
-              // Get available vehicle count for station
-              const availableVehiclesData = await stationService.getStationVehicles(station.id, 'AVAILABLE');
+
+              const availableVehiclesData =
+                await stationService.getStationVehicles(
+                  station.id,
+                  "AVAILABLE"
+                );
               const availableVehicles = availableVehiclesData.count;
-              
-              console.log(`📊 Trạm ${station.name}: ${availableVehicles}/${totalVehicles} phương tiện`);
-              
+
+              console.log(
+                `📊 Trạm ${station.name}: ${availableVehicles}/${totalVehicles} phương tiện`
+              );
+
               return {
                 ...station,
                 totalVehicles,
-                availableVehicles
+                availableVehicles,
               };
             } catch (vehicleError) {
-              console.warn(`⚠️ Không thể lấy thông tin phương tiện cho trạm ${station.name}:`, vehicleError);
-              // Fallback to backend metrics or default values
+              console.warn(
+                `⚠️ Không thể lấy thông tin phương tiện cho trạm ${station.name}:`,
+                vehicleError
+              );
               return {
                 ...station,
                 totalVehicles: station.totalVehicles || 0,
-                availableVehicles: station.availableVehicles || 0
+                availableVehicles: station.availableVehicles || 0,
               };
             }
           })
         );
-        
+
         setStations(stationsWithRealCounts);
-        
-      } catch (error: any) {
-        console.error('❌ Lỗi khi lấy danh sách trạm:', error);
-        setError(`Không thể tải danh sách trạm: ${error.message || 'Lỗi không xác định'}`);
+      } catch (err: any) {
+        console.error("❌ Lỗi khi lấy danh sách trạm:", err);
+        setError(
+          `Không thể tải danh sách trạm: ${err.message || "Lỗi không xác định"}`
+        );
         setStations([]);
       } finally {
         setIsLoading(false);
@@ -86,13 +102,13 @@ const Stations = () => {
     fetchStations();
   }, []);
 
-  const getStatusBadge = (status: Station['status']) => {
+  const getStatusBadge = (status: Station["status"]) => {
     switch (status) {
-      case 'active':
+      case "active":
         return <Badge className="badge-available">Hoạt động</Badge>;
-      case 'maintenance':
+      case "maintenance":
         return <Badge variant="destructive">Bảo trì</Badge>;
-      case 'inactive':
+      case "inactive":
         return <Badge variant="secondary">Không hoạt động</Badge>;
       default:
         return <Badge variant="outline">Không xác định</Badge>;
@@ -111,10 +127,10 @@ const Stations = () => {
                   <AlertCircle className="h-5 w-5 text-destructive" />
                   <p className="text-destructive">{error}</p>
                 </div>
-                <Button 
-                  onClick={() => window.location.reload()} 
-                  variant="outline" 
-                  size="sm" 
+                <Button
+                  onClick={() => window.location.reload()}
+                  variant="outline"
+                  size="sm"
                   className="mt-2"
                 >
                   Thử lại
@@ -165,9 +181,9 @@ const Stations = () => {
                             <div className="flex items-center space-x-2">
                               <Clock className="h-5 w-5 text-primary" />
                               <p className="text-sm">
-                                {station.operatingHours.weekday || 
-                                 station.operatingHours.weekend || 
-                                 "24/7"}
+                                {(station as any).operatingHours?.weekday ||
+                                  (station as any).operatingHours?.weekend ||
+                                  "24/7"}
                               </p>
                             </div>
 
@@ -179,8 +195,10 @@ const Stations = () => {
                             )}
 
                             <div className="mb-4 min-h-[60px]">
-                              <p className="text-sm font-medium mb-2">Tiện ích:</p>
-                              {station.amenities.length > 0 ? (
+                              <p className="text-sm font-medium mb-2">
+                                Tiện ích:
+                              </p>
+                              {station.amenities && station.amenities.length > 0 ? (
                                 <div className="flex flex-wrap gap-1">
                                   {station.amenities.slice(0, 3).map((amenity, i) => (
                                     <Badge key={i} variant="outline" className="text-xs">
@@ -222,7 +240,7 @@ const Stations = () => {
                             </div>
 
                             <div className="pt-4 border-t min-h-[50px] flex items-center">
-                              {station.rating > 0 ? (
+                              {station.rating && station.rating > 0 ? (
                                 <div className="flex items-center justify-between w-full">
                                   <span className="text-sm">Đánh giá:</span>
                                   <div className="flex items-center space-x-1">
@@ -262,7 +280,7 @@ const Stations = () => {
             ) : !isLoading && !error ? (
               <FadeIn delay={400}>
                 <div className="text-center py-12">
-                  <div className="text-6xl mb-4">🏢</div>
+                  <BatteryCharging className="mx-auto h-12 w-12 text-gray-400 mb-4" />
                   <h3 className="text-xl font-semibold mb-2">
                     Không tìm thấy trạm nào
                   </h3>

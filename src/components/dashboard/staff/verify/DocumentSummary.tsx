@@ -10,7 +10,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { FileText, User, Eye, CheckCircle, XCircle } from 'lucide-react';
-import { type PendingDocument, type Document } from '@/services/documentService';
+import { type PendingDocument } from '@/services/documentService';
 
 interface OnlineDocumentSummaryProps {
   document: PendingDocument;
@@ -20,8 +20,7 @@ interface OnlineDocumentSummaryProps {
   onReject: () => void;
   rejectionReason: string;
   setRejectionReason: (reason: string) => void;
-  getDocumentStatusColor: (status: Document['status']) => string;
-  getDocumentTypeLabel: (type: Document['type']) => string;
+  getDocumentStatusColor: (status: PendingDocument['verificationStatus']) => string;
 }
 
 export const OnlineDocumentSummary: React.FC<OnlineDocumentSummaryProps> = ({
@@ -33,7 +32,6 @@ export const OnlineDocumentSummary: React.FC<OnlineDocumentSummaryProps> = ({
   rejectionReason,
   setRejectionReason,
   getDocumentStatusColor,
-  getDocumentTypeLabel,
 }) => {
   return (
     <>
@@ -51,22 +49,22 @@ export const OnlineDocumentSummary: React.FC<OnlineDocumentSummaryProps> = ({
             <p className="text-muted-foreground">{userName}</p>
             <p className="text-xs text-muted-foreground">{userEmail}</p>
           </div>
-          <div>
+          {/*<div>
             <p className="text-sm font-medium">Document Type</p>
             <Badge variant="outline">
               {getDocumentTypeLabel(document.type)}
             </Badge>
-          </div>
-          {document.number && (
+          </div>*/}
+          {/*document.number && ( (
             <div>
               <p className="text-sm font-medium">Document Number</p>
               <p className="text-muted-foreground">{document.number}</p>
             </div>
-          )}
+          )*/}
           <div>
             <p className="text-sm font-medium">Status</p>
-            <Badge className={getDocumentStatusColor(document.status)}>
-              {document.status}
+            <Badge className={getDocumentStatusColor(document.verificationStatus)}>
+              {document.verificationStatus}
             </Badge>
           </div>
         </CardContent>
@@ -84,7 +82,7 @@ export const OnlineDocumentSummary: React.FC<OnlineDocumentSummaryProps> = ({
           <div className="space-y-4">
             <div className="relative border rounded-lg overflow-hidden">
               <img
-                src={document.image_url}
+                src={document.idCardFront || '/placeholder-document.png'}
                 alt="Document"
                 className="w-full h-48 object-cover"
                 onError={(e) => {
@@ -95,7 +93,7 @@ export const OnlineDocumentSummary: React.FC<OnlineDocumentSummaryProps> = ({
                 variant="outline"
                 size="sm"
                 className="absolute top-2 right-2"
-                onClick={() => window.open(document.image_url, '_blank')}
+                onClick={() => window.open(document.idCardFront || '', '_blank')}
               >
                 <Eye className="h-4 w-4 mr-1" />
                 Full Size
@@ -154,8 +152,7 @@ export const OnlineDocumentSummaryModal: React.FC<{
   document: PendingDocument;
   userName: string;
   userEmail: string;
-  getDocumentStatusColor: (status: Document['status']) => string;
-  getDocumentTypeLabel: (type: Document['type']) => string;
+  getDocumentStatusColor: (status: PendingDocument['verificationStatus']) => string;
   onApprove?: () => void;
   onReject?: () => void;
   rejectionReason?: string;
@@ -167,8 +164,7 @@ export const OnlineDocumentSummaryModal: React.FC<{
   document,
   userName,
   userEmail,
-  getDocumentStatusColor,
-  getDocumentTypeLabel,
+  getDocumentStatusColor: _getDocumentStatusColor,
   onApprove,
   onReject,
   rejectionReason = '',

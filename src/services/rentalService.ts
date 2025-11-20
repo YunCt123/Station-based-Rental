@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import api from "./api";
+import type { Rental } from './customerService';
 
 // Types for handover operations
 export interface AcceptHandoverPayload {
@@ -539,7 +540,7 @@ export const rentalService = {
   },
 
   // Get rentals ready for handover at a station
-  async getStationHandovers(stationId: string): Promise<SimpleRental[]> {
+  async getStationHandovers(stationId: string): Promise<Rental[]> {
     try {
       const response = await api.get(`/rentals/station/${stationId}?status=CONFIRMED`);
       return response.data.data || [];

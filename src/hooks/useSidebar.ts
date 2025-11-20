@@ -95,6 +95,7 @@ export const useUserSession = () => {
     return savedUser ? JSON.parse(savedUser) : null;
   });
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const updateUserInfo = (info: any) => {
     setUserInfo(info);
     localStorage.setItem('userInfo', JSON.stringify(info));

@@ -182,7 +182,7 @@ function mapBackendVehicleToFrontend(backendVehicle: BackendVehicle): Vehicle {
     features: backendVehicle.features || [],
     condition: (backendVehicle.condition as Vehicle['condition']) || "good",
     lastMaintenance: backendVehicle.lastMaintenance || new Date().toISOString(),
-    mileage: backendVehicle.mileage || backendVehicle.odo_km || 0,
+    mileage: backendVehicle.odo_km || 0,
     fuelEfficiency: backendVehicle.fuelEfficiency || `${backendVehicle.consumption_wh_per_km || 150} Wh/km`,
     inspectionDate: backendVehicle.inspectionDate || backendVehicle.inspection_due_at || new Date().toISOString(),
     insuranceExpiry: backendVehicle.insuranceExpiry || backendVehicle.insurance_expiry_at || new Date().toISOString(),

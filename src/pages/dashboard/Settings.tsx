@@ -46,7 +46,7 @@ const Settings = () => {
   const { toast } = useToast();
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [notifications, setNotifications] = useState({
+  const [_notifications, _setNotifications] = useState({
     emailBooking: true,
     emailPromotions: false,
     smsReminders: true,

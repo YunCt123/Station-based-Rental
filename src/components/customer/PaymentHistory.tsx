@@ -7,14 +7,14 @@ import {
   CloseCircleOutlined,
   DownOutlined
 } from '@ant-design/icons';
-import type { Payment } from '../../services/customerService';
+import type { Payment, PricingSnapshot } from '../../services/customerService';
 
 const { Title, Text, Paragraph } = Typography;
 const { Panel } = Collapse;
 
 interface PaymentHistoryProps {
   payments: Payment[];
-  pricingSnapshot: unknown
+  pricingSnapshot: PricingSnapshot;
 }
 
 const PaymentHistory: React.FC<PaymentHistoryProps> = ({ payments, pricingSnapshot }) => {
@@ -79,8 +79,6 @@ const PaymentHistory: React.FC<PaymentHistoryProps> = ({ payments, pricingSnapsh
       <Space direction="vertical" size={16} style={{ width: '100%' }}>
         {payments.map(payment => {
           const statusConfig = getStatusConfig(payment.status);
-          const rental = payment.rental_id;
-          const charges = rental?.charges;
           const metadata = payment.metadata;
           console.log(pricingSnapshot)
           return (
@@ -100,7 +98,7 @@ const PaymentHistory: React.FC<PaymentHistoryProps> = ({ payments, pricingSnapsh
                       {getPaymentIcon(payment.type)}
                     </Title>
                     <Text type="secondary" style={{ fontSize: '13px' }}>
-                      {formatDate(payment.createdAt)}
+                      {formatDate(payment.created_at)}
                     </Text>
                   </div>
                 </Space>
@@ -136,71 +134,41 @@ const PaymentHistory: React.FC<PaymentHistoryProps> = ({ payments, pricingSnapsh
                 >
                   <Space direction="vertical" size={4} style={{ width: '100%', fontSize: '13px' }}>
                     {/* Tổng chi phí */}
-                    {charges && (
+                    {metadata && (
                       <>
                         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                           <Text>Tổng chi phí thuê xe:</Text>
-                          <Text strong>{(pricingSnapshot.total_price + charges?.extra_fees).toLocaleString()} VND</Text>
+                          <Text strong>{metadata.totalCharges?.toLocaleString()} VND</Text>
                         </div>
 
                         <div style={{ borderLeft: '2px solid #d9d9d9', marginLeft: 10, paddingLeft: 12 }}>
-                          {charges.rental_fee > 0 && (
+                          {pricingSnapshot?.taxes && pricingSnapshot.taxes > 0 && (
                             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                              <Text type="secondary">Phí thuê xe</Text>
-                              <Text>{charges.rental_fee.toLocaleString()} VND</Text>
+                              <Text type="secondary">Thuế</Text>
+                              <Text>{pricingSnapshot.taxes.toLocaleString()} VND</Text>
                             </div>
                           )}
-                          {pricingSnapshot?.taxes > 0 && (
-                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                              <Text type="secondary">Taxs</Text>
-                              <Text>{pricingSnapshot?.taxes.toLocaleString()} VND</Text>
-                            </div>
-                          )}
-                          {pricingSnapshot?.insurance_price > 0 && (
+                          {pricingSnapshot?.insurance_price && pricingSnapshot.insurance_price > 0 && (
                             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                               <Text type="secondary">Bảo hiểm</Text>
-                              <Text>{pricingSnapshot?.insurance_price.toLocaleString()} VND</Text>
+                              <Text>{pricingSnapshot.insurance_price.toLocaleString()} VND</Text>
                             </div>
                           )}
-                          {charges.cleaning_fee > 0 && (
-                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                              <Text type="secondary">Phí vệ sinh</Text>
-                              <Text>{charges.cleaning_fee.toLocaleString()} VND</Text>
+                          {metadata.extraFees && metadata.extraFees.length > 0 && metadata.extraFees.map((fee, index) => (
+                            <div key={index} style={{ display: 'flex', justifyContent: 'space-between' }}>
+                              <Text type="secondary">{fee.description || fee.type}</Text>
+                              <Text strong type="danger">{fee.amount.toLocaleString()} VND</Text>
                             </div>
-                          )}
-                          {charges.damage_fee > 0 && (
-                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                              <Text type="secondary">Phí hư hỏng</Text>
-                              <Text>{charges.damage_fee.toLocaleString()} VND</Text>
-                            </div>
-                          )}
-                          {charges.late_fee > 0 && (
-                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                              <Text type="secondary">Phí trễ hạn</Text>
-                              <Text>{charges.late_fee.toLocaleString()} VND</Text>
-                            </div>
-                          )}
-                          {charges.other_fees > 0 && (
-                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                              <Text type="secondary">Phí khác</Text>
-                              <Text>{charges.other_fees.toLocaleString()} VND</Text>
-                            </div>
-                          )}
-                          {charges.extra_fees > 0 && (
-                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                              <Text type="secondary">Phí phát sinh</Text>
-                              <Text strong type="danger">{charges.extra_fees.toLocaleString()} VND</Text>
-                            </div>
-                          )}
+                          ))}
                         </div>
                       </>
                     )}
 
                     {/* Đặt cọc đã trả */}
-                    {metadata?.deposit_paid !== undefined && (
+                    {metadata?.depositPaid !== undefined && (
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8 }}>
                         <Text type="secondary">Đã đặt cọc trước:</Text>
-                        <Text>{metadata.deposit_paid.toLocaleString()} VND</Text>
+                        <Text>{metadata.depositPaid.toLocaleString()} VND</Text>
                       </div>
                     )}
 

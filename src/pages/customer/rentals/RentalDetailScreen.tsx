@@ -509,15 +509,16 @@ const RentalDetailScreen: React.FC<RentalDetailScreenProps> = ({
         )}
 
         {/* ---------- Thông tin thanh toán ---------- */}
-        <Col xs={24} lg={12}>
-          <Card
-            title={
-              <>
-                <CreditCardOutlined style={{ marginRight: 8 }} />
-                Thông tin thanh toán
-              </>
-            }
-          >
+        {(status === "ONGOING" || status === "CONFIRMED") && (
+          <Col xs={24} lg={12}>
+            <Card
+              title={
+                <>
+                  <CreditCardOutlined style={{ marginRight: 8 }} />
+                  Thông tin thanh toán
+                </>
+              }
+            >
             <Space direction="vertical" size={12} style={{ width: "100%" }}>
               {/* Hình thức thuê */}
               <div
@@ -798,10 +799,13 @@ const RentalDetailScreen: React.FC<RentalDetailScreenProps> = ({
               </div>
             </Space>
           </Card>
+        </Col>
+        )}
 
-          {/* ---------- Chi tiết hóa đơn (đầy đủ phí) ---------- */}
-          {((status === "RETURN_PENDING" && onPayment) ||
-            status === "COMPLETED") && (
+        {/* ---------- Chi tiết hóa đơn (đầy đủ phí) ---------- */}
+        {((status === "RETURN_PENDING" && onPayment) ||
+          status === "COMPLETED") && (
+          <Col xs={24} lg={12}>
             <Card
               title={
                 <>
@@ -946,7 +950,10 @@ const RentalDetailScreen: React.FC<RentalDetailScreenProps> = ({
                       >
                         <Text strong>Tổng giá thuê</Text>
                         <Text strong type="success">
-                          {formatCurrency(pricing_snapshot.total_price, "VND")}
+                          {formatCurrency(
+                            pricing_snapshot.total_price + (charges?.extra_fees || 0), 
+                            "VND"
+                          )}
                         </Text>
                       </div>
                     </div>
@@ -995,7 +1002,7 @@ const RentalDetailScreen: React.FC<RentalDetailScreenProps> = ({
 
                 <Divider />
 
-                {/* Tổng tiền (đã bao gồm tất cả phí) */}
+                {/* Tổng tiền cuối cùng */}
                 <Text>
                   <Text strong>Tổng tiền:</Text>{" "}
                   <Text type="danger" strong>
@@ -1015,6 +1022,30 @@ const RentalDetailScreen: React.FC<RentalDetailScreenProps> = ({
                     </Text>
                   </Text>
                 )}
+                <div
+                  style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  padding: "12px",
+                  border: "1px solid #faad14",
+                  borderRadius: "8px",
+                  backgroundColor: "#fffbe6",
+                  marginTop: "12px",
+                  }}
+                >
+                  <Text strong style={{ fontSize: "16px", color: "#d46b08" }}>
+                  Tiền phải trả còn lại:
+                  </Text>
+                  <Text strong style={{ fontSize: "16px", color: "#fa8c16" }}>
+                  {formatCurrency(
+                    pricing_snapshot.total_price +
+                    (charges?.extra_fees || 0) -
+                    (pricing_snapshot.deposit ?? 0),
+                    "VND"
+                  )}
+                  </Text>
+                </div>
 
                 {/* Tiền còn lại cần thanh toán */}
                 {status === "RETURN_PENDING" && (
@@ -1034,8 +1065,8 @@ const RentalDetailScreen: React.FC<RentalDetailScreenProps> = ({
                 )}
               </Space>
             </Card>
-          )}
-        </Col>
+          </Col>
+        )}
 
         {/* ---------- Ảnh nhận xe / Ảnh từ chối ---------- */}
         {status === "REJECTED" &&

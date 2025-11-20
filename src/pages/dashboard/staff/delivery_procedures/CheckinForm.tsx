@@ -240,7 +240,6 @@ const CheckinForm: React.FC<CheckinFormProps> = ({
           vehicleData
         );
 
-        message.success('Xe đã được giao thành công!');
       }
 
       // Success - close modal and refresh

@@ -2,7 +2,6 @@ import React from 'react';
 import { Card, Button, Tag, Space, Typography, Image, Alert } from 'antd';
 import { 
   CalendarOutlined, 
-  CarOutlined, 
   EnvironmentOutlined,
   CreditCardOutlined,
   EyeOutlined,
@@ -108,15 +107,14 @@ const RentalCard: React.FC<RentalCardProps> = ({
           <Space direction="vertical" size={8} style={{ width: '100%' }}>
             {/* Vehicle Details */}
             <Space>
-              <CarOutlined style={{ color: '#666' }} />
               <Text type="secondary">
-                {vehicle_id.brand} {vehicle_id.model} • {vehicle_id.year}
+                Hãng: {vehicle_id.brand} 
               </Text>
             </Space>
             
             {vehicle_id.licensePlate && (
               <Text strong style={{ color: '#1890ff' }}>
-                🪪 {vehicle_id.licensePlate}
+                Biển số: {vehicle_id.licensePlate}
               </Text>
             )}
 
@@ -124,7 +122,7 @@ const RentalCard: React.FC<RentalCardProps> = ({
             <Space>
               <EnvironmentOutlined style={{ color: '#52c41a' }} />
               <Text type="secondary">
-                {station_id.name}
+                Trạm: {station_id.name}
               </Text>
             </Space>
 

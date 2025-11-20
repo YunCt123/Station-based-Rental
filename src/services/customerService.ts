@@ -102,6 +102,10 @@ export interface Rental {
     total: number;
     rental_fee: number;
     extra_fees: number;
+    cleaning_fee: number;
+    damage_fee: number;
+    late_fee: number;
+    other_fees: number;
   };
 }
 
@@ -115,6 +119,8 @@ export interface Payment {
   provider?: string;
   vnpay_transaction_id?: string;
   created_at: string;
+  createdAt: string;
+  method: string;
   metadata?: {
     totalCharges?: number;
     depositPaid?: number;
@@ -226,7 +232,7 @@ export const customerService = {
   },
 
   // Create final payment
-  async createFinalPayment(rentalId: string, returnUrl: string): Promise<{ payment: { vnpay_checkout_url: string } }> {
+  async createFinalPayment(rentalId: string, returnUrl: string): Promise<{ checkoutUrl: string }> {
     try {
       const response = await api.post(`/payments/rentals/${rentalId}/final`, {
         returnUrl

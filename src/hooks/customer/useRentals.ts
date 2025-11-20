@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect, useCallback } from 'react';
 import { customerService, type Rental, type Payment } from '../../services/customerService';
 
@@ -114,7 +115,7 @@ export const useFinalPayment = () => {
           rentalId, 
           window.location.origin + '/payment-result'
         );
-        window.location.href = paymentResponse?.payment?.vnpay_checkout_url;
+        window.location.href = paymentResponse?.checkoutUrl;
         return true;
         
       } catch (paymentError: any) {

@@ -172,36 +172,89 @@ export interface PendingReturnRental {
 
 export interface StationRental {
   _id: string;
-  booking_id: string;
-  user_id: RentalCustomer;
-  vehicle_id: RentalVehicle;
-  station_id: RentalStation;
-  status: 'ONGOING' | 'COMPLETED' | 'CANCELLED';
-  start_at: string;
-  end_at: string;
+  // Some callers expect top-level start_at / end_at — keep as optional aliases
+  start_at?: string;
+  end_at?: string;
+  booking_id: {
+    _id: string;
+    start_at: string;
+    end_at: string;
+    total_amount?: number;
+    status?: string;
+  };
+  user_id: {
+    _id: string;
+    name: string;
+    email: string;
+    phoneNumber?: string;
+  };
+  vehicle_id: {
+    _id: string;
+    name: string;
+    brand: string;
+    model: string;
+    type: string;
+    licensePlate: string;
+    image: string;
+    seats?: number;
+    batteryLevel?: number;
+    odo_km?: number;
+  };
+  station_id: {
+    _id: string;
+    name: string;
+    address: string;
+    city?: string;
+  };
+  status: 'CONFIRMED' | 'ONGOING' | 'RETURN_PENDING' | 'COMPLETED' | 'DISPUTED' | 'REJECTED';
   pickup?: {
     at?: string;
-    photos?: string[];
+    photos?: Array<{
+      _id: string;
+      url: string;
+      taken_at: string;
+      phase: string;
+    }>;
     staff_id?: string;
     odo_km?: number;
     soc?: number;
     notes?: string;
+    rejected?: {
+      at?: string;
+      staff_id?: string;
+      reason?: string;
+      photos?: Array<{
+        _id: string;
+        url: string;
+        taken_at: string;
+        phase: string;
+      }>;
+    };
   };
   return?: {
     at?: string;
-    photos?: string[];
+    photos?: Array<{
+      _id: string;
+      url: string;
+      taken_at: string;
+      phase: string;
+    }>;
     odo_km?: number;
     soc?: number;
   };
   charges?: {
     rental_fee: number;
-    late_fee: number;
+    cleaning_fee: number;
     damage_fee: number;
+    late_fee: number;
+    other_fees: number;
+    extra_fees: number;
     total: number;
   };
   pricing_snapshot: RentalPricing;
   createdAt: string;
   updatedAt: string;
+  closed_at?: string;
 }
 
 export interface ApiResponse<T> {
@@ -553,7 +606,7 @@ export const rentalService = {
   // Get all rentals (admin)
   async getAllRentals(): Promise<StationRental[]> {
     try {
-      const response = await api.get<ApiResponse<StationRental[]>>('/rentals/all');
+      const response = await api.get<ApiResponse<StationRental[]>>('/rentals/all?populate=user_id,vehicle_id,station_id,booking_id');
       if (response.data.success && response.data.data) {
         return response.data.data;
       }
@@ -561,6 +614,129 @@ export const rentalService = {
     } catch (error) {
       console.error("❌ [rentalService] Failed to get all rentals:", error);
       throw new Error("Failed to load rentals");
+    }
+  },
+
+  /**
+   * Get rentals with pagination and filters (ADMIN ONLY)
+   * GET /v1/rentals/all?page=1&limit=20&status=COMPLETED
+   */
+  async getAdminRentals(params?: {
+    page?: number;
+    limit?: number;
+    status?: string;
+  }): Promise<ApiResponse<StationRental[]>> {
+    try {
+      console.log('[RentalService] Getting admin rentals with params:', params);
+      
+      const queryParams = new URLSearchParams();
+      if (params?.page) queryParams.append('page', params.page.toString());
+      if (params?.limit) queryParams.append('limit', params.limit.toString());
+      if (params?.status) queryParams.append('status', params.status);
+      // Request populated data
+      queryParams.append('populate', 'user_id,vehicle_id,station_id,booking_id');
+      
+      const response = await api.get<ApiResponse<StationRental[]>>(
+        `/rentals/all?${queryParams.toString()}`
+      );
+      
+      if (response.data.success) {
+        console.log('[RentalService] Admin rentals retrieved:', {
+          count: response.data.data?.length || 0,
+          total: response.data.meta?.total || 0
+        });
+        return response.data;
+      }
+      
+      console.warn('[RentalService] Response not successful:', response.data);
+      return { success: false, data: [], meta: undefined };
+    } catch (error: any) {
+      console.error('[RentalService] Get admin rentals error:', error);
+      console.error('[RentalService] Error details:', {
+        status: error.response?.status,
+        message: error.response?.data?.message,
+        data: error.response?.data
+      });
+      
+      let errorMessage = 'Failed to get rentals';
+      if (error.response?.status === 403) {
+        errorMessage = 'Bạn không có quyền truy cập danh sách giao xe. Vui lòng đăng nhập với tài khoản admin.';
+      } else if (error.response?.status === 401) {
+        errorMessage = 'Vui lòng đăng nhập lại để tiếp tục.';
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      return { 
+        success: false, 
+        data: [], 
+        meta: undefined,
+        error: errorMessage
+      } as any;
+    }
+  },
+
+  /**
+   * Get rentals with pagination and filters (CUSTOMER ONLY)
+   * GET /v1/rentals?page=1&limit=20&status=COMPLETED
+   */
+  async getRentals(params?: {
+    page?: number;
+    limit?: number;
+    status?: string;
+  }): Promise<ApiResponse<Rental[]>> {
+    try {
+      console.log('[RentalService] Getting rentals with params:', params);
+      
+      const queryParams = new URLSearchParams();
+      if (params?.page) queryParams.append('page', params.page.toString());
+      if (params?.limit) queryParams.append('limit', params.limit.toString());
+      if (params?.status) queryParams.append('status', params.status);
+      
+      const response = await api.get<ApiResponse<Rental[]>>(
+        `/rentals?${queryParams.toString()}`
+      );
+      
+      if (response.data.success) {
+        console.log('[RentalService] Rentals retrieved:', {
+          count: response.data.data?.length || 0,
+          total: response.data.meta?.total || 0
+        });
+        return response.data;
+      }
+      
+      // If response is not successful but no error thrown, return empty
+      console.warn('[RentalService] Response not successful:', response.data);
+      return { success: false, data: [], meta: undefined };
+    } catch (error: any) {
+      console.error('[RentalService] Get rentals error:', error);
+      console.error('[RentalService] Error details:', {
+        status: error.response?.status,
+        message: error.response?.data?.message,
+        data: error.response?.data
+      });
+      
+      // Handle specific error codes
+      let errorMessage = 'Failed to get rentals';
+      if (error.response?.status === 403) {
+        errorMessage = 'Bạn không có quyền truy cập danh sách giao xe. Vui lòng liên hệ quản trị viên.';
+      } else if (error.response?.status === 401) {
+        errorMessage = 'Vui lòng đăng nhập lại để tiếp tục.';
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      // Return empty data instead of throwing to allow UI to show fallback
+      return { 
+        success: false, 
+        data: [], 
+        meta: undefined,
+        error: errorMessage
+      } as any;
     }
   }
 };

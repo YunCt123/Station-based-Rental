@@ -210,97 +210,97 @@ const PaymentPage: React.FC = () => {
   }, [loadBookingData]);
 
   // Handle PayOS payment creation
-  const handlePayOSPayment = async () => {
-    if (!booking || !booking.pricing_snapshot) {
-      message.error('Thông tin đặt chỗ không có sẵn');
-      return;
-    }
+  // const handlePayOSPayment = async () => {
+  //   if (!booking || !booking.pricing_snapshot) {
+  //     message.error('Thông tin đặt chỗ không có sẵn');
+  //     return;
+  //   }
 
-    // Prevent multiple clicks
-    if (creating) {
-      message.warning('Thanh toán đang được xử lý...');
-      return;
-    }
+  //   // Prevent multiple clicks
+  //   if (creating) {
+  //     message.warning('Thanh toán đang được xử lý...');
+  //     return;
+  //   }
 
-    // Prevent rapid successive payments (5 second cooldown)
-    const now = Date.now();
-    if (now - lastPaymentAttempt < 5000) {
-      message.warning('Vui lòng đợi trước khi thực hiện thanh toán khác...');
-      return;
-    }
+  //   // Prevent rapid successive payments (5 second cooldown)
+  //   const now = Date.now();
+  //   if (now - lastPaymentAttempt < 5000) {
+  //     message.warning('Vui lòng đợi trước khi thực hiện thanh toán khác...');
+  //     return;
+  //   }
 
-    try {
-      setCreating(true);
-      setLastPaymentAttempt(now);
+  //   try {
+  //     setCreating(true);
+  //     setLastPaymentAttempt(now);
       
-      // ✅ Use proper pricing calculation with API
-      const pricing = await calculatePricing(booking);
+  //     // ✅ Use proper pricing calculation with API
+  //     const pricing = await calculatePricing(booking);
       
-      const paymentRequest = {
-        bookingId: booking._id,
-        amount: pricing.deposit,
-        returnUrl: `${window.location.origin}/payment/success?bookingId=${booking._id}`,
-        cancelUrl: `${window.location.origin}/payment/cancel?bookingId=${booking._id}`
-      };
+  //     const paymentRequest = {
+  //       bookingId: booking._id,
+  //       amount: pricing.deposit,
+  //       returnUrl: `${window.location.origin}/payment/success?bookingId=${booking._id}`,
+  //       cancelUrl: `${window.location.origin}/payment/cancel?bookingId=${booking._id}`
+  //     };
 
-      console.log('=== PayOS DEPOSIT CALCULATION (FIXED LOGIC) ===');
-      console.log('Hours:', pricing.hours);
-      console.log('Rental type:', pricing.rentalType);
-      console.log('Hourly rate:', booking.pricing_snapshot.hourly_rate);
-      console.log('Daily rate:', booking.pricing_snapshot.daily_rate);
-      console.log('Base price:', pricing.basePrice);
-      console.log('Taxes (10%):', pricing.taxes);
-      console.log('Total:', pricing.totalPrice);
-      console.log('Final deposit amount:', pricing.deposit);
-      console.log('Booking pricing_snapshot:', booking.pricing_snapshot);
+  //     console.log('=== PayOS DEPOSIT CALCULATION (FIXED LOGIC) ===');
+  //     console.log('Hours:', pricing.hours);
+  //     console.log('Rental type:', pricing.rentalType);
+  //     console.log('Hourly rate:', booking.pricing_snapshot.hourly_rate);
+  //     console.log('Daily rate:', booking.pricing_snapshot.daily_rate);
+  //     console.log('Base price:', pricing.basePrice);
+  //     console.log('Taxes (10%):', pricing.taxes);
+  //     console.log('Total:', pricing.totalPrice);
+  //     console.log('Final deposit amount:', pricing.deposit);
+  //     console.log('Booking pricing_snapshot:', booking.pricing_snapshot);
 
-      const paymentResponse = await bookingService.createPayOSPayment(paymentRequest);
+  //     const paymentResponse = await bookingService.createPayOSPayment(paymentRequest);
       
-      console.log('=== PAYOS PAYMENT RESPONSE ===');
-      console.log('Full response:', paymentResponse);
-      console.log('Payment URL:', paymentResponse.paymentUrl);
-      console.log('Payment ID:', paymentResponse.paymentId);
-      console.log('Provider Payment ID:', paymentResponse.providerPaymentId);
-      console.log('Response type:', typeof paymentResponse);
-      console.log('Response keys:', Object.keys(paymentResponse));
+  //     console.log('=== PAYOS PAYMENT RESPONSE ===');
+  //     console.log('Full response:', paymentResponse);
+  //     console.log('Payment URL:', paymentResponse.paymentUrl);
+  //     console.log('Payment ID:', paymentResponse.paymentId);
+  //     console.log('Provider Payment ID:', paymentResponse.providerPaymentId);
+  //     console.log('Response type:', typeof paymentResponse);
+  //     console.log('Response keys:', Object.keys(paymentResponse));
       
-      if (!paymentResponse.paymentUrl) {
-        console.error('❌ No payment URL in response!');
-        console.error('Available response fields:', Object.keys(paymentResponse));
+  //     if (!paymentResponse.paymentUrl) {
+  //       console.error('❌ No payment URL in response!');
+  //       console.error('Available response fields:', Object.keys(paymentResponse));
         
-        // Try alternative field names that might be returned (debugging purpose)
-        const responseRecord = paymentResponse as unknown as Record<string, unknown>;
-        const possibleUrls = [
-          responseRecord.paymentUrl,
-          responseRecord.payment_url,
-          responseRecord.checkoutUrl,
-          responseRecord.checkout_url,
-          responseRecord.url
-        ].filter(Boolean).filter(url => typeof url === 'string');
+  //       // Try alternative field names that might be returned (debugging purpose)
+  //       const responseRecord = paymentResponse as unknown as Record<string, unknown>;
+  //       const possibleUrls = [
+  //         responseRecord.paymentUrl,
+  //         responseRecord.payment_url,
+  //         responseRecord.checkoutUrl,
+  //         responseRecord.checkout_url,
+  //         responseRecord.url
+  //       ].filter(Boolean).filter(url => typeof url === 'string');
         
-        if (possibleUrls.length > 0) {
-          console.log('🔄 Found alternative URL:', possibleUrls[0]);
-          window.location.href = possibleUrls[0];
-          return;
-        }
+  //       if (possibleUrls.length > 0) {
+  //         console.log('🔄 Found alternative URL:', possibleUrls[0]);
+  //         window.location.href = possibleUrls[0];
+  //         return;
+  //       }
         
-        message.error('URL thanh toán không nhận được từ máy chủ. Vui lòng thử lại.');
-        return;
-      }
+  //       message.error('URL thanh toán không nhận được từ máy chủ. Vui lòng thử lại.');
+  //       return;
+  //     }
       
-      message.success('Đang chuyển hướng đến thanh toán PayOS...');
+  //     message.success('Đang chuyển hướng đến thanh toán PayOS...');
       
-      // Redirect to PayOS payment URL
-      console.log('🔄 Redirecting to:', paymentResponse.paymentUrl);
-      window.location.href = paymentResponse.paymentUrl;
+  //     // Redirect to PayOS payment URL
+  //     console.log('🔄 Redirecting to:', paymentResponse.paymentUrl);
+  //     window.location.href = paymentResponse.paymentUrl;
       
-    } catch (error) {
-      console.error('Payment creation error:', error);
-      message.error('Không thể tạo thanh toán. Vui lòng thử lại.');
-    } finally {
-      setCreating(false);
-    }
-  };
+  //   } catch (error) {
+  //     console.error('Payment creation error:', error);
+  //     message.error('Không thể tạo thanh toán. Vui lòng thử lại.');
+  //   } finally {
+  //     setCreating(false);
+  //   }
+  // };
 
   // Handle VNPAY payment (fallback)
   const handleVNPayPayment = async () => {
@@ -566,11 +566,10 @@ const PaymentPage: React.FC = () => {
                     </div>
                     <Button 
                       type="primary" 
-                      loading={creating}
-                      onClick={handlePayOSPayment}
-                      className="bg-blue-600 hover:bg-blue-700"
+                      disabled
+                      className="bg-gray-400 cursor-not-allowed"
                     >
-                      Thanh toán ngay
+                      Chưa khả dụng
                     </Button>
                   </div>
                 </div>
@@ -773,7 +772,7 @@ const PaymentPage: React.FC = () => {
                         <Text strong className="text-green-600">{pricing.deposit.toLocaleString('vi-VN')}đ</Text>
                       </div>
                        <div className="flex justify-between text-green-600 bg-yellow-100 p-2 rounded">
-                        <Text className="text-green-600">Tiền còn lại (Dự kiến):</Text>
+                        <Text className="text-green-600">Tiền còn lại phải thanh toán (Dự kiến):</Text>
                         <Text strong className="text-green-600">{(pricing.totalPrice - pricing.deposit).toLocaleString('vi-VN')}đ</Text>
                       </div>
                     </>

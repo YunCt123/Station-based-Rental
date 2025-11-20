@@ -117,77 +117,48 @@ const AdminDashboard: React.FC = () => {
           new Date(issue.createdAt) >= oneWeekAgo
         );
         recentIssues.forEach(issue => {
-          const vehicleName = (typeof issue.vehicle_id === 'object' && issue.vehicle_id && 'name' in issue.vehicle_id)
-            ? (issue.vehicle_id as any).name
-            : (issue.vehicle?.name || 'Xe không xác định');
           activities.push({
             id: `issue-${issue._id}`,
             type: 'issue',
-            message: `Sự cố "${issue.title}" - ${vehicleName}`,
+            message: `Sự cố "${issue.title}" - ${issue.vehicle?.licensePlate || 'Xe không xác định'}`,
             time: getRelativeTime(new Date(issue.createdAt)),
             status: issue.status === 'RESOLVED' ? 'success' : 'error',
             timestamp: new Date(issue.createdAt)
           });
         });
 
-        // Add rentals activities (fallback to pickup.at or createdAt if start_at missing)
-        const recentRentals = rentals.filter(rental => {
-          const startAtStr = rental.start_at || rental.pickup?.at || rental.createdAt;
-          if (!startAtStr) return false;
-          const startAt = new Date(startAtStr);
-          return !isNaN(startAt.getTime()) && startAt >= oneWeekAgo;
-        });
+        // Add rentals activities
+        const recentRentals = rentals.filter(rental => 
+          new Date(rental.booking_id?.start_at || rental.start_at || rental.createdAt) >= oneWeekAgo
+        );
         recentRentals.forEach(rental => {
-          const startAtStr = rental.start_at || rental.pickup?.at || rental.createdAt;
-          const startAt = new Date(startAtStr);
-          const customerName = rental.user_id?.name || 'Khách hàng';
-          const vehicleName = rental.vehicle_id?.name || 'Xe không xác định';
-          const stationName = rental.station_id?.name || 'Trạm không xác định';
-          const isCompleted = rental.status === 'COMPLETED';
-
+          const customerName = (rental as any).user_id?.name || 'Khách hàng';
+          const vehicleName = (rental as any).vehicle_id?.name || 'Xe không xác định';
+          const stationName = (rental as any).station_id?.name || 'Trạm không xác định';
+          const eventTime = rental.booking_id?.start_at || rental.start_at || rental.createdAt;
+          
           activities.push({
             id: `rental-${rental._id}`,
             type: 'rental',
-            message: isCompleted
-              ? `${customerName} đã trả xe ${vehicleName} tại ${stationName}`
-              : `${customerName} thuê xe ${vehicleName} tại ${stationName}`,
-            time: getRelativeTime(startAt),
+            message: `${customerName} thuê xe ${vehicleName} tại ${stationName}`,
+            time: getRelativeTime(new Date(eventTime)),
             status: 'success',
-            timestamp: startAt
+            timestamp: new Date(eventTime)
           });
-
-          // If completed and return time exists & within week, add return activity
-          if (isCompleted && rental.return?.at) {
-            const returnAt = new Date(rental.return.at);
-            if (!isNaN(returnAt.getTime()) && returnAt >= oneWeekAgo) {
-              activities.push({
-                id: `rental-return-${rental._id}`,
-                type: 'rental',
-                message: `${customerName} hoàn tất trả xe ${vehicleName}`,
-                time: getRelativeTime(returnAt),
-                status: 'success',
-                timestamp: returnAt
-              });
-            }
-          }
         });
 
-        // Add pending documents / user verification submission activities
-        const recentDocs = pendingDocs.filter(doc => {
-          const submittedAtStr = (doc as any).verificationSubmittedAt || doc.updatedAt || doc.createdAt;
-          const submittedAt = new Date(submittedAtStr);
-          return submittedAt >= oneWeekAgo;
-        });
+        // Add pending documents activities
+        const recentDocs = pendingDocs.filter(doc => 
+          new Date(doc.createdAt) >= oneWeekAgo
+        );
         recentDocs.forEach(doc => {
-          const submittedAtStr = (doc as any).verificationSubmittedAt || doc.updatedAt || doc.createdAt;
-          const submittedAt = new Date(submittedAtStr);
           activities.push({
             id: `doc-${doc._id}`,
             type: 'document',
-            message: `Khách hàng ${doc.name} vừa gửi hồ sơ xác minh`,
-            time: getRelativeTime(submittedAt),
+            message: `Tài liệu mới từ ${doc.name} đang chờ xét duyệt`,
+            time: getRelativeTime(new Date(doc.createdAt)),
             status: 'warning',
-            timestamp: submittedAt
+            timestamp: new Date(doc.createdAt)
           });
         });
 

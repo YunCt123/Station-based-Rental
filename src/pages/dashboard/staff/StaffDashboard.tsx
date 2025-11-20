@@ -129,9 +129,16 @@ const StaffDashboard: React.FC = () => {
       let detailedRentals: StationRental[] = [];
       try {
         const { rentalService } = await import('@/services/rentalService');
-        ongoingRentals = await rentalService.getStationRentals(stationId, 'ONGOING');
-        // Lấy detailed data cho ONGOING rentals 
-        detailedRentals = await rentalService.getStationRentals(stationId, 'ONGOING');
+        const fetched = await rentalService.getStationRentals(stationId, 'ONGOING');
+        // Map fetched StationRental[] to lightweight SimpleRental[] for quick checks
+        ongoingRentals = fetched.map(r => ({
+          _id: r._id,
+          booking_id: typeof r.booking_id === 'string' ? r.booking_id : (r.booking_id as any)?._id,
+          status: r.status,
+          vehicle_id: { name: (r.vehicle_id as any)?.name }
+        }));
+        // Keep detailed copy for deeper inspections later
+        detailedRentals = fetched;
       } catch (error) {
         console.warn('Could not load rental service:', error);
       }
@@ -231,7 +238,7 @@ const StaffDashboard: React.FC = () => {
             endAt: endTime,
             priority: overdueHours > 24 ? 'high' : 'medium',
             status: 'pending',
-            bookingId: rental.booking_id,
+            bookingId: typeof rental.booking_id === 'string' ? rental.booking_id : (rental.booking_id as any)?._id,
             isOverdue: true,
             overdueHours
           });

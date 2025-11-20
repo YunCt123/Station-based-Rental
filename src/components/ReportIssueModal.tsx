@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   ExclamationTriangleIcon, 
   XMarkIcon,
@@ -35,6 +35,20 @@ const ReportIssueModal: React.FC<ReportIssueModalProps> = ({
   });
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+
+  // Chặn scroll khi modal mở
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+
+    // Cleanup khi component unmount
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -77,6 +91,13 @@ const ReportIssueModal: React.FC<ReportIssueModalProps> = ({
     }
   };
 
+  const handleOverlayClick = (e: React.MouseEvent) => {
+    // Chỉ đóng modal khi click vào overlay, không phải content
+    if (e.target === e.currentTarget) {
+      handleClose();
+    }
+  };
+
   const handleInputChange = (field: keyof IssueForm, value: string | string[]) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
@@ -86,7 +107,11 @@ const ReportIssueModal: React.FC<ReportIssueModalProps> = ({
   // Success state
   if (success) {
     return (
-      <div className="fixed inset-0 flex items-center justify-center p-4 z-[9999]">
+      <div 
+        className="fixed inset-0 flex items-center justify-center p-4 z-[9999]"
+        style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)', backdropFilter: 'blur(4px)' }}
+        onClick={handleOverlayClick}
+      >
         <div className="bg-white rounded-lg max-w-md w-full p-6 text-center shadow-2xl border relative z-[10000]">
           <CheckCircleIcon className="w-16 h-16 text-green-500 mx-auto mb-4" />
           <h3 className="text-lg font-semibold text-gray-900 mb-2">
@@ -104,8 +129,15 @@ const ReportIssueModal: React.FC<ReportIssueModalProps> = ({
   }
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center p-4 z-[9999]">
-      <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border relative z-[10000]">
+    <div 
+      className="fixed inset-0 flex items-center justify-center p-4 z-[9999]"
+      style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)', backdropFilter: 'blur(4px)' }}
+      onClick={handleOverlayClick}
+    >
+      <div 
+        className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border relative z-[10000]"
+        onClick={(e) => e.stopPropagation()} // Ngăn đóng modal khi click vào content
+      >
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div className="flex items-center space-x-3">

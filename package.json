@@ -32,6 +32,7 @@
     "embla-carousel-react": "^8.6.0",
     "firebase": "^12.5.0",
     "flowbite-react": "^0.12.9",
+    "framer-motion": "^12.23.24",
     "i": "^0.3.7",
     "leaflet": "^1.9.4",
     "leaflet-routing-machine": "^3.2.12",

@@ -155,29 +155,6 @@ export const getMenuSections = (): SidebarSection[] => [
         roles: [UserRole.ADMIN]
       },
       {
-        id: 'fleet-monitoring',
-        title: 'Giám sát số lượng xe',
-        icon: <TruckIcon className="w-5 h-5" />,
-        path: '/admin/fleet',
-        roles: [UserRole.ADMIN],
-        children: [
-          {
-            id: 'fleet-overview',
-            title: 'Tổng quan đội xe',
-            icon: <ChartBarIcon className="w-4 h-4" />,
-            path: '/admin/fleet/overview',
-            roles: [UserRole.ADMIN]
-          },
-          {
-            id: 'vehicle-distribution',
-            title: 'Phân bổ xe theo điểm',
-            icon: <MapPinIcon className="w-4 h-4" />,
-            path: '/admin/fleet/distribution',
-            roles: [UserRole.ADMIN]
-          }
-        ]
-      },
-      {
         id: 'vehicle-management',
         title: 'Quản lý xe',
         icon: <Cog6ToothIcon className="w-5 h-5" />,
@@ -210,29 +187,6 @@ export const getMenuSections = (): SidebarSection[] => [
             title: 'Lịch sử nhận xe',
             icon: <DocumentTextIcon className="w-4 h-4" />,
             path: '/admin/transactions/return',
-            roles: [UserRole.ADMIN]
-          }
-        ]
-      },
-      {
-        id: 'staff-allocation',
-        title: 'Điều phối nhân viên & xe',
-        icon: <UserGroupIcon className="w-5 h-5" />,
-        path: '/admin/allocation',
-        roles: [UserRole.ADMIN],
-        children: [
-          {
-            id: 'staff-schedule',
-            title: 'Lịch làm việc nhân viên',
-            icon: <ClipboardDocumentListIcon className="w-4 h-4" />,
-            path: '/admin/allocation/schedule',
-            roles: [UserRole.ADMIN]
-          },
-          {
-            id: 'peak-hour-management',
-            title: 'Quản lý giờ cao điểm',
-            icon: <ChartBarIcon className="w-4 h-4" />,
-            path: '/admin/allocation/peak-hours',
             roles: [UserRole.ADMIN]
           }
         ]

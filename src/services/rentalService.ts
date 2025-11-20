@@ -602,7 +602,7 @@ export const rentalService = {
   // Get all rentals (admin)
   async getAllRentals(): Promise<StationRental[]> {
     try {
-      const response = await api.get<ApiResponse<StationRental[]>>('/rentals/all');
+      const response = await api.get<ApiResponse<StationRental[]>>('/rentals/all?populate=user_id,vehicle_id,station_id,booking_id');
       if (response.data.success && response.data.data) {
         return response.data.data;
       }
@@ -629,6 +629,8 @@ export const rentalService = {
       if (params?.page) queryParams.append('page', params.page.toString());
       if (params?.limit) queryParams.append('limit', params.limit.toString());
       if (params?.status) queryParams.append('status', params.status);
+      // Request populated data
+      queryParams.append('populate', 'user_id,vehicle_id,station_id,booking_id');
       
       const response = await api.get<ApiResponse<Rental[]>>(
         `/rentals/all?${queryParams.toString()}`

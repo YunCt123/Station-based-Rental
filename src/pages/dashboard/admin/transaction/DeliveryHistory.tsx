@@ -12,79 +12,126 @@ import {
 } from "../../../../components/admin/delivery";
 import type { DeliveryTransaction } from "../../../../types/admin";
 import rentalService from "../../../../services/rentalService";
-import type { Rental } from "../../../../services/customerService";
+import type { StationRental } from "../../../../services/rentalService";
 
-// Interface for user data from API
-interface RentalUser {
-  _id: string;
-  name: string;
-  email: string;
-  phoneNumber?: string;
-}
+// Helper function to check if a value is a populated object or just an ID
+const isPopulated = (value: any): boolean => {
+  return value && typeof value === 'object' && '_id' in value && Object.keys(value).length > 1;
+};
 
 // Helper function to transform API rental data to DeliveryTransaction
-const transformRentalToDelivery = (rental: Rental): DeliveryTransaction => {
-  const booking = rental.booking_id;
-  const vehicle = rental.vehicle_id;
-  const station = rental.station_id;
-  // Type assertion since API returns populated user object
-  const user = typeof rental.user_id === 'string' ? null : (rental.user_id as unknown as RentalUser | null);
-  
-  // Map rental status to delivery status
-  const statusMap: Record<string, DeliveryTransaction['status']> = {
-    CONFIRMED: 'completed',
-    ONGOING: 'delayed',
-    RETURN_PENDING: 'delayed',
-    COMPLETED: 'completed',
-    REJECTED: 'issue_reported'
-  };
-  
-  // Calculate rental type based on duration
-  const calculateRentalType = (startAt: string, endAt: string): DeliveryTransaction['rentalType'] => {
-    const hours = Math.abs(new Date(endAt).getTime() - new Date(startAt).getTime()) / 36e5;
-    if (hours <= 24) return 'hourly';
-    if (hours <= 168) return 'daily';
-    return 'weekly';
-  };
-  
-  // Calculate duration string
-  const calculateDuration = (startAt: string, endAt: string): string => {
-    const hours = Math.abs(new Date(endAt).getTime() - new Date(startAt).getTime()) / 36e5;
-    if (hours < 24) return `${Math.round(hours)} giờ`;
-    if (hours < 168) return `${Math.round(hours / 24)} ngày`;
-    return `${Math.round(hours / 168)} tuần`;
-  };
-  
-  return {
-    id: rental._id,
-    transactionDate: rental.createdAt,
-    vehicleId: vehicle._id,
-    vehicleName: `${vehicle.brand} ${vehicle.model}`,
-    vehicleImage: vehicle.image || '/vehicles/default.jpg',
-    customerName: user?.name || 'N/A',
-    customerPhone: user?.phoneNumber || 'N/A',
-    customerEmail: user?.email || 'N/A',
-    licenseNumber: vehicle.licensePlate || 'N/A',
-    fromStation: station.name,
-    toStation: station.name,
-    staffName: 'N/A',
-    deliveryTime: rental.pickup?.at || booking?.start_at || rental.createdAt,
-    returnDueTime: booking?.end_at || rental.createdAt,
-    status: statusMap[rental.status] || 'completed',
-    rentalType: booking ? calculateRentalType(booking.start_at, booking.end_at) : 'daily',
-    rentalDuration: booking ? calculateDuration(booking.start_at, booking.end_at) : 'N/A',
-    totalCost: rental.charges?.total || booking?.pricing_snapshot?.total_price || 0,
-    depositAmount: rental.pricing_snapshot?.deposit || booking?.pricing_snapshot?.deposit || 0,
-    paymentMethod: 'online',
-    paymentStatus: rental.status === 'COMPLETED' ? 'paid' : rental.status === 'REJECTED' ? 'refunded' : 'pending',
-    documents: {
-      contract: true,
-      license: true,
-      insurance: true,
-      inspection: (rental.pickup?.photos?.length || 0) > 0,
-    },
-    notes: rental.pickup?.notes || '',
-  };
+const transformRentalToDelivery = (rental: StationRental): DeliveryTransaction | null => {
+  try {
+    // Validate required fields
+    if (!rental || !rental._id) {
+      console.warn('⚠️ Invalid rental data: missing _id', rental);
+      return null;
+    }
+
+    const booking = rental.booking_id;
+    const vehicle = rental.vehicle_id;
+    const station = rental.station_id;
+    const user = rental.user_id;
+    
+    // Check if data is populated or just IDs
+    const isVehiclePopulated = isPopulated(vehicle);
+    const isStationPopulated = isPopulated(station);
+    const isUserPopulated = isPopulated(user);
+    const isBookingPopulated = isPopulated(booking);
+    
+    console.log('🔍 [transformRentalToDelivery] Rental data:', {
+      id: rental._id,
+      isVehiclePopulated,
+      isStationPopulated,
+      isUserPopulated,
+      isBookingPopulated,
+      vehicle,
+      station,
+      user,
+      booking
+    });
+    
+    // If critical data is not populated, skip this rental
+    if (!isVehiclePopulated || !isStationPopulated) {
+      console.warn('⚠️ Skipping rental - vehicle or station not populated:', rental._id);
+      return null;
+    }
+    
+    // Map rental status to delivery status
+    const statusMap: Record<string, DeliveryTransaction['status']> = {
+      CONFIRMED: 'completed',
+      ONGOING: 'delayed',
+      RETURN_PENDING: 'delayed',
+      COMPLETED: 'completed',
+      REJECTED: 'issue_reported',
+      DISPUTED: 'issue_reported'
+    };
+    
+    // Calculate rental type based on duration
+    const calculateRentalType = (startAt?: string, endAt?: string): DeliveryTransaction['rentalType'] => {
+      if (!startAt || !endAt) return 'daily';
+      const hours = Math.abs(new Date(endAt).getTime() - new Date(startAt).getTime()) / 36e5;
+      if (hours <= 24) return 'hourly';
+      if (hours <= 168) return 'daily';
+      return 'weekly';
+    };
+    
+    // Calculate duration string
+    const calculateDuration = (startAt?: string, endAt?: string): string => {
+      if (!startAt || !endAt) return 'N/A';
+      const hours = Math.abs(new Date(endAt).getTime() - new Date(startAt).getTime()) / 36e5;
+      if (hours < 24) return `${Math.round(hours)} giờ`;
+      if (hours < 168) return `${Math.round(hours / 24)} ngày`;
+      return `${Math.round(hours / 168)} tuần`;
+    };
+    
+    // Get staff name from pickup info
+    const staffName = typeof rental.pickup?.staff_id === 'object' && rental.pickup?.staff_id !== null
+      ? (rental.pickup.staff_id as any).name || 'N/A'
+      : 'N/A';
+    
+    // Extract booking dates
+    const bookingStartAt = isBookingPopulated ? (booking as any).start_at : undefined;
+    const bookingEndAt = isBookingPopulated ? (booking as any).end_at : undefined;
+    
+    const brand = (vehicle as any).brand || '';
+    const model = (vehicle as any).model || '';
+    const vehicleName = (brand || model) ? `${brand} ${model}`.trim() : 'N/A';
+    
+    return {
+      id: rental._id,
+      transactionDate: rental.createdAt || new Date().toISOString(),
+      vehicleId: (vehicle as any)._id,
+      vehicleName: vehicleName,
+      vehicleImage: (vehicle as any).image || '/vehicles/default.jpg',
+      customerName: isUserPopulated ? (user as any).name : `ID: ${user}`,
+      customerPhone: isUserPopulated ? ((user as any).phoneNumber || 'N/A') : 'N/A',
+      customerEmail: isUserPopulated ? ((user as any).email || 'N/A') : 'N/A',
+      licenseNumber: (vehicle as any).licensePlate || 'N/A',
+      fromStation: (station as any).name || 'N/A',
+      toStation: (station as any).name || 'N/A',
+      staffName: staffName,
+      deliveryTime: rental.pickup?.at || bookingStartAt || rental.createdAt || new Date().toISOString(),
+      returnDueTime: bookingEndAt || rental.createdAt || new Date().toISOString(),
+      status: statusMap[rental.status] || 'completed',
+      rentalType: calculateRentalType(bookingStartAt, bookingEndAt),
+      rentalDuration: calculateDuration(bookingStartAt, bookingEndAt),
+      totalCost: rental.charges?.total || rental.pricing_snapshot?.total_price || 0,
+      depositAmount: rental.pricing_snapshot?.deposit || 0,
+      paymentMethod: 'online',
+      paymentStatus: rental.status === 'COMPLETED' ? 'paid' : rental.status === 'REJECTED' ? 'refunded' : 'pending',
+      documents: {
+        contract: !!rental.pickup?.at,
+        license: true,
+        insurance: true,
+        inspection: (rental.pickup?.photos?.length || 0) > 0,
+      },
+      notes: rental.pickup?.notes || '',
+    };
+  } catch (error) {
+    console.error('❌ Error transforming rental to delivery:', error, rental);
+    return null;
+  }
 };
 
 export const DeliveryHistory: React.FC = () => {
@@ -114,6 +161,12 @@ export const DeliveryHistory: React.FC = () => {
         setLoading(true);
         setError(null);
         
+        console.log('🔄 [DeliveryHistory] Fetching deliveries with params:', {
+          page: pagination.page,
+          limit: pagination.limit,
+          statusFilter
+        });
+        
         const params: any = {
           page: pagination.page,
           limit: pagination.limit,
@@ -125,15 +178,30 @@ export const DeliveryHistory: React.FC = () => {
             completed: 'COMPLETED',
             delayed: 'ONGOING',
             overdue: 'RETURN_PENDING',
-            issue_reported: 'CANCELLED',
+            issue_reported: 'REJECTED',
           };
           params.status = statusMap[statusFilter];
         }
 
         const response = await rentalService.getAdminRentals(params);
         
+        console.log('✅ [DeliveryHistory] API response:', {
+          success: response.success,
+          dataCount: response.data?.length || 0,
+          meta: response.meta,
+          sampleData: response.data?.[0]
+        });
+        
         if (response.success && response.data) {
-          const transformedData = response.data.map(transformRentalToDelivery);
+          const transformedData = response.data
+            .map(transformRentalToDelivery)
+            .filter((item): item is DeliveryTransaction => item !== null);
+          
+          console.log('✅ [DeliveryHistory] Transformed data:', {
+            originalCount: response.data.length,
+            validCount: transformedData.length,
+            sample: transformedData[0]
+          });
           setDeliveryTransactions(transformedData);
           
           if (response.meta) {
@@ -148,12 +216,12 @@ export const DeliveryHistory: React.FC = () => {
           // API returned but no data or error
           const errorMsg = (response as any).error || 'Không thể tải dữ liệu giao xe';
           setError(errorMsg);
-          console.warn('API response not successful:', response);
+          console.warn('⚠️ [DeliveryHistory] API response not successful:', response);
         }
       } catch (err: any) {
         const errorMessage = err.message || err.response?.data?.message || 'Không thể tải dữ liệu giao xe';
         setError(errorMessage);
-        console.error('Error fetching deliveries:', err);
+        console.error('❌ [DeliveryHistory] Error fetching deliveries:', err);
       } finally {
         setLoading(false);
       }
@@ -297,7 +365,7 @@ export const DeliveryHistory: React.FC = () => {
 
       return matchesSearch && matchesStation;
     });
-  }, [deliveryTransactions, mockDeliveryTransactions, searchTerm, stationFilter]);
+  }, [deliveryTransactions, searchTerm, stationFilter, error]);
 
   const selectedTransaction = selectedTransactionId
     ? filteredTransactions.find((t) => t.id === selectedTransactionId) || null

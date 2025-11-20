@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   WrenchScrewdriverIcon,
   EyeIcon,
@@ -16,6 +16,8 @@ import {
   type FilterOption,
   type QuickAction,
 } from "../../../../components/dashboard/shared";
+import rentalService from "../../../../services/rentalService";
+import type { StationRental } from "../../../../services/rentalService";
 
 interface ReturnTransaction {
   id: string;
@@ -67,6 +69,114 @@ interface ReturnTransaction {
   notes?: string;
 }
 
+// Helper function to check if a value is a populated object or just an ID
+const isPopulated = (value: any): boolean => {
+  return value && typeof value === 'object' && '_id' in value && Object.keys(value).length > 1;
+};
+
+// Helper function to transform API rental data to ReturnTransaction
+const transformRentalToReturn = (rental: StationRental): ReturnTransaction | null => {
+  try {
+    // Validate required fields
+    if (!rental || !rental._id || !rental.return?.at) {
+      return null; // Skip if no return data
+    }
+
+    const booking = rental.booking_id;
+    const vehicle = rental.vehicle_id;
+    const station = rental.station_id;
+    const user = rental.user_id;
+    
+    // Check if data is populated
+    const isVehiclePopulated = isPopulated(vehicle);
+    const isStationPopulated = isPopulated(station);
+    const isUserPopulated = isPopulated(user);
+    const isBookingPopulated = isPopulated(booking);
+    
+    // Skip if critical data is not populated
+    if (!isVehiclePopulated || !isStationPopulated) {
+      return null;
+    }
+    
+    // Map rental status to return status
+    const statusMap: Record<string, ReturnTransaction['status']> = {
+      COMPLETED: 'completed',
+      RETURN_PENDING: 'pending_inspection',
+      DISPUTED: 'damaged',
+      REJECTED: 'damaged',
+    };
+    
+    // Calculate if return was late
+    const scheduledTime = isBookingPopulated ? (booking as any).end_at : null;
+    const actualTime = rental.return.at;
+    const isLate = scheduledTime && actualTime && new Date(actualTime) > new Date(scheduledTime);
+    
+    // Determine condition based on charges
+    const hasDamage = (rental.charges?.damage_fee || 0) > 0;
+    const needsCleaning = (rental.charges?.cleaning_fee || 0) > 0;
+    
+    const exteriorCondition = hasDamage ? 'major_damage' : 'good';
+    const interiorCondition = needsCleaning ? 'minor_damage' : 'good';
+    
+    // Get staff name from return info
+    const staffName = typeof rental.return?.staff_id === 'object' && rental.return?.staff_id !== null
+      ? (rental.return.staff_id as any).name || 'N/A'
+      : 'N/A';
+    
+    const brand = (vehicle as any).brand || '';
+    const model = (vehicle as any).model || '';
+    const vehicleName = (brand || model) ? `${brand} ${model}`.trim() : 'N/A';
+    
+    return {
+      id: rental._id,
+      deliveryTransactionId: rental._id,
+      returnDate: rental.return.at,
+      vehicleId: (vehicle as any)._id,
+      vehicleName: vehicleName,
+      vehicleImage: (vehicle as any).image || '/vehicles/default.jpg',
+      customerName: isUserPopulated ? (user as any).name : `ID: ${user}`,
+      customerPhone: isUserPopulated ? ((user as any).phoneNumber || 'N/A') : 'N/A',
+      customerEmail: isUserPopulated ? ((user as any).email || 'N/A') : 'N/A',
+      toStation: (station as any).name || 'N/A',
+      staffName: staffName,
+      scheduledReturnTime: scheduledTime || rental.return.at,
+      actualReturnTime: rental.return.at,
+      status: isLate ? 'late' : (hasDamage ? 'damaged' : (statusMap[rental.status] || 'completed')),
+      rentalDuration: 'N/A',
+      totalCost: rental.charges?.total || rental.pricing_snapshot?.total_price || 0,
+      extraCharges: (rental.charges?.damage_fee || 0) + (rental.charges?.cleaning_fee || 0) + (rental.charges?.other_fees || 0),
+      refundAmount: 0,
+      fuelLevel: 0,
+      batteryLevel: rental.return.soc ? Math.round(rental.return.soc * 100) : 0,
+      mileage: {
+        start: rental.pickup?.odo_km || 0,
+        end: rental.return.odo_km || 0,
+      },
+      condition: {
+        exterior: exteriorCondition as any,
+        interior: interiorCondition as any,
+        mechanical: 'good',
+      },
+      inspection: {
+        completed: !!rental.return.at,
+        inspector: staffName,
+        issues: hasDamage || needsCleaning ? ['Có hư hỏng hoặc cần vệ sinh'] : [],
+        photos: rental.return.photos?.map((p: any) => p.url || p) || [],
+      },
+      penalties: {
+        lateFee: rental.charges?.late_fee || 0,
+        damageFee: rental.charges?.damage_fee || 0,
+        cleaningFee: rental.charges?.cleaning_fee || 0,
+        otherFees: rental.charges?.other_fees || 0,
+      },
+      notes: rental.pickup?.notes || '',
+    };
+  } catch (error) {
+    console.error('❌ Error transforming rental to return:', error, rental);
+    return null;
+  }
+};
+
 export const ReturnHistory: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -75,221 +185,93 @@ export const ReturnHistory: React.FC = () => {
   const [selectedTransaction, setSelectedTransaction] = useState<string | null>(
     null
   );
+  
+  // State for API data
+  const [returnTransactions, setReturnTransactions] = useState<ReturnTransaction[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 20,
+    total: 0,
+    totalPages: 0,
+  });
 
-  // Mock data - in real app, this would come from API
-  const returnTransactions: ReturnTransaction[] = useMemo(
-    () => [
-      {
-        id: "RT-2024-001",
-        deliveryTransactionId: "DV-2024-001",
-        returnDate: "2024-10-18 10:15:00",
-        vehicleId: "EV-001",
-        vehicleName: "VinFast VF e34",
-        vehicleImage: "/images/vehicles/vinfast-vf-e34.jpg",
-        customerName: "Nguyễn Văn Minh",
-        customerPhone: "0987654321",
-        customerEmail: "minh.nguyen@email.com",
-        toStation: "Trạm Cầu Giấy",
-        staffName: "Trần Thị Hoa",
-        scheduledReturnTime: "2024-10-18 09:30:00",
-        actualReturnTime: "2024-10-18 10:15:00",
-        status: "completed",
-        rentalDuration: "3 ngày",
-        totalCost: 1500000,
-        extraCharges: 50000,
-        refundAmount: 450000,
-        fuelLevel: 85,
-        batteryLevel: 90,
-        mileage: { start: 15420, end: 15890 },
-        condition: {
-          exterior: "good",
-          interior: "good",
-          mechanical: "good",
-        },
-        inspection: {
-          completed: true,
-          inspector: "Trần Thị Hoa",
-          issues: [],
-          photos: [],
-        },
-        penalties: {
-          lateFee: 50000,
-          damageFee: 0,
-          cleaningFee: 0,
-          otherFees: 0,
-        },
-        notes: "Xe trả muộn 45 phút, tính phí phạt trễ giờ",
-      },
-      {
-        id: "RT-2024-002",
-        deliveryTransactionId: "DV-2024-002",
-        returnDate: "2024-10-15 22:30:00",
-        vehicleId: "EV-023",
-        vehicleName: "Hyundai Kona Electric",
-        vehicleImage: "/images/vehicles/hyundai-kona.jpg",
-        customerName: "Lê Thị Lan",
-        customerPhone: "0912345678",
-        customerEmail: "lan.le@email.com",
-        toStation: "Trạm Lotte Center",
-        staffName: "Phạm Văn Đức",
-        scheduledReturnTime: "2024-10-15 20:15:00",
-        actualReturnTime: "2024-10-15 22:30:00",
-        status: "late",
-        rentalDuration: "6 giờ",
-        totalCost: 300000,
-        extraCharges: 100000,
-        refundAmount: 100000,
-        fuelLevel: 70,
-        batteryLevel: 60,
-        mileage: { start: 28500, end: 28680 },
-        condition: {
-          exterior: "minor_damage",
-          interior: "good",
-          mechanical: "good",
-        },
-        inspection: {
-          completed: true,
-          inspector: "Phạm Văn Đức",
-          issues: ["Trầy xước nhỏ ở cửa phải", "Pin xuống mức thấp"],
-          photos: ["damage1.jpg", "damage2.jpg"],
-        },
-        penalties: {
-          lateFee: 80000,
-          damageFee: 200000,
-          cleaningFee: 0,
-          otherFees: 20000,
-        },
-        notes: "Xe trả trễ 2 giờ 15 phút, có trầy xước nhỏ, đã tính phí phạt",
-      },
-      {
-        id: "RT-2024-003",
-        deliveryTransactionId: "DV-2024-003",
-        returnDate: "2024-10-21 17:00:00",
-        vehicleId: "EV-045",
-        vehicleName: "Tesla Model 3",
-        vehicleImage: "/images/vehicles/tesla-model3.jpg",
-        customerName: "Hoàng Minh Tú",
-        customerPhone: "0934567890",
-        customerEmail: "tu.hoang@email.com",
-        toStation: "Trạm Times City",
-        staffName: "Nguyễn Văn Long",
-        scheduledReturnTime: "2024-10-21 16:45:00",
-        actualReturnTime: "2024-10-21 17:00:00",
-        status: "completed",
-        rentalDuration: "1 tuần",
-        totalCost: 7000000,
-        extraCharges: 0,
-        refundAmount: 2000000,
-        fuelLevel: 95,
-        batteryLevel: 95,
-        mileage: { start: 12000, end: 12750 },
-        condition: {
-          exterior: "good",
-          interior: "good",
-          mechanical: "good",
-        },
-        inspection: {
-          completed: true,
-          inspector: "Nguyễn Văn Long",
-          issues: [],
-          photos: [],
-        },
-        penalties: {
-          lateFee: 0,
-          damageFee: 0,
-          cleaningFee: 0,
-          otherFees: 0,
-        },
-      },
-      {
-        id: "RT-2024-004",
-        deliveryTransactionId: "DV-2024-004",
-        returnDate: "2024-10-16 14:30:00",
-        vehicleId: "EV-067",
-        vehicleName: "BYD Atto 3",
-        vehicleImage: "/images/vehicles/byd-atto3.jpg",
-        customerName: "Vũ Thị Mai",
-        customerPhone: "0945678901",
-        customerEmail: "mai.vu@email.com",
-        toStation: "Trạm Hàng Xanh",
-        staffName: "Đỗ Thị Kim",
-        scheduledReturnTime: "2024-10-16 11:20:00",
-        actualReturnTime: "2024-10-16 14:30:00",
-        status: "damaged",
-        rentalDuration: "2 ngày",
-        totalCost: 1000000,
-        extraCharges: 500000,
-        refundAmount: 0,
-        fuelLevel: 40,
-        batteryLevel: 30,
-        mileage: { start: 45200, end: 45520 },
-        condition: {
-          exterior: "major_damage",
-          interior: "minor_damage",
-          mechanical: "minor_issue",
-        },
-        inspection: {
-          completed: true,
-          inspector: "Đỗ Thị Kim",
-          issues: ["Pin suy giảm nghiêm trọng", "Móp đầu xe", "Ghế bẩn"],
-          photos: [
-            "damage_battery.jpg",
-            "damage_front.jpg",
-            "interior_dirty.jpg",
-          ],
-        },
-        penalties: {
-          lateFee: 150000,
-          damageFee: 800000,
-          cleaningFee: 100000,
-          otherFees: 50000,
-        },
-        notes: "Xe có hư hỏng nghiêm trọng về pin và ngoại thất, cần sửa chữa",
-      },
-      {
-        id: "RT-2024-005",
-        deliveryTransactionId: "DV-2024-005",
-        returnDate: "2024-10-16 00:30:00",
-        vehicleId: "EV-089",
-        vehicleName: "VinFast VF 8",
-        vehicleImage: "/images/vehicles/vinfast-vf8.jpg",
-        customerName: "Trần Quốc Huy",
-        customerPhone: "0956789012",
-        customerEmail: "huy.tran@email.com",
-        toStation: "Trạm Landmark 81",
-        staffName: "Lê Văn Hùng",
-        scheduledReturnTime: "2024-10-15 20:00:00",
-        actualReturnTime: "2024-10-16 00:30:00",
-        status: "late",
-        rentalDuration: "2.5 ngày",
-        totalCost: 1250000,
-        extraCharges: 200000,
-        refundAmount: 400000,
-        fuelLevel: 75,
-        batteryLevel: 80,
-        mileage: { start: 8900, end: 9350 },
-        condition: {
-          exterior: "good",
-          interior: "minor_damage",
-          mechanical: "good",
-        },
-        inspection: {
-          completed: true,
-          inspector: "Lê Văn Hùng",
-          issues: ["Ghế có vết bẩn nhỏ"],
-          photos: ["seat_stain.jpg"],
-        },
-        penalties: {
-          lateFee: 180000,
-          damageFee: 0,
-          cleaningFee: 50000,
-          otherFees: 0,
-        },
-        notes: "Xe trả trễ 4.5 giờ, có vết bẩn nhỏ trên ghế",
-      },
-    ],
-    []
-  );
+  // Fetch return transactions from API
+  useEffect(() => {
+    const fetchReturns = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        console.log('🔄 [ReturnHistory] Fetching returns with params:', {
+          page: pagination.page,
+          limit: pagination.limit,
+          statusFilter
+        });
+        
+        const params: any = {
+          page: pagination.page,
+          limit: pagination.limit,
+        };
+        
+        // Map UI status filter to API status
+        if (statusFilter !== 'all') {
+          const statusMap: Record<string, string> = {
+            completed: 'COMPLETED',
+            late: 'COMPLETED',
+            damaged: 'DISPUTED',
+            missing_items: 'DISPUTED',
+            pending_inspection: 'RETURN_PENDING',
+          };
+          params.status = statusMap[statusFilter];
+        }
+
+        const response = await rentalService.getAdminRentals(params);
+        
+        console.log('✅ [ReturnHistory] API response:', {
+          success: response.success,
+          dataCount: response.data?.length || 0,
+          meta: response.meta,
+          sampleData: response.data?.[0]
+        });
+        
+        if (response.success && response.data) {
+          const transformedData = response.data
+            .map(transformRentalToReturn)
+            .filter((item): item is ReturnTransaction => item !== null);
+          
+          console.log('✅ [ReturnHistory] Transformed data:', {
+            originalCount: response.data.length,
+            validCount: transformedData.length,
+            sample: transformedData[0]
+          });
+          setReturnTransactions(transformedData);
+          
+          if (response.meta) {
+            setPagination({
+              page: response.meta.page,
+              limit: response.meta.limit,
+              total: response.meta.total,
+              totalPages: response.meta.totalPages,
+            });
+          }
+        } else {
+          const errorMsg = (response as any).error || 'Không thể tải dữ liệu nhận xe';
+          setError(errorMsg);
+          console.warn('⚠️ [ReturnHistory] API response not successful:', response);
+        }
+      } catch (err: any) {
+        const errorMessage = err.message || err.response?.data?.message || 'Không thể tải dữ liệu nhận xe';
+        setError(errorMessage);
+        console.error('❌ [ReturnHistory] Error fetching returns:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchReturns();
+  }, [pagination.page, statusFilter]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -359,6 +341,14 @@ export const ReturnHistory: React.FC = () => {
 
   // Filter transactions based on search and filters
   const filteredTransactions = useMemo(() => {
+    console.log('[ReturnHistory] Filtering transactions:', {
+      total: returnTransactions.length,
+      hasError: !!error,
+      searchTerm,
+      statusFilter,
+      stationFilter
+    });
+    
     return returnTransactions.filter((transaction) => {
       const matchesSearch =
         transaction.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -403,7 +393,7 @@ export const ReturnHistory: React.FC = () => {
 
       return matchesSearch && matchesStatus && matchesStation && matchesDate;
     });
-  }, [searchTerm, statusFilter, dateFilter, stationFilter, returnTransactions]);
+  }, [searchTerm, statusFilter, dateFilter, stationFilter, returnTransactions, error]);
 
   const stats = {
     total: returnTransactions.length,
@@ -480,6 +470,48 @@ export const ReturnHistory: React.FC = () => {
       color: "orange",
     },
   ];
+
+  const handlePageChange = (newPage: number) => {
+    setPagination(prev => ({ ...prev, page: newPage }));
+  };
+
+  // Loading state
+  if (loading && returnTransactions.length === 0) {
+    return (
+      <div className="p-6">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mb-4"></div>
+            <p className="text-gray-500">Đang tải dữ liệu nhận xe...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error && returnTransactions.length === 0 && !loading) {
+    return (
+      <div className="p-6 space-y-6">
+        <PageHeader
+          title="Lịch sử nhận xe"
+          subtitle="Quản lý quá trình nhận xe và kiểm tra tình trạng"
+          icon={<WrenchScrewdriverIcon className="w-6 h-6" />}
+          color="red"
+        />
+        <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+          <p className="text-red-800 text-lg font-semibold mb-2">⚠️ Không thể tải dữ liệu</p>
+          <p className="text-red-600 mb-4">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition"
+          >
+            Tải lại trang
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 bg-gray-50 min-h-screen p-6">
@@ -850,6 +882,46 @@ export const ReturnHistory: React.FC = () => {
               </div>
             );
           })()}
+        </div>
+      )}
+
+      {/* Empty state */}
+      {!loading && !error && filteredTransactions.length === 0 && (
+        <div className="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center">
+          <p className="text-gray-600 text-lg">Chưa có giao dịch nhận xe nào</p>
+          <p className="text-gray-500 text-sm mt-2">Dữ liệu sẽ xuất hiện khi có giao dịch mới</p>
+        </div>
+      )}
+
+      {/* Pagination */}
+      {pagination.totalPages > 1 && (
+        <div className="bg-white rounded-lg shadow p-4">
+          <div className="flex items-center justify-between">
+            <div className="text-sm text-gray-600">
+              Hiển thị {Math.min((pagination.page - 1) * pagination.limit + 1, pagination.total)} - {Math.min(pagination.page * pagination.limit, pagination.total)} trong tổng số {pagination.total} giao dịch
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => handlePageChange(pagination.page - 1)}
+                disabled={pagination.page === 1}
+                className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                ← Trước
+              </button>
+              <div className="flex items-center gap-2 px-4">
+                <span className="text-sm text-gray-600">
+                  Trang {pagination.page} / {pagination.totalPages}
+                </span>
+              </div>
+              <button
+                onClick={() => handlePageChange(pagination.page + 1)}
+                disabled={pagination.page === pagination.totalPages}
+                className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                Sau →
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

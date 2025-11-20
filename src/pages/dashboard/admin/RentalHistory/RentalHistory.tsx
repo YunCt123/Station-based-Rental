@@ -215,7 +215,7 @@ const RentalHistory: React.FC = () => {
                 />
               )}
               <div>
-                <div className="font-medium">{vehicle.name || 'Không rõ'}</div>
+                <div className="font-medium">{vehicle.model || 'Không rõ'}</div>
                 <div className="text-xs text-gray-500">{vehicle.licensePlate || '-'}</div>
               </div>
             </div>

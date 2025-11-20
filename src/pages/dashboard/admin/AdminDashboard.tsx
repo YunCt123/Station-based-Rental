@@ -117,10 +117,13 @@ const AdminDashboard: React.FC = () => {
           new Date(issue.createdAt) >= oneWeekAgo
         );
         recentIssues.forEach(issue => {
+          const vehicleName = (typeof issue.vehicle_id === 'object' && issue.vehicle_id && 'name' in issue.vehicle_id)
+            ? (issue.vehicle_id as any).name
+            : (issue.vehicle?.name || 'Xe không xác định');
           activities.push({
             id: `issue-${issue._id}`,
             type: 'issue',
-            message: `Sự cố "${issue.title}" - ${issue.vehicle?.licensePlate || 'Xe không xác định'}`,
+            message: `Sự cố "${issue.title}" - ${vehicleName}`,
             time: getRelativeTime(new Date(issue.createdAt)),
             status: issue.status === 'RESOLVED' ? 'success' : 'error',
             timestamp: new Date(issue.createdAt)

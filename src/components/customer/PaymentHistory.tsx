@@ -264,12 +264,11 @@ const PaymentHistory: React.FC<PaymentHistoryProps> = ({ payments, pricingSnapsh
                       {charges?.other_fees > 0 && (
                         <RowItem label="Phí khác" value={charges.other_fees} />
                       )}
-                      {charges.extra_fees > 0 && <RowItem label="Phí phát sinh" value={charges.extra_fees} danger />}
                     </div>
 
                     {/* Đặt cọc đã trả */}
                     {'deposit_paid' in metadata && metadata.deposit_paid !== undefined && (
-                      <RowItem label="Đặt cọc đã trả" value={metadata.deposit_paid as number} />
+                      <RowItem label="Đặt cọc đã trả" value={- (metadata.deposit_paid as number)} />
                     )}
 
                     {/* Thanh toán lần này */}

@@ -30,6 +30,7 @@ const RoutingMachine = ({ userPosition, stationPosition }: RoutingProps) => {
             draggableWaypoints: false,
             fitSelectedRoutes: true,
             createMarker: () => null,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } as any).addTo(map);
 
         // --- BỔ SUNG QUAN TRỌNG: Bắt lỗi từ dịch vụ chỉ đường ---

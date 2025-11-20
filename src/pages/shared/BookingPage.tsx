@@ -553,6 +553,31 @@ const BookingPage: React.FC = () => {
                     priceBreakdown={priceBreakdown}
                     loading={calculatingPrice}
                     insuranceSelected={form.getFieldValue('insurance_premium') || false}
+                    rentalDates={(() => {
+                      const formValues = form.getFieldsValue();
+                      const rentalType = formValues.rental_type;
+                      
+                      if (rentalType === "daily" && formValues.rental_period && Array.isArray(formValues.rental_period)) {
+                        const [start, end] = formValues.rental_period;
+                        if (start && end) {
+                          return {
+                            start: start.toDate(),
+                            end: end.toDate()
+                          };
+                        }
+                      } else if (rentalType === "hourly" && formValues.rental_start_time && formValues.rental_end_time) {
+                        const today = new Date();
+                        const start = formValues.rental_start_time.toDate();
+                        const end = formValues.rental_end_time.toDate();
+                        
+                        return {
+                          start: new Date(today.getFullYear(), today.getMonth(), today.getDate(), start.getHours(), start.getMinutes()),
+                          end: new Date(today.getFullYear(), today.getMonth(), today.getDate(), end.getHours(), end.getMinutes())
+                        };
+                      }
+                      
+                      return null;
+                    })()}
                   />
                 )}
               </div>

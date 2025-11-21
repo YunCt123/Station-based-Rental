@@ -3,8 +3,10 @@ import { Modal } from '../../../Modal';
 
 interface Vehicle {
   id: string;
+  name?: string;
   model: string;
-  licensePlate: string;
+  brand?: string;
+  licensePlate?: string;
 }
 
 interface BatteryUpdateModalProps {
@@ -12,7 +14,7 @@ interface BatteryUpdateModalProps {
   vehicle: Vehicle | null;
   batteryLevel: number;
   setBatteryLevel: (level: number) => void;
-  onSubmit: (newLevel?: number) => void;
+  onSubmit: (newLevel: number) => void;
   onClose: () => void;
 }
 
@@ -31,7 +33,7 @@ export const BatteryUpdateModal: React.FC<BatteryUpdateModalProps> = ({
       isOpen={isOpen}
       onClose={onClose}
       title="Cập nhật mức pin"
-      subtitle={`${vehicle.model} - ${vehicle.licensePlate}`}
+      subtitle={`${vehicle.name || `${vehicle.brand} ${vehicle.model}`} ${vehicle.licensePlate ? `- ${vehicle.licensePlate}` : ''}`}
       size="md"
     >
       <div className="space-y-6">

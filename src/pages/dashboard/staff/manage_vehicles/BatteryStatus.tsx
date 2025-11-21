@@ -18,7 +18,6 @@ import type { Vehicle } from '../../../../types/vehicle';
 interface BatteryVehicle extends Vehicle {
   batteryStatus: 'excellent' | 'good' | 'warning' | 'critical';
   estimatedRange: number;
-  licensePlate: string; // Ensure this property is included
 }
 
 const BatteryStatus: React.FC = () => {
@@ -39,36 +38,10 @@ const BatteryStatus: React.FC = () => {
     else batteryStatus = 'excellent';
 
     return {
-  ...vehicle,
-  batteryStatus,
-  estimatedRange: Math.round(vehicle.range * (vehicle.batteryLevel / 100)) || 0,
-  licensePlate: '',
-  id: '',
-  name: '',
-  year: 0,
-  brand: '',
-  model: '',
-  type: '',
-  image: '',
-  batteryLevel: 0,
-  location: '',
-  availability: 'available',
-  pricePerHour: 0,
-  pricePerDay: 0,
-  rating: 0,
-  reviewCount: 0,
-  trips: 0,
-  range: 0,
-  seats: 0,
-  features: [],
-  condition: 'excellent',
-  lastMaintenance: '',
-  mileage: 0,
-  fuelEfficiency: '',
-  inspectionDate: '',
-  insuranceExpiry: '',
-  description: ''
-};
+      ...vehicle,
+      batteryStatus,
+      estimatedRange: Math.round(vehicle.range * (vehicle.batteryLevel / 100)) || 0
+    };
   };
 
   // Load vehicles data
@@ -105,7 +78,7 @@ const BatteryStatus: React.FC = () => {
   // Load data on component mount
   useEffect(() => {
     loadVehicles();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const getBatteryColor = (level: number, status: string) => {
     if (status === 'critical' || level <= 15) return 'text-red-500';
@@ -116,7 +89,7 @@ const BatteryStatus: React.FC = () => {
 
 
 
-  const getChargingStatusIcon = (status: string) => {
+  const getAvailabilityIcon = (status: string) => {
     switch (status) {
       case 'maintenance':
         return <BoltIcon className="w-4 h-4 text-orange-500" />;
@@ -171,13 +144,10 @@ const BatteryStatus: React.FC = () => {
       setShowUpdateModal(false);
       setSelectedVehicle(null);
       
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('❌ Error updating battery:', error);
-      message.error(
-        error?.response?.data?.message || 
-        error?.message || 
-        'Không thể cập nhật mức pin. Vui lòng thử lại.'
-      );
+      const errorMessage = error instanceof Error ? error.message : 'Không thể cập nhật mức pin. Vui lòng thử lại.';
+      message.error(errorMessage);
     }
   };
 
@@ -373,7 +343,7 @@ const BatteryStatus: React.FC = () => {
                           </div>
                         </div>
                         <div className="ml-2">
-                          {getChargingStatusIcon(vehicle.availability)}
+                          {getAvailabilityIcon(vehicle.availability)}
                         </div>
                       </div>
                     </td>
@@ -440,11 +410,7 @@ const BatteryStatus: React.FC = () => {
             });
           }
         }}
-        onSubmit={(newLevel) => {
-          if (newLevel !== undefined) {
-            handleSubmitBatteryUpdate(newLevel);
-          }
-        }}
+        onSubmit={handleSubmitBatteryUpdate}
         onClose={() => {
           setShowUpdateModal(false);
           setSelectedVehicle(null);

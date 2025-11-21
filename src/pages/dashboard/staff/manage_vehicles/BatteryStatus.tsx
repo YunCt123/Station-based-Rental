@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   BoltIcon,
   ExclamationTriangleIcon,
@@ -9,75 +9,103 @@ import {
 import {
   BoltIcon as BoltSolidIcon,
 } from '@heroicons/react/24/solid';
+import { message } from 'antd';
 import { BatteryUpdateModal } from '../../../../components/dashboard/staff/manage_vehicles/BatteryUpdateModal';
-import { ChargingControlModal } from '../../../../components/dashboard/staff/manage_vehicles/ChargingControlModal';
+import { vehicleService } from '../../../../services/vehicleService';
+import type { Vehicle } from '../../../../types/vehicle';
 
-interface Vehicle {
-  id: string;
-  model: string;
-  licensePlate: string;
-  batteryLevel: number;
+// Map Vehicle type to local interface for battery status
+interface BatteryVehicle extends Vehicle {
   batteryStatus: 'excellent' | 'good' | 'warning' | 'critical';
-  chargingStatus: 'charging' | 'full' | 'discharging' | 'idle';
-  lastCharged: string;
   estimatedRange: number;
-  position: string; // Vị trí trong trạm (Vị trí 1, 2, 3...)
+  licensePlate: string; // Ensure this property is included
 }
 
-const mockVehicles: Vehicle[] = [
-  {
-    id: 'EV001',
-    model: 'Tesla Model 3',
-    licensePlate: '30A-12345',
-    batteryLevel: 85,
-    batteryStatus: 'excellent',
-    chargingStatus: 'full',
-    position: 'Vị trí 1',
-    lastCharged: '2024-10-14 08:30',
-    estimatedRange: 340
-  },
-  {
-    id: 'EV002',
-    model: 'VinFast VF8',
-    licensePlate: '30B-67890',
-    batteryLevel: 45,
-    batteryStatus: 'good',
-    chargingStatus: 'discharging',
-    position: 'Vị trí 3',
-    lastCharged: '2024-10-14 06:15',
-    estimatedRange: 180
-  },
-  {
-    id: 'EV003',
-    model: 'BYD Seal',
-    licensePlate: '30C-11111',
-    batteryLevel: 15,
-    batteryStatus: 'warning',
-    chargingStatus: 'charging',
-    position: 'Vị trí 5',
-    lastCharged: '2024-10-14 09:00',
-    estimatedRange: 60
-  },
-  {
-    id: 'EV004',
-    model: 'Hyundai Kona',
-    licensePlate: '30D-22222',
-    batteryLevel: 8,
-    batteryStatus: 'critical',
-    chargingStatus: 'charging',
-    position: 'Vị trí 2',
-    lastCharged: '2024-10-13 20:45',
-    estimatedRange: 25
-  },
-];
-
 const BatteryStatus: React.FC = () => {
+  const [vehicles, setVehicles] = useState<BatteryVehicle[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
-  const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
+  const [selectedVehicle, setSelectedVehicle] = useState<BatteryVehicle | null>(null);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
-  const [showChargingModal, setShowChargingModal] = useState(false);
-  const [actionType, setActionType] = useState<'start-charging' | 'stop-charging' | 'update-status'>('update-status');
+
+  // Map Vehicle to BatteryVehicle
+  const mapVehicleToBatteryVehicle = (vehicle: Vehicle): BatteryVehicle => {
+    let batteryStatus: 'excellent' | 'good' | 'warning' | 'critical';
+    if (vehicle.batteryLevel <= 15) batteryStatus = 'critical';
+    else if (vehicle.batteryLevel <= 30) batteryStatus = 'warning';
+    else if (vehicle.batteryLevel <= 60) batteryStatus = 'good';
+    else batteryStatus = 'excellent';
+
+    return {
+  ...vehicle,
+  batteryStatus,
+  estimatedRange: Math.round(vehicle.range * (vehicle.batteryLevel / 100)) || 0,
+  licensePlate: '',
+  id: '',
+  name: '',
+  year: 0,
+  brand: '',
+  model: '',
+  type: '',
+  image: '',
+  batteryLevel: 0,
+  location: '',
+  availability: 'available',
+  pricePerHour: 0,
+  pricePerDay: 0,
+  rating: 0,
+  reviewCount: 0,
+  trips: 0,
+  range: 0,
+  seats: 0,
+  features: [],
+  condition: 'excellent',
+  lastMaintenance: '',
+  mileage: 0,
+  fuelEfficiency: '',
+  inspectionDate: '',
+  insuranceExpiry: '',
+  description: ''
+};
+  };
+
+  // Load vehicles data
+  const loadVehicles = async () => {
+    try {
+      setLoading(true);
+      console.log('🔄 Loading all vehicles for battery status...');
+      
+      const { vehicles: allVehicles } = await vehicleService.getAllVehicles({ 
+        limit: 1000 // Get all vehicles
+      });
+      
+      console.log('✅ Loaded vehicles:', allVehicles);
+      
+      const mappedVehicles = allVehicles.map(mapVehicleToBatteryVehicle);
+      setVehicles(mappedVehicles);
+      
+    } catch (error) {
+      console.error('❌ Error loading vehicles:', error);
+      message.error('Không thể tải danh sách xe. Vui lòng thử lại.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Refresh data
+  const refreshData = async () => {
+    setRefreshing(true);
+    await loadVehicles();
+    setRefreshing(false);
+    message.success('Đã làm mới dữ liệu thành công');
+  };
+
+  // Load data on component mount
+  useEffect(() => {
+    loadVehicles();
+  }, []);
 
   const getBatteryColor = (level: number, status: string) => {
     if (status === 'critical' || level <= 15) return 'text-red-500';
@@ -90,83 +118,67 @@ const BatteryStatus: React.FC = () => {
 
   const getChargingStatusIcon = (status: string) => {
     switch (status) {
-      case 'charging':
-        return <BoltSolidIcon className="w-4 h-4 text-yellow-500 animate-pulse" />;
-      case 'full':
+      case 'maintenance':
+        return <BoltIcon className="w-4 h-4 text-orange-500" />;
+      case 'rented':
+        return <BoltIcon className="w-4 h-4 text-blue-500" />;
+      case 'available':
         return <BoltSolidIcon className="w-4 h-4 text-green-500" />;
       default:
         return <BoltIcon className="w-4 h-4 text-gray-400" />;
     }
   };
 
-  const filteredVehicles = mockVehicles.filter(vehicle => {
-    const matchesSearch = vehicle.model.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         vehicle.licensePlate.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         vehicle.position.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredVehicles = vehicles.filter(vehicle => {
+    const matchesSearch = vehicle.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         vehicle.brand.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         vehicle.model.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         vehicle.location.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesFilter = filterStatus === 'all' || vehicle.batteryStatus === filterStatus;
     
     return matchesSearch && matchesFilter;
   });
 
-  const refreshData = () => {
-    // Simulate refresh
-    console.log('Refreshing battery data...');
-  };
-
-  const handleStartCharging = (vehicle: Vehicle) => {
-    setSelectedVehicle(vehicle);
-    setActionType('start-charging');
-    setShowChargingModal(true);
-  };
-
-  const handleStopCharging = (vehicle: Vehicle) => {
-    setSelectedVehicle(vehicle);
-    setActionType('stop-charging');
-    setShowChargingModal(true);
-  };
-
-  const handleUpdateBatteryStatus = (vehicle: Vehicle) => {
+  const handleUpdateBatteryStatus = (vehicle: BatteryVehicle) => {
     setSelectedVehicle(vehicle);
     setShowUpdateModal(true);
   };
 
-  const handleSubmitBatteryUpdate = () => {
+  const handleSubmitBatteryUpdate = async (newBatteryLevel: number) => {
     if (!selectedVehicle) return;
     
-    // Simulate API call
-    console.log('Cập nhật mức pin:', {
-      vehicleId: selectedVehicle.id,
-      newBatteryLevel: selectedVehicle.batteryLevel,
-      timestamp: new Date()
-    });
-    
-    setShowUpdateModal(false);
-    setSelectedVehicle(null);
-  };
-
-  const handleSubmitChargingControl = () => {
-    if (!selectedVehicle) return;
-    
-    const newStatus = actionType === 'start-charging' ? 'charging' : 'idle';
-    
-    // Simulate API call
-    console.log(`${actionType === 'start-charging' ? 'Bắt đầu' : 'Dừng'} sạc xe:`, {
-      vehicleId: selectedVehicle.id,
-      action: actionType,
-      newStatus: newStatus,
-      timestamp: new Date()
-    });
-    
-    // Update local state
-    setSelectedVehicle({
-      ...selectedVehicle,
-      chargingStatus: newStatus
-    });
-    
-    setShowChargingModal(false);
-    setSelectedVehicle(null);
-    setActionType('update-status');
+    try {
+      console.log('🔋 Updating battery level:', {
+        vehicleId: selectedVehicle.id,
+        currentLevel: selectedVehicle.batteryLevel,
+        newLevel: newBatteryLevel
+      });
+      
+      // Call API to update battery
+      const updatedVehicle = await vehicleService.updateVehicleBattery(
+        selectedVehicle.id, 
+        newBatteryLevel
+      );
+      
+      // Update local state
+      const mappedUpdatedVehicle = mapVehicleToBatteryVehicle(updatedVehicle);
+      setVehicles(prev => prev.map(v => 
+        v.id === selectedVehicle.id ? mappedUpdatedVehicle : v
+      ));
+      
+      message.success(`Đã cập nhật mức pin xe ${selectedVehicle.name} thành ${newBatteryLevel}%`);
+      setShowUpdateModal(false);
+      setSelectedVehicle(null);
+      
+    } catch (error: any) {
+      console.error('❌ Error updating battery:', error);
+      message.error(
+        error?.response?.data?.message || 
+        error?.message || 
+        'Không thể cập nhật mức pin. Vui lòng thử lại.'
+      );
+    }
   };
 
 
@@ -180,7 +192,7 @@ const BatteryStatus: React.FC = () => {
           <h1 className="text-3xl font-bold text-gray-900">Trạng thái pin</h1>
         </div>
         <p className="text-gray-600">
-          Theo dõi tình trạng pin và quản lý sạc xe điện tại các điểm
+          Theo dõi và cập nhật tình trạng pin của tất cả xe điện trong hệ thống
         </p>
       </div>
 
@@ -192,7 +204,7 @@ const BatteryStatus: React.FC = () => {
             <MagnifyingGlassIcon className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
             <input
               type="text"
-              placeholder="Tìm kiếm xe, biển số, vị trí..."
+              placeholder="Tìm kiếm xe, model, thương hiệu..."
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -215,10 +227,11 @@ const BatteryStatus: React.FC = () => {
             
             <button
               onClick={refreshData}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              disabled={refreshing}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
             >
-              <ArrowPathIcon className="w-4 h-4" />
-              Làm mới
+              <ArrowPathIcon className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+              {refreshing ? 'Đang tải...' : 'Làm mới'}
             </button>
           </div>
         </div>
@@ -230,7 +243,7 @@ const BatteryStatus: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Tổng số xe</p>
-              <p className="text-2xl font-bold text-gray-900">{mockVehicles.length}</p>
+              <p className="text-2xl font-bold text-gray-900">{vehicles.length}</p>
             </div>
             <ChartBarIcon className="w-8 h-8 text-blue-500" />
           </div>
@@ -239,12 +252,12 @@ const BatteryStatus: React.FC = () => {
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Đang sạc</p>
-              <p className="text-2xl font-bold text-yellow-600">
-                {mockVehicles.filter(v => v.chargingStatus === 'charging').length}
+              <p className="text-sm font-medium text-gray-600">Có sẵn</p>
+              <p className="text-2xl font-bold text-green-600">
+                {vehicles.filter(v => v.availability === 'available').length}
               </p>
             </div>
-            <BoltSolidIcon className="w-8 h-8 text-yellow-500" />
+            <BoltSolidIcon className="w-8 h-8 text-green-500" />
           </div>
         </div>
 
@@ -253,7 +266,7 @@ const BatteryStatus: React.FC = () => {
             <div>
               <p className="text-sm font-medium text-gray-600">Pin yếu</p>
               <p className="text-2xl font-bold text-red-600">
-                {mockVehicles.filter(v => v.batteryLevel <= 30).length}
+                {vehicles.filter(v => v.batteryLevel <= 30).length}
               </p>
             </div>
             <ExclamationTriangleIcon className="w-8 h-8 text-red-500" />
@@ -265,7 +278,7 @@ const BatteryStatus: React.FC = () => {
             <div>
               <p className="text-sm font-medium text-gray-600">Pin đầy</p>
               <p className="text-2xl font-bold text-green-600">
-                {mockVehicles.filter(v => v.chargingStatus === 'full').length}
+                {vehicles.filter(v => v.batteryLevel >= 80).length}
               </p>
             </div>
             <BoltSolidIcon className="w-8 h-8 text-green-500" />
@@ -277,133 +290,139 @@ const BatteryStatus: React.FC = () => {
       <div className="bg-white rounded-lg shadow-sm border border-gray-200">
         <div className="px-6 py-4 border-b border-gray-200">
           <h2 className="text-xl font-semibold text-gray-900">
-            Danh sách xe có sẵn
+            Danh sách xe ({filteredVehicles.length})
           </h2>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Hình ảnh
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  ID xe / Biển số
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Loại xe / Model
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Pin
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Vị trí
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Trạng thái
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Thao tác
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {filteredVehicles.map((vehicle) => (
-                <tr key={vehicle.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <img 
-                      src="https://via.placeholder.com/80x60?text=Vehicle" 
-                      alt="vehicle" 
-                      className="w-16 h-12 object-cover rounded"
-                    />
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div>
-                      <div className="text-sm font-medium text-gray-900">ID: {vehicle.id}</div>
-                      <div className="text-sm text-gray-500">Biển số: {vehicle.licensePlate}</div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div>
-                      <div className="text-sm font-medium text-gray-900">Loại: Car</div>
-                      <div className="text-sm text-gray-500">Model: {vehicle.model}</div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <div className="flex-1">
-                        <div className={`text-sm font-bold ${getBatteryColor(vehicle.batteryLevel, vehicle.batteryStatus)}`}>
-                          {vehicle.batteryLevel}%
+        {loading ? (
+          <div className="flex justify-center items-center py-12">
+            <ArrowPathIcon className="w-8 h-8 animate-spin text-blue-500" />
+            <span className="ml-3 text-gray-600">Đang tải dữ liệu xe...</span>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Hình ảnh
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    ID xe / Tên xe
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Thương hiệu / Model
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Pin
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Trạm / Vị trí
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Trạng thái
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Thao tác
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {filteredVehicles.map((vehicle) => (
+                  <tr key={vehicle.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <img 
+                        src={vehicle.image} 
+                        alt={`${vehicle.brand} ${vehicle.model}`}
+                        className="w-16 h-12 object-cover rounded"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = 'https://via.placeholder.com/80x60?text=Vehicle';
+                        }}
+                      />
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">ID: {vehicle.id}</div>
+                        <div className="text-sm text-gray-500">{vehicle.name}</div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">{vehicle.brand}</div>
+                        <div className="text-sm text-gray-500">{vehicle.model}</div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <div className="flex-1">
+                          <div className={`text-sm font-bold ${getBatteryColor(vehicle.batteryLevel, vehicle.batteryStatus)}`}>
+                            {vehicle.batteryLevel}%
+                          </div>
+                          <div className="w-full bg-gray-200 rounded-full h-2 mt-1">
+                            <div
+                              className={`h-2 rounded-full transition-all duration-300 ${
+                                vehicle.batteryLevel <= 15 ? 'bg-red-500' :
+                                vehicle.batteryLevel <= 30 ? 'bg-yellow-500' :
+                                vehicle.batteryLevel <= 60 ? 'bg-blue-500' : 'bg-green-500'
+                              }`}
+                              style={{ width: `${vehicle.batteryLevel}%` }}
+                            />
+                          </div>
+                          <div className="text-xs text-gray-500 mt-1">
+                            ~{vehicle.estimatedRange}km
+                          </div>
                         </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2 mt-1">
-                          <div
-                            className={`h-2 rounded-full transition-all duration-300 ${
-                              vehicle.batteryLevel <= 15 ? 'bg-red-500' :
-                              vehicle.batteryLevel <= 30 ? 'bg-yellow-500' :
-                              vehicle.batteryLevel <= 60 ? 'bg-blue-500' : 'bg-green-500'
-                            }`}
-                            style={{ width: `${vehicle.batteryLevel}%` }}
-                          />
+                        <div className="ml-2">
+                          {getChargingStatusIcon(vehicle.availability)}
                         </div>
                       </div>
-                      <div className="ml-2">
-                        {getChargingStatusIcon(vehicle.chargingStatus)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">{vehicle.location}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex flex-col gap-1">
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                          vehicle.batteryLevel > 60 ? 'bg-green-100 text-green-800' :
+                          vehicle.batteryLevel > 30 ? 'bg-yellow-100 text-yellow-800' :
+                          vehicle.batteryLevel > 15 ? 'bg-orange-100 text-orange-800' :
+                          'bg-red-100 text-red-800'
+                        }`}>
+                          {vehicle.batteryLevel > 60 ? 'Pin tốt' :
+                           vehicle.batteryLevel > 30 ? 'Cần sạc' :
+                           vehicle.batteryLevel > 15 ? 'Pin yếu' : 'Pin cạn'}
+                        </span>
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                          vehicle.availability === 'available' ? 'bg-green-100 text-green-800' :
+                          vehicle.availability === 'rented' ? 'bg-blue-100 text-blue-800' :
+                          'bg-orange-100 text-orange-800'
+                        }`}>
+                          {vehicle.availability === 'available' ? 'Có sẵn' :
+                           vehicle.availability === 'rented' ? 'Đang thuê' : 'Bảo trì'}
+                        </span>
                       </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{vehicle.position}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                      vehicle.batteryLevel > 60 ? 'bg-green-100 text-green-800' :
-                      vehicle.batteryLevel > 30 ? 'bg-yellow-100 text-yellow-800' :
-                      vehicle.batteryLevel > 15 ? 'bg-orange-100 text-orange-800' :
-                      'bg-red-100 text-red-800'
-                    }`}>
-                      {vehicle.batteryLevel > 60 ? 'Có sẵn' :
-                       vehicle.batteryLevel > 30 ? 'Cần sạc' :
-                       vehicle.batteryLevel > 15 ? 'Pin yếu' : 'Pin cạn'}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    <div className="flex gap-2">
-                      {vehicle.chargingStatus === 'charging' ? (
-                        <button 
-                          onClick={() => handleStopCharging(vehicle)}
-                          className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-xs font-medium transition-colors"
-                        >
-                          Dừng sạc
-                        </button>
-                      ) : (
-                        <button 
-                          onClick={() => handleStartCharging(vehicle)}
-                          className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-xs font-medium transition-colors"
-                        >
-                          Bắt đầu sạc
-                        </button>
-                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
                       <button 
                         onClick={() => handleUpdateBatteryStatus(vehicle)}
                         className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs font-medium transition-colors"
                       >
-                        Cập nhật
+                        Cập nhật pin
                       </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          
-          {filteredVehicles.length === 0 && (
-            <div className="text-center py-8">
-              <BoltIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600">Không tìm thấy xe nào phù hợp với bộ lọc.</p>
-            </div>
-          )}
-        </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            
+            {filteredVehicles.length === 0 && !loading && (
+              <div className="text-center py-8">
+                <BoltIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-600">Không tìm thấy xe nào phù hợp với bộ lọc.</p>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
 
@@ -421,23 +440,14 @@ const BatteryStatus: React.FC = () => {
             });
           }
         }}
-        onSubmit={handleSubmitBatteryUpdate}
+        onSubmit={(newLevel) => {
+          if (newLevel !== undefined) {
+            handleSubmitBatteryUpdate(newLevel);
+          }
+        }}
         onClose={() => {
           setShowUpdateModal(false);
           setSelectedVehicle(null);
-        }}
-      />
-
-      {/* Charging Control Modal */}
-      <ChargingControlModal
-        isOpen={showChargingModal}
-        vehicle={selectedVehicle}
-        isCharging={selectedVehicle?.chargingStatus === 'charging'}
-        onConfirm={handleSubmitChargingControl}
-        onClose={() => {
-          setShowChargingModal(false);
-          setSelectedVehicle(null);
-          setActionType('update-status');
         }}
       />
     </div>

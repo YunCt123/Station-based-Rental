@@ -12,7 +12,7 @@ interface BatteryUpdateModalProps {
   vehicle: Vehicle | null;
   batteryLevel: number;
   setBatteryLevel: (level: number) => void;
-  onSubmit: () => void;
+  onSubmit: (newLevel?: number) => void;
   onClose: () => void;
 }
 
@@ -62,10 +62,10 @@ export const BatteryUpdateModal: React.FC<BatteryUpdateModalProps> = ({
             Hủy
           </button>
           <button
-            onClick={onSubmit}
+            onClick={() => onSubmit(batteryLevel)}
             className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
           >
-            Lưu
+            Cập nhật pin
           </button>
         </div>
       </div>

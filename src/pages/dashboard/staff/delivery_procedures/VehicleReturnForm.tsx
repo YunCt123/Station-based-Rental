@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import React, { useState, useEffect } from 'react';
 import { Modal, Form, Upload, InputNumber, Input, Button, message, Typography, Space, Divider, Card, Tag } from 'antd';
 import { UploadOutlined, CheckCircleOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons';
@@ -490,22 +491,22 @@ const VehicleReturnForm: React.FC<VehicleReturnFormProps> = ({
             const hoursDiff = Math.ceil(timeDiff / (1000 * 60 * 60));
             const daysDiff = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
             
-            let timeDisplay = '';
-            if (isOverdue) {
-              // For overdue: show hours if < 24 hours, otherwise show days
-              if (hoursDiff < 24) {
-                timeDisplay = `${hoursDiff} giờ`;
-              } else {
-                timeDisplay = `${daysDiff} ngày ${hoursDiff % 24} giờ`;
-              }
-            } else {
-              // For remaining time
-              if (hoursDiff < 24) {
-                timeDisplay = `${hoursDiff} giờ`;
-              } else {
-                timeDisplay = `${daysDiff} ngày`;
-              }
-            }
+            // let timeDisplay = '';
+            // if (isOverdue) {
+            //   // For overdue: show hours if < 24 hours, otherwise show days
+            //   if (hoursDiff < 24) {
+            //     timeDisplay = `${hoursDiff} giờ`;
+            //   } else {
+            //     timeDisplay = `${daysDiff} ngày ${hoursDiff % 24} giờ`;
+            //   }
+            // } else {
+            //   // For remaining time
+            //   if (hoursDiff < 24) {
+            //     timeDisplay = `${hoursDiff} giờ`;
+            //   } else {
+            //     timeDisplay = `${daysDiff} ngày`;
+            //   }
+            // }
 
             return (
               <>

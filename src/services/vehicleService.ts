@@ -278,6 +278,26 @@ export const vehicleService = {
   },
 
   /**
+   * Update vehicle battery level (Staff only)
+   * PATCH /v1/vehicles/{id}/battery
+   */
+  async updateVehicleBattery(id: string, batteryLevel: number): Promise<Vehicle> {
+    try {
+      console.log(`🔋 Updating battery for vehicle ${id} to ${batteryLevel}%`);
+      
+      const response = await api.patch<ApiResponse<BackendVehicle>>(`/vehicles/${id}/battery`, {
+        batteryLevel
+      });
+      
+      console.log('✅ Battery update successful:', response.data);
+      return mapBackendVehicleToFrontend(response.data.data);
+    } catch (error) {
+      console.error('❌ Error updating vehicle battery:', error);
+      throw error;
+    }
+  },
+
+  /**
    * Helper function to get available vehicles with comprehensive search
    * This is a convenience method that uses searchVehicles with status filter
    */
@@ -336,6 +356,7 @@ export const {
   getAvailableVehiclesByStation,
   createVehicle,
   updateVehicle,
+  updateVehicleBattery,
   deleteVehicle,
   getAvailableVehicles,
   searchVehiclesByLocation,

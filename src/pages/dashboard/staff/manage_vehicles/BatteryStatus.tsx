@@ -114,6 +114,12 @@ const BatteryStatus: React.FC = () => {
   });
 
   const handleUpdateBatteryStatus = (vehicle: BatteryVehicle) => {
+    // Kiểm tra xe có đang được thuê không
+    if (vehicle.availability === 'rented') {
+      message.warning('Không thể cập nhật mức pin khi xe đang được thuê');
+      return;
+    }
+    
     setSelectedVehicle(vehicle);
     setShowUpdateModal(true);
   };
@@ -222,12 +228,24 @@ const BatteryStatus: React.FC = () => {
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Có sẵn</p>
+              <p className="text-sm font-medium text-gray-600">Có thể cập nhật</p>
               <p className="text-2xl font-bold text-green-600">
-                {vehicles.filter(v => v.availability === 'available').length}
+                {vehicles.filter(v => v.availability !== 'rented').length}
               </p>
             </div>
             <BoltSolidIcon className="w-8 h-8 text-green-500" />
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Đang thuê</p>
+              <p className="text-2xl font-bold text-blue-600">
+                {vehicles.filter(v => v.availability === 'rented').length}
+              </p>
+            </div>
+            <ChartBarIcon className="w-8 h-8 text-blue-500" />
           </div>
         </div>
 
@@ -375,9 +393,19 @@ const BatteryStatus: React.FC = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                       <button 
                         onClick={() => handleUpdateBatteryStatus(vehicle)}
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs font-medium transition-colors"
+                        disabled={vehicle.availability === 'rented'}
+                        className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
+                          vehicle.availability === 'rented'
+                            ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                            : 'bg-blue-600 hover:bg-blue-700 text-white'
+                        }`}
+                        title={
+                          vehicle.availability === 'rented'
+                            ? 'Không thể cập nhật pin khi xe đang được thuê'
+                            : 'Cập nhật mức pin xe'
+                        }
                       >
-                        Cập nhật pin
+                        {vehicle.availability === 'rented' ? 'Xe đang thuê' : 'Cập nhật pin'}
                       </button>
                     </td>
                   </tr>

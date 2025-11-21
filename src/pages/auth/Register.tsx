@@ -161,23 +161,23 @@ const Register = ({ onRegister: _onRegister }: RegisterProps) => {
         <Card className="shadow-premium">
           <CardHeader className="space-y-1">
             <CardTitle className="text-2xl font-bold text-center">
-              {t("register.createAccount")}
+              Tạo tài khoản mới
             </CardTitle>
             <CardDescription className="text-center">
-              {t("register.joinElectric")}
+              Tham gia ngay hôm nay
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* Full Name */}
               <div className="space-y-2">
-                <Label htmlFor="name">{t("register.fullName")} *</Label>
+                <Label htmlFor="name">Họ và tên *</Label>
                 <div className="relative">
                   <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-5 w-5" />
                   <Input
                     id="name"
                     type="text"
-                    placeholder={t("register.fullNamePlaceholder")}
+                    placeholder="Nhập họ và tên của bạn"
                     value={formData.name}
                     onChange={(e) => handleInputChange("name", e.target.value)}
                     className="pl-10 text-black"
@@ -188,13 +188,13 @@ const Register = ({ onRegister: _onRegister }: RegisterProps) => {
 
               {/* Email */}
               <div className="space-y-2">
-                <Label htmlFor="email">{t("register.emailAddress")} *</Label>
+                <Label htmlFor="email">Địa chỉ email *</Label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-5 w-5" />
                   <Input
                     id="email"
                     type="email"
-                    placeholder={t("register.emailPlaceholder")}
+                    placeholder="abc@gmail.com"
                     value={formData.email}
                     onChange={(e) => handleInputChange("email", e.target.value)}
                     className="pl-10 text-black"
@@ -205,7 +205,7 @@ const Register = ({ onRegister: _onRegister }: RegisterProps) => {
 
               {/* Phone */}
               <div className="space-y-2">
-                <Label htmlFor="phoneNumber">{t("register.phoneNumber")} *</Label>
+                <Label htmlFor="phoneNumber">Số điện thoại *</Label>
                 <div className="relative">
                   <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-5 w-5" />
                   <Input
@@ -223,7 +223,7 @@ const Register = ({ onRegister: _onRegister }: RegisterProps) => {
               {/* Date of Birth */}
               <div className="space-y-2">
                 <Label htmlFor="dateOfBirth">
-                  {t("register.dateOfBirth")} *
+                  Ngày sinh
                 </Label>
                 <div className="relative">
                   <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-5 w-5" />
@@ -242,13 +242,13 @@ const Register = ({ onRegister: _onRegister }: RegisterProps) => {
 
               {/* Password */}
               <div className="space-y-2">
-                <Label htmlFor="password">{t("register.password")} *</Label>
+                <Label htmlFor="password">Mật khẩu *</Label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-5 w-5" />
                   <Input
                     id="password"
                     type={showPassword ? "text" : "password"}
-                    placeholder={t("register.passwordPlaceholder")}
+                    placeholder="Nhập mật khẩu của bạn"
                     value={formData.password}
                     onChange={(e) =>
                       handleInputChange("password", e.target.value)
@@ -275,14 +275,14 @@ const Register = ({ onRegister: _onRegister }: RegisterProps) => {
               {/* Confirm Password */}
               <div className="space-y-2">
                 <Label htmlFor="confirmPassword">
-                  {t("register.confirmPassword")} *
+                  Xác nhận mật khẩu *
                 </Label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-5 w-5" />
                   <Input
                     id="confirmPassword"
                     type={showConfirmPassword ? "text" : "password"}
-                    placeholder={t("register.confirmPasswordPlaceholder")}
+                    placeholder="Xác nhận mật khẩu của bạn"
                     value={formData.confirmPassword}
                     onChange={(e) =>
                       handleInputChange("confirmPassword", e.target.value)
@@ -318,17 +318,17 @@ const Register = ({ onRegister: _onRegister }: RegisterProps) => {
                 <label htmlFor="terms" className="text-sm leading-relaxed">
                   {t("register.agreeToTermsText")}{" "}
                   <Link
-                    to="/terms"
+                    to="/policy"
                     className="text-primary hover:text-primary-dark"
                   >
-                    {t("register.termsOfService")}
+                    Điều khoản dịch vụ
                   </Link>{" "}
-                  {t("register.and")}{" "}
+                  và{" "}
                   <Link
-                    to="/privacy"
+                    to="/policy"
                     className="text-primary hover:text-primary-dark"
                   >
-                    {t("register.privacyPolicy")}
+                    Chính sách bảo mật
                   </Link>
                 </label>
               </div>
@@ -340,8 +340,8 @@ const Register = ({ onRegister: _onRegister }: RegisterProps) => {
                 disabled={isLoading || !agreeToTerms}
               >
                 {isLoading
-                  ? t("common.creatingAccount")
-                  : t("common.createAccount")}
+                  ? "Đang tạo tài khoản"
+                  : "Tạo tài khoản"}
               </Button>
             </form>
 
@@ -378,13 +378,13 @@ const Register = ({ onRegister: _onRegister }: RegisterProps) => {
             {/* Sign In Link */}
             <div className="text-center text-sm">
               <span className="text-muted-foreground">
-                {t("register.alreadyHaveAccount")}{" "}
+                Bạn đã có tài khoản?{" "}
               </span>
               <Link
                 to="/login"
                 className="text-primary hover:text-primary-dark font-medium transition-colors"
               >
-                {t("register.signInHere")}
+                Đăng nhập tại đây
               </Link>
             </div>
           </CardContent>

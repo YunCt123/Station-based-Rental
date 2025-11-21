@@ -147,4 +147,6 @@ export interface SearchOptions {
 export interface VehicleCardProps {
   vehicle: Vehicle;
   className?: string;
+   onSelect?: (vehicle: Vehicle) => void;
+   showLocation?: boolean;
 }

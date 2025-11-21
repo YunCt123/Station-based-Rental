@@ -23,6 +23,7 @@ import NotFoundPage from "./pages/shared/NotFoundPage";
 import { PaymentPage, PaymentSuccessPage, PaymentCancelPage, PolicyPage } from "./pages/shared";
 import PaymentResultPage from "./pages/shared/PaymentResultPage";
 import PaymentPayOsPage from "./pages/shared/PaymentPayOsPage";
+import StationVehicles from "./pages/stations/StationVehicles";
 
 // Contexts & UI
 import { TranslationProvider } from "./contexts/TranslationContext";
@@ -181,6 +182,19 @@ function App() {
                       <Header user={user} onLogout={handleLogout} />
                       <main className="min-h-screen">
                         <StationDetailPage />
+                      </main>
+                      <Footer />
+                    </>
+                  }
+                />
+
+                <Route
+                  path="/stations/:stationId/vehicles"
+                  element={
+                    <>
+                      <Header user={user} onLogout={handleLogout} />
+                      <main className="min-h-screen">
+                        <StationVehicles />
                       </main>
                       <Footer />
                     </>

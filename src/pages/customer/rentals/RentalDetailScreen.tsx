@@ -117,6 +117,7 @@ const RentalDetailScreen: React.FC<RentalDetailScreenProps> = ({
   /* ---------------------------------------------------------------------- */
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("vi-VN", {
+      weekday: "long", // Hiển thị thêm thứ
       year: "numeric",
       month: "long",
       day: "numeric",
@@ -458,8 +459,11 @@ const RentalDetailScreen: React.FC<RentalDetailScreenProps> = ({
                           pricing_snapshot.currency
                         )}
                       </Text>
+                      
                     </div>
+                    
                   )}
+                   <Text style={{ fontSize: 13, color: "#fa8c16" }}>(Giá vào ngày cuối tuần +20%)</Text>
                 </div>
               </div>
             </Space>
@@ -664,7 +668,7 @@ const RentalDetailScreen: React.FC<RentalDetailScreenProps> = ({
                 </div>
 
                 {/* Bảo hiểm */}
-                {(pricing_snapshot as unknown as { insurance_price?: number })
+                {/* {(pricing_snapshot as unknown as { insurance_price?: number })
                   .insurance_price &&
                   (pricing_snapshot as unknown as { insurance_price: number })
                     .insurance_price > 0 && (
@@ -687,7 +691,7 @@ const RentalDetailScreen: React.FC<RentalDetailScreenProps> = ({
                         )}
                       </Text>
                     </div>
-                  )}
+                  )} */}
 
                 {/* Thuế */}
                 {(pricing_snapshot as unknown as { taxes?: number }).taxes &&

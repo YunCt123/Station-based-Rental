@@ -90,6 +90,7 @@ const DeliveryProcedures: React.FC = () => {
   const [rentalsForCheckin, setRentalsForCheckin] = useState<BackendRental[]>([]);
   const [rentalsForReturn, setRentalsForReturn] = useState<BackendRental[]>([]);
   const [bookingsData, setBookingsData] = useState<Map<string, BookingData>>(new Map()); // Map booking_id -> booking data
+  const [checkinBookingsData, setCheckinBookingsData] = useState<Map<string, BookingData>>(new Map()); // For checkin bookings
   const [searchText, setSearchText] = useState('');
   
   // Checkin modal state
@@ -113,8 +114,27 @@ const DeliveryProcedures: React.FC = () => {
       console.log('Checkin API Response:', response.data);
       
       if (response.data.success) {
-        setRentalsForCheckin(response.data.data || []);
-        console.log('Successfully loaded checkin rentals:', response.data.data?.length || 0);
+        const rentals = response.data.data || [];
+        setRentalsForCheckin(rentals);
+        console.log('Successfully loaded checkin rentals:', rentals.length);
+
+        // Fetch booking data for each rental to get start_at time
+        const bookingMap = new Map();
+        for (const rental of rentals) {
+          if (rental.booking_id) {
+            try {
+              // Use bookingService to get booking details
+              const booking = await bookingService.getBookingById(rental.booking_id);
+              if (booking) {
+                bookingMap.set(rental.booking_id, booking);
+              }
+            } catch (error) {
+              console.warn(`Could not fetch booking ${rental.booking_id}:`, error);
+            }
+          }
+        }
+        setCheckinBookingsData(bookingMap);
+        console.log('Loaded checkin booking data for', bookingMap.size, 'bookings');
       } else {
         console.error('API returned success=false:', response.data.message);
         toast({
@@ -277,8 +297,57 @@ const DeliveryProcedures: React.FC = () => {
         <div>
           <div className="font-medium">{record.user_id?.name}</div>
           <div className="text-sm text-gray-500">{record.user_id?.email}</div>
+          {record.user_id?.phoneNumber && (
+            <div className="text-xs text-blue-600">{record.user_id.phoneNumber}</div>
+          )}
         </div>
       ),
+    },
+    {
+      title: 'Ngày lấy xe',
+      key: 'pickup_date',
+      sorter: (a, b) => {
+        const getPickupTime = (record: BackendRental) => {
+          const booking = checkinBookingsData.get(record.booking_id);
+          if (booking?.start_at) {
+            return new Date(booking.start_at).getTime();
+          }
+          return new Date(record.createdAt).getTime();
+        };
+        
+        return getPickupTime(a) - getPickupTime(b);
+      },
+      render: (_, record) => {
+        const booking = checkinBookingsData.get(record.booking_id);
+        const pickupDate = booking?.start_at ? new Date(booking.start_at) : new Date(record.createdAt);
+        const now = new Date();
+        const isOverdue = now > pickupDate;
+        const timeDiff = Math.abs(now.getTime() - pickupDate.getTime());
+        
+        const hoursDiff = Math.ceil(timeDiff / (1000 * 60 * 60));
+        const daysDiff = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
+        
+        let timeDisplay = '';
+        if (daysDiff > 1) {
+          timeDisplay = `${daysDiff} ngày`;
+        } else {
+          timeDisplay = `${hoursDiff} giờ`;
+        }
+        
+        return (
+          <div>
+            <div className={isOverdue ? "text-red-600 font-semibold" : "font-medium"}>
+              {pickupDate.toLocaleDateString('vi-VN')}
+            </div>
+            <div className="text-sm text-gray-500">
+              {pickupDate.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+            </div>
+            <div className={`text-xs ${isOverdue ? "text-red-500 font-medium" : "text-green-500"}`}>
+              {isOverdue ? `Quá hạn ${timeDisplay}` : `Còn ${timeDisplay}`}
+            </div>
+          </div>
+        );
+      },
     },
     {
       title: 'Trạng thái',

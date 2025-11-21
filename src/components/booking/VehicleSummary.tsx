@@ -12,12 +12,37 @@ interface VehicleSummaryProps {
   priceBreakdown?: PriceBreakdown | null;
   loading?: boolean;
   insuranceSelected?: boolean; // ✅ Add prop to track insurance selection
+  rentalDates?: { start: Date; end: Date } | null; // ✅ Add rental dates to check weekend
 }
 
-const VehicleSummary: React.FC<VehicleSummaryProps> = ({ vehicle, priceBreakdown, loading, insuranceSelected = false }) => {
+const VehicleSummary: React.FC<VehicleSummaryProps> = ({ vehicle, priceBreakdown, loading, insuranceSelected = false, rentalDates }) => {
   
   // Debug log to see what priceBreakdown we receive
   console.log('🏷️ [VehicleSummary] Received priceBreakdown:', priceBreakdown);
+  
+  // ✅ Check for weekend dates in rental period
+  const checkWeekendDays = () => {
+    if (!rentalDates) return { hasWeekend: false, weekendDays: [] };
+    
+    const weekendDays: string[] = [];
+    const start = new Date(rentalDates.start);
+    const end = new Date(rentalDates.end);
+    
+    // Check each day in the rental period
+    const currentDay = new Date(start);
+    while (currentDay <= end) {
+      const dayOfWeek = currentDay.getDay();
+      if (dayOfWeek === 0 || dayOfWeek === 6) { // Sunday or Saturday
+        const dayName = dayOfWeek === 0 ? 'Chủ nhật' : 'Thứ 7';
+        weekendDays.push(`${dayName} (${currentDay.toLocaleDateString('vi-VN')})`);
+      }
+      currentDay.setDate(currentDay.getDate() + 1);
+    }
+    
+    return { hasWeekend: weekendDays.length > 0, weekendDays };
+  };
+  
+  const weekendInfo = checkWeekendDays();
   
   return (
     <>
@@ -107,14 +132,31 @@ const VehicleSummary: React.FC<VehicleSummaryProps> = ({ vehicle, priceBreakdown
                     <Text>Yêu cầu đặt cọc:</Text>
                     <Text strong>{deposit.toLocaleString("vi-VN")}đ</Text>
                   </div>
+                  
+                  {/* ✅ Weekend pricing notice */}
+                  {weekendInfo.hasWeekend && (
+                    <div className="mt-3 p-2 bg-orange-50 border border-orange-200 rounded">
+                      <Text type="warning" className="text-xs font-medium">
+                        Phụ phí cuối tuần (+20%/ Ngày):
+                      </Text>
+                      <div className="mt-1">
+                        {weekendInfo.weekendDays.map((day, index) => (
+                          <Text key={index} className="text-xs text-orange-600 block">
+                            • {day}
+                          </Text>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
                   {(priceBreakdown.details?.peakMultiplier || 0) > 1 && (
                     <Text type="warning" className="text-xs">
-                      * Peak hours pricing applied ({priceBreakdown.details?.peakMultiplier}x)
+                      ⏰ Giờ cao điểm ({priceBreakdown.details?.peakMultiplier}x): 7-9h, 17-19h
                     </Text>
                   )}
                   {(priceBreakdown.details?.weekendMultiplier || 0) > 1 && (
                     <Text type="warning" className="text-xs">
-                      * Weekend pricing applied ({priceBreakdown.details?.weekendMultiplier}x)
+                      📅 Phụ phí cuối tuần ({priceBreakdown.details?.weekendMultiplier}x)
                     </Text>
                   )}
                 </div>

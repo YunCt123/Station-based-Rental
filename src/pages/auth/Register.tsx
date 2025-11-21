@@ -211,7 +211,7 @@ const Register = ({ onRegister: _onRegister }: RegisterProps) => {
                   <Input
                     id="phoneNumber"
                     type="tel"
-                    placeholder={t("register.phonePlaceholder")}
+                    placeholder="09xxxxxxxx"
                     value={formData.phoneNumber}
                     onChange={(e) => handleInputChange("phoneNumber", e.target.value)}
                     className="pl-10 text-black"

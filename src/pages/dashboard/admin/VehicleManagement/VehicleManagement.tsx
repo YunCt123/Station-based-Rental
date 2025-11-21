@@ -18,7 +18,6 @@ import {
   DeleteOutlined,
   SearchOutlined,
   EyeOutlined,
-  ExportOutlined
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import VehicleFormModal from './VehicleFormModal';
@@ -644,9 +643,9 @@ const VehicleManagement: React.FC = () => {
           </Space>
           
           <Space>
-            <Button icon={<ExportOutlined />}>
+            {/* <Button icon={<ExportOutlined />}>
               Xuất Excel
-            </Button>
+            </Button> */}
             <Button 
               type="primary" 
               icon={<PlusOutlined />}

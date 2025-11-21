@@ -20,7 +20,6 @@ import {
   DeleteOutlined,
   SearchOutlined,
   EyeOutlined,
-  ExportOutlined,
   EnvironmentOutlined,
   ThunderboltOutlined
 } from '@ant-design/icons';
@@ -477,9 +476,9 @@ const StationManagement: React.FC = () => {
           </Space>
           
           <Space>
-            <Button icon={<ExportOutlined />}>
+            {/* <Button icon={<ExportOutlined />}>
               Xuất Excel
-            </Button>
+            </Button> */}
             <Button 
               type="primary" 
               icon={<PlusOutlined />}

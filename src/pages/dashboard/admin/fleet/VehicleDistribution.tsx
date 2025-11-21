@@ -313,7 +313,6 @@ const VehicleDistribution: React.FC = () => {
           value={`${averageUtilization}%`}
           icon={AdjustmentsHorizontalIcon}
           bgColor="bg-green-500"
-          trendValue="+5% từ tuần trước"
           trend="up"
         />
         <StatCard
@@ -321,7 +320,6 @@ const VehicleDistribution: React.FC = () => {
           value={highDemandStations}
           icon={ExclamationTriangleIcon}
           bgColor="bg-red-500"
-          trendValue="Không đổi"
           trend="stable"
         />
         <StatCard
@@ -329,7 +327,6 @@ const VehicleDistribution: React.FC = () => {
           value={lowUtilizationStations}
           icon={PlusIcon}
           bgColor="bg-yellow-500"
-          trendValue="-1 từ tuần trước"
           trend="down"
         />
       </div>

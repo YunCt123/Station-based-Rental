@@ -165,9 +165,9 @@ export const DeliveryTable: React.FC<DeliveryTableProps> = ({
                       <strong>Hạn trả:</strong>{" "}
                       {formatDateTime(transaction.returnDueTime)}
                     </div>
-                    <div className="text-sm text-gray-500">
+                    {/* <div className="text-sm text-gray-500">
                       {transaction.rentalDuration}
-                    </div>
+                    </div> */}
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">

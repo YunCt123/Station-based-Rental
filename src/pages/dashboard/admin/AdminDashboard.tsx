@@ -181,26 +181,50 @@ const AdminDashboard: React.FC = () => {
         activities.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
         setRecentActivities(activities.slice(0, 10));
 
-        // Process stations data - sort by total vehicles and utilization rate
-        const stations = stationsResponse.data || [];
-        const sortedStations = stations
-          .filter(station => station.status === 'ACTIVE')
-          .sort((a, b) => {
-            // Sort by total vehicles first, then by utilization rate
-            if (b.metrics.vehicles_total !== a.metrics.vehicles_total) {
-              return b.metrics.vehicles_total - a.metrics.vehicles_total;
+        // Process stations data using real vehicle counts from API
+        const stations = (stationsResponse.data || []).filter((s: any) => s.status === 'ACTIVE');
+
+        const stationVehiclesData = await Promise.all(
+          stations.map(async (station: any) => {
+            try {
+              const resp = await adminStationService.getStationVehicles(station._id);
+              const vehicles = resp?.data?.data?.vehicles || resp?.data?.vehicles || [];
+              const rawTotal = resp?.data?.data?.count || resp?.data?.count || vehicles.length;
+              const maintenance = vehicles.filter((v: any) => v.status === 'MAINTENANCE').length;
+              // "total" yêu cầu: tổng số xe trừ xe MAINTENANCE
+              const adjustedTotal = Math.max(rawTotal - maintenance, 0);
+              const available = vehicles.filter((v: any) => v.status === 'AVAILABLE').length;
+              const inUse = vehicles.filter((v: any) => v.status === 'RENTED' || v.status === 'RESERVED' || v.status === 'CONFIRMED').length;
+              const utilizationRate = adjustedTotal > 0 ? Math.round((inUse / adjustedTotal) * 100) : 0;
+              return {
+                id: station._id,
+                name: station.name,
+                totalVehicles: adjustedTotal,
+                availableVehicles: available,
+                utilizationRate
+              };
+            } catch (e) {
+              console.error('Error loading vehicles for station', station._id, e);
+              return {
+                id: station._id,
+                name: station.name,
+                totalVehicles: 0,
+                availableVehicles: 0,
+                utilizationRate: 0
+              };
             }
-            return b.metrics.utilization_rate - a.metrics.utilization_rate;
           })
-          .slice(0, 5)
-          .map(station => ({
-            id: station._id,
-            name: station.name,
-            totalVehicles: station.metrics.vehicles_total,
-            availableVehicles: station.metrics.vehicles_available,
-            utilizationRate: Math.round(station.metrics.utilization_rate * 100)
-          }));
-        
+        );
+
+        const sortedStations = stationVehiclesData
+          .sort((a: any, b: any) => {
+            if (b.totalVehicles !== a.totalVehicles) {
+              return b.totalVehicles - a.totalVehicles;
+            }
+            return b.utilizationRate - a.utilizationRate;
+          })
+          .slice(0, 5);
+
         setTopStations(sortedStations);
         setStationsLoading(false);
 

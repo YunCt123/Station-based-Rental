@@ -10,8 +10,8 @@ const Content: React.FC = () => {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [filters, setFilters] = useState<VehicleSearchFilters>({});
-  const [sortBy, setSortBy] = useState<string>('');
+  const [filters, _setFilters] = useState<VehicleSearchFilters>({});
+  const [sortBy, _setSortBy] = useState<string>('');
   const { toast } = useToast();
 
   useEffect(() => {

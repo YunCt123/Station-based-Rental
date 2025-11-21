@@ -98,10 +98,10 @@ export const DeliveryDetails: React.FC<DeliveryDetailsProps> = ({
               <span className="text-gray-500">Trạm giao:</span>{" "}
               <span className="font-medium">{transaction.fromStation}</span>
             </div>
-            <div>
+            {/* <div>
               <span className="text-gray-500">Nhân viên giao:</span>{" "}
               <span className="font-medium">{transaction.staffName}</span>
-            </div>
+            </div> */}
           </div>
         </div>
 

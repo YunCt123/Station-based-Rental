@@ -2,7 +2,6 @@ import React from "react";
 import {
   MagnifyingGlassIcon,
   FunnelIcon,
-  DocumentArrowDownIcon,
 } from "@heroicons/react/24/outline";
 
 interface FilterOption {
@@ -35,11 +34,6 @@ export const FilterSection: React.FC<FilterSectionProps> = ({
   statusFilter,
   onStatusFilterChange,
   statusOptions,
-  dateFilter,
-  onDateFilterChange,
-  stationFilter,
-  onStationFilterChange,
-  stations,
   resultCount,
   color = "blue",
 }) => {
@@ -108,7 +102,7 @@ export const FilterSection: React.FC<FilterSectionProps> = ({
         </div>
 
         {/* Date Filter */}
-        <div>
+        {/* <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Thời gian
           </label>
@@ -122,10 +116,10 @@ export const FilterSection: React.FC<FilterSectionProps> = ({
             <option value="week">7 ngày qua</option>
             <option value="month">30 ngày qua</option>
           </select>
-        </div>
+        </div> */}
 
         {/* Station Filter */}
-        <div>
+        {/* <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Trạm
           </label>
@@ -141,7 +135,7 @@ export const FilterSection: React.FC<FilterSectionProps> = ({
               </option>
             ))}
           </select>
-        </div>
+        </div> */}
       </div>
 
       {/* Results and Actions */}
@@ -154,16 +148,16 @@ export const FilterSection: React.FC<FilterSectionProps> = ({
           </p>
         </div>
         <div className="flex space-x-2">
-          <button className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-md text-sm transition-colors flex items-center space-x-2">
+          {/* <button className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-md text-sm transition-colors flex items-center space-x-2">
             <FunnelIcon className="w-4 h-4" />
             <span>Lọc nâng cao</span>
-          </button>
-          <button
+          </button> */}
+          {/* <button
             className={`${colors.button} text-white px-4 py-2 rounded-md text-sm transition-colors flex items-center space-x-2`}
           >
             <DocumentArrowDownIcon className="w-4 h-4" />
             <span>Xuất Excel</span>
-          </button>
+          </button> */}
         </div>
       </div>
     </div>

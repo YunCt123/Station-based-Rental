@@ -4,17 +4,13 @@ import {
   EyeIcon,
   CheckCircleIcon,
   ExclamationTriangleIcon,
-  CalendarDaysIcon,
   CurrencyDollarIcon,
-  DocumentArrowDownIcon,
 } from "@heroicons/react/24/outline";
 import {
   StatCard,
   FilterSection,
   PageHeader,
-  QuickActions,
   type FilterOption,
-  type QuickAction,
 } from "../../../../components/dashboard/shared";
 import rentalService from "../../../../services/rentalService";
 import type { StationRental } from "../../../../services/rentalService";
@@ -440,36 +436,6 @@ export const ReturnHistory: React.FC = () => {
   ];
 
   // Quick actions
-  const quickActions: QuickAction[] = [
-    {
-      label: "Tạo báo cáo",
-      description: "Xuất báo cáo",
-      icon: <DocumentArrowDownIcon className="w-full h-full" />,
-      onClick: () => console.log("Generate report"),
-      color: "blue",
-    },
-    {
-      label: "Kiểm tra xe",
-      description: "Lịch kiểm tra",
-      icon: <WrenchScrewdriverIcon className="w-full h-full" />,
-      onClick: () => console.log("Schedule inspection"),
-      color: "red",
-    },
-    {
-      label: "Lập lịch nhận",
-      description: "Đặt lịch nhận",
-      icon: <CalendarDaysIcon className="w-full h-full" />,
-      onClick: () => console.log("Schedule return"),
-      color: "green",
-    },
-    {
-      label: "Tính phí phạt",
-      description: "Quản lý phí",
-      icon: <CurrencyDollarIcon className="w-full h-full" />,
-      onClick: () => console.log("Calculate penalties"),
-      color: "orange",
-    },
-  ];
 
   const handlePageChange = (newPage: number) => {
     setPagination(prev => ({ ...prev, page: newPage }));
@@ -541,28 +507,24 @@ export const ReturnHistory: React.FC = () => {
         <StatCard
           title="Tổng Nhận Xe"
           value={stats.total}
-          subtitle="+5% từ tuần trước"
           icon={<WrenchScrewdriverIcon className="w-6 h-6" />}
           color="gray"
         />
         <StatCard
           title="Hoàn Thành"
           value={stats.completed}
-          subtitle="+3% từ tuần trước"
           icon={<CheckCircleIcon className="w-6 h-6" />}
           color="green"
         />
         <StatCard
           title="Có Vấn Đề"
           value={stats.issues}
-          subtitle="-1% từ tuần trước"
           icon={<ExclamationTriangleIcon className="w-6 h-6" />}
           color="red"
         />
         <StatCard
           title="Tổng Phí Phạt"
           value={formatCurrency(stats.totalPenalties)}
-          subtitle="+8% từ tuần trước"
           icon={<CurrencyDollarIcon className="w-6 h-6" />}
           color="orange"
         />
@@ -926,13 +888,13 @@ export const ReturnHistory: React.FC = () => {
       )}
 
       {/* Quick Actions */}
-      <QuickActions
+      {/* <QuickActions
         title="Trung Tâm Kiểm Tra"
         subtitle="Thao tác nhanh cho việc kiểm tra và đánh giá xe"
         actions={quickActions}
         headerIcon={<WrenchScrewdriverIcon className="w-6 h-6" />}
         color="red"
-      />
+      /> */}
     </div>
   );
 };

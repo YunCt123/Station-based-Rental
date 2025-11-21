@@ -7,11 +7,9 @@ import {
   Card,
   Row,
   Col,
-  Progress,
   Divider,
   Typography,
   Space,
-  Rate,
   List,
   Spin,
   Button,
@@ -23,8 +21,6 @@ import {
   ClockCircleOutlined,
   CarOutlined,
   ReloadOutlined,
-  UserOutlined,
-  TeamOutlined
 } from '@ant-design/icons';
 import { stationService } from '@/services/stationService';
 import type { Vehicle } from '@/types/vehicle';
@@ -189,14 +185,8 @@ const StationDetailModal: React.FC<StationDetailModalProps> = ({
 
   // Safe access to nested properties
   const coordinates = station.geo?.coordinates || [0, 0];
-  const rating = station.rating || { avg: 0, count: 0 };
   const operatingHours = station.operatingHours || {};
-  const metrics = station.metrics || {
-    vehicles_total: 0,
-    vehicles_available: 0,
-    vehicles_in_use: 0,
-    utilization_rate: 0
-  };
+  
   const amenities = station.amenities || [];
 
   // Get status color
@@ -228,11 +218,11 @@ const StationDetailModal: React.FC<StationDetailModalProps> = ({
   };
 
   // Get utilization color
-  const getUtilizationColor = (rate: number) => {
-    if (rate >= 0.8) return '#ff4d4f';
-    if (rate >= 0.6) return '#faad14';
-    return '#52c41a';
-  };
+  // const getUtilizationColor = (rate: number) => {
+  //   if (rate >= 0.8) return '#ff4d4f';
+  //   if (rate >= 0.6) return '#faad14';
+  //   return '#52c41a';
+  // };
 
   // Amenity labels
   const amenityLabels: Record<string, string> = {
@@ -332,7 +322,7 @@ const StationDetailModal: React.FC<StationDetailModalProps> = ({
             </div>
 
             {/* Rating */}
-            <div className="mb-4">
+            {/* <div className="mb-4">
               <Text strong>Đánh giá</Text>
               <div className="mt-1">
                 <Rate disabled defaultValue={rating.avg || 0} style={{ fontSize: 16 }} />
@@ -340,7 +330,7 @@ const StationDetailModal: React.FC<StationDetailModalProps> = ({
                   {(rating.avg || 0).toFixed(1)}/5 ({rating.count || 0} đánh giá)
                 </div>
               </div>
-            </div>
+            </div> */}
 
             {/* Location Map */}
             <div className="mb-4">
@@ -429,10 +419,10 @@ const StationDetailModal: React.FC<StationDetailModalProps> = ({
             <Divider />
 
             {/* Manager and Staff Information */}
-            <div className="mb-4">
+            {/* <div className="mb-4"> */}
 
                   {/* Manager */}
-                  {stationStaff.manager ? (
+                  {/* {stationStaff.manager ? (
                     <div className="mb-3">
                       <Text strong>
                         <UserOutlined /> Quản lý trạm:
@@ -456,10 +446,10 @@ const StationDetailModal: React.FC<StationDetailModalProps> = ({
                       </Text>
                       <div className="mt-1 text-gray-500">Chưa có quản lý được chỉ định</div>
                     </div>
-                  )}
+                  )} */}
 
                   {/* Staff */}
-                  <div>
+                  {/* <div>
                     <Text strong>
                       <TeamOutlined /> Nhân viên ({stationStaff.staff.length}):
                     </Text>
@@ -482,21 +472,21 @@ const StationDetailModal: React.FC<StationDetailModalProps> = ({
                     ) : (
                       <div className="mt-1 text-gray-500">Chưa có nhân viên nào được chỉ định</div>
                     )}
-                  </div>
-                </div>
+                  </div> */}
+                {/* </div> */}
             
 
             <Divider />
 
             {/* Utilization Rate */}
-            <div className="mb-4">
+            {/* <div className="mb-4">
               <Text strong>Tỷ lệ sử dụng</Text>
               <Progress
                 percent={Math.round((metrics.utilization_rate || 0) * 100)}
                 strokeColor={getUtilizationColor(metrics.utilization_rate || 0)}
                 className="mt-2"
               />
-            </div>
+            </div> */}
 
             <Divider />
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   WrenchScrewdriverIcon,
   ClockIcon,
@@ -11,207 +11,143 @@ import {
   XCircleIcon as XCircleSolidIcon,
   ExclamationTriangleIcon as ExclamationTriangleSolidIcon
 } from '@heroicons/react/24/solid';
-import { MaintenanceScheduleModal } from '../../../../components/dashboard/staff/manage_vehicles/MaintenanceScheduleModal';
-import { MaintenanceHistoryModal } from '../../../../components/dashboard/staff/manage_vehicles/MaintenanceHistoryModal';
-import { VehicleDetailsModal } from '../../../../components/dashboard/staff/manage_vehicles/VehicleDetailsModal';
-import { AddIncidentModal } from '../../../../components/dashboard/staff/manage_vehicles/AddIncidentModal';
-import { createIssue } from '@/services/issueService';
-import { toast } from 'sonner';
+import { message, Spin, Input, Select, Modal } from 'antd';
+import { vehicleService } from '../../../../services/vehicleService';
+import type { Vehicle } from '../../../../types/vehicle';
 
-interface MaintenanceRecord {
-  id: string;
-  date: string;
-  type: 'routine' | 'repair' | 'inspection';
-  description: string;
-  technician: string;
-  status: 'completed' | 'in-progress' | 'scheduled';
-  cost?: number;
-}
+const { Option } = Select;
 
-interface Vehicle {
-  id: string;
-  model: string;
-  licensePlate: string;
+// Map Vehicle type to technical status
+interface TechnicalVehicle extends Vehicle {
   technicalStatus: 'excellent' | 'good' | 'warning' | 'maintenance' | 'out-of-service';
-  lastInspection: string;
-  nextMaintenance: string;
-  mileage: number;
-  position: string; // Vị trí trong trạm
-  maintenanceRecords: MaintenanceRecord[];
-  issues: string[];
+  status: string; // Backend status like 'AVAILABLE', 'RENTED', etc.
 }
-
-const mockVehicles: Vehicle[] = [
-  {
-    id: 'EV001',
-    model: 'Tesla Model 3',
-    licensePlate: '30A-12345',
-    technicalStatus: 'excellent',
-    lastInspection: '2024-10-10',
-    nextMaintenance: '2024-11-15',
-    mileage: 25400,
-    position: 'Vị trí 1',
-    issues: [],
-    maintenanceRecords: [
-      {
-        id: 'M001',
-        date: '2024-10-10',
-        type: 'inspection',
-        description: 'Kiểm tra định kỳ 6 tháng',
-        technician: 'Nguyễn Văn A',
-        status: 'completed'
-      },
-      {
-        id: 'M002',
-        date: '2024-09-15',
-        type: 'routine',
-        description: 'Thay lốp xe sau trái',
-        technician: 'Trần Văn B',
-        status: 'completed',
-        cost: 1500000
-      }
-    ]
-  },
-  {
-    id: 'EV002',
-    model: 'VinFast VF8',
-    licensePlate: '30B-67890',
-    technicalStatus: 'good',
-    lastInspection: '2024-09-25',
-    nextMaintenance: '2024-10-20',
-    mileage: 18200,
-    position: 'Vị trí 3',
-    issues: ['Tiếng ồn nhẹ từ động cơ'],
-    maintenanceRecords: [
-      {
-        id: 'M003',
-        date: '2024-10-20',
-        type: 'routine',
-        description: 'Bảo dưỡng định kỳ',
-        technician: 'Lê Thị C',
-        status: 'scheduled'
-      }
-    ]
-  },
-  {
-    id: 'EV003',
-    model: 'BYD Seal',
-    licensePlate: '30C-11111',
-    technicalStatus: 'warning',
-    lastInspection: '2024-08-15',
-    nextMaintenance: '2024-10-16',
-    mileage: 31500,
-    position: 'Vị trí 7',
-    issues: ['Phanh có tiếng kêu', 'Đèn báo lỗi ABS'],
-    maintenanceRecords: [
-      {
-        id: 'M004',
-        date: '2024-10-16',
-        type: 'repair',
-        description: 'Sửa chữa hệ thống phanh ABS',
-        technician: 'Phạm Văn D',
-        status: 'in-progress'
-      }
-    ]
-  },
-  {
-    id: 'EV004',
-    model: 'Hyundai Kona',
-    licensePlate: '30D-22222',
-    technicalStatus: 'maintenance',
-    lastInspection: '2024-10-05',
-    nextMaintenance: '2024-10-15',
-    mileage: 42300,
-    position: 'Xưởng bảo trì',
-    issues: ['Hư hỏng hệ thống sạc', 'Cần thay pin phụ'],
-    maintenanceRecords: [
-      {
-        id: 'M005',
-        date: '2024-10-15',
-        type: 'repair',
-        description: 'Thay thế hệ thống sạc và pin phụ',
-        technician: 'Nguyễn Thị E',
-        status: 'in-progress',
-        cost: 8500000
-      }
-    ]
-  }
-];
 
 export const TechnicalStatus: React.FC = () => {
+  const [vehicles, setVehicles] = useState<TechnicalVehicle[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
-  const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
   
-  // Modal states
-  const [showReportModal, setShowReportModal] = useState(false);
-  const [showMaintenanceModal, setShowMaintenanceModal] = useState(false);
-  const [showHistoryModal, setShowHistoryModal] = useState(false);
-  const [showDetailsModal, setShowDetailsModal] = useState(false);
-  const [modalVehicle, setModalVehicle] = useState<Vehicle | null>(null);
-  
-  // Form states
-  const [maintenanceType, setMaintenanceType] = useState('preventive');
-  const [maintenanceDescription, setMaintenanceDescription] = useState('');
+  // Status update modal state
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [selectedVehicle, setSelectedVehicle] = useState<TechnicalVehicle | null>(null);
+  const [selectedStatus, setSelectedStatus] = useState<string>('');
+  const [updateReason, setUpdateReason] = useState<string>('');
+  const [updating, setUpdating] = useState(false);
 
-  // Modal handlers
-  const handleReportIssue = (vehicle: Vehicle) => {
-    setModalVehicle(vehicle);
-    setShowReportModal(true);
+  // Map Vehicle to TechnicalVehicle
+  const mapVehicleToTechnicalVehicle = (vehicle: Vehicle): TechnicalVehicle => {
+    let technicalStatus: 'excellent' | 'good' | 'warning' | 'maintenance' | 'out-of-service';
+    
+    // Map based on vehicle availability and condition
+    if (vehicle.availability === 'maintenance') {
+      technicalStatus = 'maintenance';
+    } else if (vehicle.condition === 'excellent') {
+      technicalStatus = 'excellent';
+    } else if (vehicle.condition === 'good') {
+      technicalStatus = 'good';
+    } else if (vehicle.condition === 'fair') {
+      technicalStatus = 'warning';
+    } else {
+      technicalStatus = 'out-of-service';
+    }
+
+    return {
+      ...vehicle,
+      technicalStatus,
+      status: (vehicle as Vehicle & { status?: string }).status || 'AVAILABLE' // Backend status
+    };
   };
 
-  const handleScheduleMaintenance = (vehicle: Vehicle) => {
-    setModalVehicle(vehicle);
-    setShowMaintenanceModal(true);
-  };
-
-  const handleViewHistory = (vehicle: Vehicle) => {
-    setModalVehicle(vehicle);
-    setShowHistoryModal(true);
-  };
-
-  const handleSubmitIssue = async (incident: any) => {
+  // Load vehicles data
+  const loadVehicles = useCallback(async () => {
     try {
-      await createIssue({
-        vehicle_id: incident.vehicleId,
-        title: incident.title,
-        description: incident.description,
-        photos: incident.images || []
+      setLoading(true);
+      console.log('🔄 Loading all vehicles for technical status...');
+      
+      const { vehicles: allVehicles } = await vehicleService.getAllVehicles({ 
+        limit: 1000 // Get all vehicles
       });
-      toast.success('Đã báo cáo sự cố thành công!');
-      setShowReportModal(false);
-      setModalVehicle(null);
-    } catch (error: any) {
-      console.error('Error reporting issue:', error);
-      toast.error('Không thể báo cáo sự cố');
+      
+      console.log('✅ Loaded vehicles:', allVehicles);
+      
+      const mappedVehicles = allVehicles.map(mapVehicleToTechnicalVehicle);
+      setVehicles(mappedVehicles);
+      
+    } catch (error) {
+      console.error('❌ Error loading vehicles:', error);
+      message.error('Không thể tải danh sách xe. Vui lòng thử lại.');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Load data on component mount
+  useEffect(() => {
+    loadVehicles();
+  }, [loadVehicles]);
+
+  // Handle update vehicle status - show modal
+  const handleUpdateStatus = (vehicle: TechnicalVehicle) => {
+    // Check if vehicle is rented
+    if (vehicle.availability === 'rented') {
+      message.warning('Không thể cập nhật trạng thái xe đang được thuê!');
+      return;
+    }
+    
+    setSelectedVehicle(vehicle);
+    setSelectedStatus(vehicle.status || 'AVAILABLE');
+    setUpdateReason('');
+    setIsModalVisible(true);
+  };
+
+  // Handle status update confirmation
+  const handleStatusUpdate = async () => {
+    if (!selectedVehicle || !selectedStatus) return;
+    
+    // Check if status is the same
+    if (selectedStatus === selectedVehicle.status) {
+      message.warning('Vui lòng chọn trạng thái khác với trạng thái hiện tại!');
+      return;
+    }
+    
+    try {
+      setUpdating(true);
+      
+      await vehicleService.updateVehicleStatus(
+        selectedVehicle.id,
+        selectedStatus,
+        updateReason || undefined
+      );
+      
+      message.success(`Đã cập nhật trạng thái xe ${selectedVehicle.name} thành công!`);
+      
+      // Refresh vehicles list
+      await loadVehicles();
+      
+      // Close modal
+      setIsModalVisible(false);
+      setSelectedVehicle(null);
+      setUpdateReason('');
+      
+    } catch (error) {
+      console.error('Error updating vehicle status:', error);
+      const errorMessage = error && typeof error === 'object' && 'response' in error && error.response && typeof error.response === 'object' && 'data' in error.response && error.response.data && typeof error.response.data === 'object' && 'message' in error.response.data
+        ? (error.response.data.message as string)
+        : 'Không thể cập nhật trạng thái xe. Vui lòng thử lại.';
+      message.error(errorMessage);
+    } finally {
+      setUpdating(false);
     }
   };
 
-  const handleSubmitMaintenance = () => {
-    if (!modalVehicle || !maintenanceDescription.trim()) return;
-    
-    // Simulate API call
-    console.log('Lên lịch bảo trì:', {
-      vehicleId: modalVehicle.id,
-      type: maintenanceType,
-      description: maintenanceDescription,
-      scheduledDate: new Date()
-    });
-    
-    setShowMaintenanceModal(false);
-    setMaintenanceType('preventive');
-    setMaintenanceDescription('');
-    setModalVehicle(null);
-  };
-
-  const closeModals = () => {
-    setShowReportModal(false);
-    setShowMaintenanceModal(false);
-    setShowHistoryModal(false);
-    setShowDetailsModal(false);
-    setModalVehicle(null);
-    setMaintenanceType('preventive');
-    setMaintenanceDescription('');
+  // Handle modal close
+  const handleModalClose = () => {
+    setIsModalVisible(false);
+    setSelectedVehicle(null);
+    setUpdateReason('');
+    setSelectedStatus('');
   };
 
   const getStatusIcon = (status: string) => {
@@ -236,10 +172,10 @@ export const TechnicalStatus: React.FC = () => {
     }
   };
 
-  const filteredVehicles = mockVehicles.filter(vehicle => {
-    const matchesSearch = vehicle.model.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         vehicle.licensePlate.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         vehicle.position.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredVehicles = vehicles.filter(vehicle => {
+    const matchesSearch = vehicle.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         vehicle.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         vehicle.brand.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesFilter = filterStatus === 'all' || vehicle.technicalStatus === filterStatus;
     
@@ -263,30 +199,29 @@ export const TechnicalStatus: React.FC = () => {
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
         <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
           {/* Search */}
-          <div className="relative flex-1 max-w-md">
-            <MagnifyingGlassIcon className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Tìm kiếm xe, biển số, vị trí..."
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          <div className="flex-1 max-w-md">
+            <Input
+              placeholder="Tìm kiếm xe, model, thương hiệu..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+              prefix={<MagnifyingGlassIcon className="w-5 h-5 text-gray-400" />}
+              allowClear
             />
           </div>
 
           {/* Filter */}
-          <select
+          <Select
             value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            onChange={setFilterStatus}
+            className="w-48"
           >
-            <option value="all">Tất cả</option>
-            <option value="excellent">Xuất sắc</option>
-            <option value="good">Tốt</option>
-            <option value="warning">Cảnh báo</option>
-            <option value="maintenance">Đang bảo trì</option>
-            <option value="out-of-service">Ngừng hoạt động</option>
-          </select>
+            <Option value="all">Tất cả</Option>
+            <Option value="excellent">Xuất sắc</Option>
+            <Option value="good">Tốt</Option>
+            <Option value="warning">Cảnh báo</Option>
+            <Option value="maintenance">Đang bảo trì</Option>
+            <Option value="out-of-service">Ngừng hoạt động</Option>
+          </Select>
         </div>
       </div>
 
@@ -298,7 +233,7 @@ export const TechnicalStatus: React.FC = () => {
               <div>
                 <p className="text-sm font-medium text-gray-600">{getStatusText(status)}</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {mockVehicles.filter(v => v.technicalStatus === status).length}
+                  {vehicles.filter(v => v.technicalStatus === status).length}
                 </p>
               </div>
               {getStatusIcon(status)}
@@ -323,10 +258,10 @@ export const TechnicalStatus: React.FC = () => {
                   Hình ảnh
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  ID xe / Biển số
+                  ID xe / Model
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Loại xe / Model
+                  Tên xe / Loại
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Tình trạng kỹ thuật
@@ -343,104 +278,86 @@ export const TechnicalStatus: React.FC = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-y-gray-200">
-              {filteredVehicles.map((vehicle) => (
-                <tr 
-                  key={vehicle.id} 
-                  className="hover:bg-gray-50 cursor-pointer transition-colors"
-                  onClick={() => {
-                    setSelectedVehicle(vehicle);
-                    setShowDetailsModal(true);
-                  }}
-                >
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <img 
-                      src="https://via.placeholder.com/80x60?text=Vehicle" 
-                      alt="vehicle" 
-                      className="w-16 h-12 object-cover rounded"
-                    />
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div>
-                      <div className="text-sm font-medium text-gray-900">ID: {vehicle.id}</div>
-                      <div className="text-sm text-gray-500">Biển số: {vehicle.licensePlate}</div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div>
-                      <div className="text-sm font-medium text-gray-900">Loại: Car</div>
-                      <div className="text-sm text-gray-500">Model: {vehicle.model}</div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      {getStatusIcon(vehicle.technicalStatus)}
-                      <span className="ml-2 text-sm font-medium text-gray-900">
-                        {getStatusText(vehicle.technicalStatus)}
-                      </span>
-                    </div>
-                    {vehicle.issues.length > 0 && (
-                      <div className="mt-1">
-                        <span className="text-xs text-red-600">
-                          {vehicle.issues.length} vấn đề
-                        </span>
-                      </div>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{vehicle.position}</div>
-                    <div className="text-xs text-gray-500">{vehicle.mileage.toLocaleString()} km</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                      vehicle.technicalStatus === 'excellent' ? 'bg-green-100 text-green-800' :
-                      vehicle.technicalStatus === 'good' ? 'bg-blue-100 text-blue-800' :
-                      vehicle.technicalStatus === 'warning' ? 'bg-yellow-100 text-yellow-800' :
-                      vehicle.technicalStatus === 'maintenance' ? 'bg-orange-100 text-orange-800' :
-                      'bg-red-100 text-red-800'
-                    }`}>
-                      {vehicle.technicalStatus === 'excellent' ? 'Có sẵn' :
-                       vehicle.technicalStatus === 'good' ? 'Có sẵn' :
-                       vehicle.technicalStatus === 'warning' ? 'Cần kiểm tra' :
-                       vehicle.technicalStatus === 'maintenance' ? 'Bảo trì' : 'Không sẵn sàng'}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    <div className="flex space-x-2">
-                      <button 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleReportIssue(vehicle);
-                        }}
-                        className="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded text-xs font-medium transition-colors"
-                      >
-                        Báo sự cố
-                      </button>
-                      <button 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleScheduleMaintenance(vehicle);
-                        }}
-                        className="bg-orange-600 hover:bg-orange-700 text-white px-3 py-1.5 rounded text-xs font-medium transition-colors"
-                      >
-                        Bảo trì
-                      </button>
-                      <button 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleViewHistory(vehicle);
-                        }}
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded text-xs font-medium transition-colors"
-                      >
-                        Lịch sử
-                      </button>
-                    </div>
+              {loading ? (
+                <tr>
+                  <td colSpan={7} className="px-6 py-12 text-center">
+                    <Spin size="large" />
+                    <div className="mt-3 text-gray-500">Đang tải danh sách xe...</div>
                   </td>
                 </tr>
-              ))}
+              ) : (
+                filteredVehicles.map((vehicle) => (
+                  <tr key={vehicle.id} className="hover:bg-gray-50 cursor-pointer transition-colors">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <img 
+                        src={vehicle.image || "https://via.placeholder.com/80x60?text=Vehicle"} 
+                        alt="vehicle" 
+                        className="w-16 h-12 object-cover rounded"
+                      />
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">ID: {vehicle.id}</div>
+                        <div className="text-sm text-gray-500">Model: {vehicle.model}</div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">Tên xe: {vehicle.name}</div>
+                        <div className="text-sm text-gray-500">Loại: {vehicle.type}</div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        {getStatusIcon(vehicle.technicalStatus)}
+                        <span className="ml-2 text-sm font-medium text-gray-900">
+                          {getStatusText(vehicle.technicalStatus)}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">{vehicle.location || 'Chưa xác định'}</div>
+                      <div className="text-xs text-gray-500">Pin: {vehicle.batteryLevel}%</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                        vehicle.availability === 'available' ? 'bg-green-100 text-green-800' :
+                        vehicle.availability === 'rented' ? 'bg-blue-100 text-blue-800' :
+                        vehicle.availability === 'maintenance' ? 'bg-orange-100 text-orange-800' :
+                        'bg-red-100 text-red-800'
+                      }`}>
+                        {vehicle.availability === 'available' ? 'Có sẵn' :
+                         vehicle.availability === 'rented' ? 'Đang thuê' :
+                         vehicle.availability === 'maintenance' ? 'Bảo trì' : 'Không sẵn sàng'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      <div className="flex space-x-2">
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleUpdateStatus(vehicle);
+                          }}
+                          disabled={vehicle.availability === 'rented'}
+                          className={`px-3 py-1.5 rounded text-xs font-medium transition-colors ${
+                            vehicle.availability === 'rented' 
+                              ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
+                              : 'bg-blue-600 hover:bg-blue-700 text-white'
+                          }`}
+                          title={vehicle.availability === 'rented' ? 'Xe đang thuê - không thể cập nhật' : 'Cập nhật trạng thái xe'}
+                        >
+                          Cập nhật
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
           
-          {filteredVehicles.length === 0 && (
+          {/* Empty state */}
+          {filteredVehicles.length === 0 && !loading && (
             <div className="text-center py-8">
               <WrenchScrewdriverIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
               <p className="text-gray-600">Không tìm thấy xe nào phù hợp với bộ lọc.</p>
@@ -449,47 +366,99 @@ export const TechnicalStatus: React.FC = () => {
         </div>
       </div>
 
-      {/* Vehicle Details Modal */}
-      <VehicleDetailsModal
-        vehicle={selectedVehicle}
-        isOpen={showDetailsModal}
-        onClose={() => {
-          setShowDetailsModal(false);
-          setSelectedVehicle(null);
-        }}
-      />
+      {/* Status Update Modal */}
+      <Modal
+        title="Cập nhật trạng thái xe"
+        open={isModalVisible}
+        onOk={handleStatusUpdate}
+        onCancel={handleModalClose}
+        confirmLoading={updating}
+        okText="Cập nhật"
+        cancelText="Hủy"
+        width={500}
+      >
+        {selectedVehicle && (
+          <div className="space-y-4">
+            {/* Vehicle Info */}
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <div className="flex items-center space-x-3">
+                <img 
+                  src={selectedVehicle.image || "https://via.placeholder.com/60x40?text=Vehicle"} 
+                  alt="vehicle" 
+                  className="w-12 h-8 object-cover rounded"
+                />
+                <div>
+                  <div className="font-medium text-gray-900">{selectedVehicle.name}</div>
+                  <div className="text-sm text-gray-500">ID: {selectedVehicle.id}</div>
+                </div>
+              </div>
+            </div>
 
-      {/* Add Incident Modal */}
-      <AddIncidentModal
-        isOpen={showReportModal}
-        onClose={closeModals}
-        onSubmit={handleSubmitIssue}
-        initialVehicle={modalVehicle ? {
-          id: modalVehicle.id,
-          model: modalVehicle.model,
-          licensePlate: modalVehicle.licensePlate
-        } : null}
-      />
+            {/* Current Status */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Trạng thái hiện tại
+              </label>
+              <div className={`inline-flex px-3 py-1 text-sm font-medium rounded-full ${
+                selectedVehicle.availability === 'available' ? 'bg-green-100 text-green-800' :
+                selectedVehicle.availability === 'rented' ? 'bg-blue-100 text-blue-800' :
+                selectedVehicle.availability === 'maintenance' ? 'bg-orange-100 text-orange-800' :
+                'bg-red-100 text-red-800'
+              }`}>
+                {selectedVehicle.availability === 'available' ? 'Có sẵn' :
+                 selectedVehicle.availability === 'rented' ? 'Đang thuê' :
+                 selectedVehicle.availability === 'maintenance' ? 'Bảo trì' : 'Không sẵn sàng'}
+              </div>
+            </div>
 
-      {/* Maintenance Schedule Modal */}
-      <MaintenanceScheduleModal
-        isOpen={showMaintenanceModal}
-        vehicle={modalVehicle}
-        maintenanceType={maintenanceType}
-        setMaintenanceType={setMaintenanceType}
-        maintenanceDescription={maintenanceDescription}
-        setMaintenanceDescription={setMaintenanceDescription}
-        onSubmit={handleSubmitMaintenance}
-        onClose={closeModals}
-      />
+            {/* New Status Selection */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Trạng thái mới <span className="text-red-500">*</span>
+              </label>
+              <Select
+                value={selectedStatus}
+                onChange={setSelectedStatus}
+                className="w-full"
+                placeholder="Chọn trạng thái mới"
+              >
+                <Option value="AVAILABLE">Có sẵn</Option>
+                <Option value="RESERVED">Đã đặt</Option>
+                <Option value="RENTED">Đang thuê</Option>
+                <Option value="MAINTENANCE">Bảo trì</Option>
+              </Select>
+            </div>
 
-      {/* Maintenance History Modal */}
-      <MaintenanceHistoryModal
-        isOpen={showHistoryModal}
-        vehicle={modalVehicle}
-        onClose={closeModals}
-      />
+            {/* Reason (Optional) */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Lý do thay đổi (tùy chọn)
+              </label>
+              <Input.TextArea
+                value={updateReason}
+                onChange={(e) => setUpdateReason(e.target.value)}
+                placeholder="Nhập lý do thay đổi trạng thái..."
+                rows={3}
+                maxLength={500}
+                showCount
+              />
+            </div>
 
+            {/* Business Rules Warning */}
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+              <div className="text-sm text-yellow-800">
+                <strong>Lưu ý:</strong>
+                <ul className="mt-1 ml-4 list-disc">
+                  <li>Xe "Có sẵn" có thể chuyển thành "Đã đặt" hoặc "Bảo trì"</li>
+                  <li>Xe "Đã đặt" có thể chuyển thành "Có sẵn" hoặc "Đang thuê"</li>
+                  <li>Xe "Đang thuê" có thể chuyển thành "Có sẵn" hoặc "Bảo trì"</li>
+                  <li>Xe "Bảo trì" có thể chuyển thành "Có sẵn"</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 };

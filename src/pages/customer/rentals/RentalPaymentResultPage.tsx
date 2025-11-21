@@ -229,7 +229,7 @@ const RentalPaymentResultPage: React.FC = () => {
                 )}
                 <br />
                 <br />
-                Bạn sẽ nhận được email xác nhận qua địa chỉ đã đăng ký.
+               Bạn sẽ nhận được email xác nhận qua địa chỉ đã đăng ký.
               </Paragraph>
             )}
 
@@ -238,8 +238,6 @@ const RentalPaymentResultPage: React.FC = () => {
                 <Title level={5} className="text-green-800">Bước tiếp theo:</Title>
                 <div className="text-left text-green-700">
                   <p>1. Kiểm tra email xác nhận hoàn tất thuê xe</p>
-                  <p>2. Trả xe tại trạm đã chỉ định</p>
-                  <p>3. Hoàn tất kiểm tra xe với nhân viên</p>
                   <p>4. Nhận hóa đơn chi tiết</p>
                 </div>
               </div>

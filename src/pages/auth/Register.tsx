@@ -316,7 +316,7 @@ const Register = ({ onRegister: _onRegister }: RegisterProps) => {
                   }
                 />
                 <label htmlFor="terms" className="text-sm leading-relaxed">
-                 Tôi {" "}
+                 Tôi đồng ý với{" "}
                   <Link
                     to="/policy"
                     className="text-primary hover:text-primary-dark"

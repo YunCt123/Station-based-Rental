@@ -55,6 +55,7 @@ interface VehicleReturnFormProps {
       daily_rate?: number;
       currency: string;
       deposit?: number;
+      insurance_price?: number;
     };
     createdAt: string;
     updatedAt: string;
@@ -519,6 +520,14 @@ const VehicleReturnForm: React.FC<VehicleReturnFormProps> = ({
                     {rental.pickup.soc && (
                       <div>Pin khi giao: {Math.round(rental.pickup.soc * 100)}%</div>
                     )}
+                    {rental.pickup.odo_km && (
+                        <div>
+                          
+                          <Tag color={(rental.pricing_snapshot.insurance_price ?? 0) > 0 ? 'green' : 'red'}>
+                          {(rental.pricing_snapshot.insurance_price ?? 0) > 0 ? 'Có Bảo Hiểm' : 'Không có bảo hiểm'}
+                          </Tag>
+                        </div>
+                    )}
                   </div>
                   <div>
                     <Text strong>Thời hạn trả xe:</Text>
@@ -526,7 +535,9 @@ const VehicleReturnForm: React.FC<VehicleReturnFormProps> = ({
                       {expectedReturnDate.toLocaleDateString('vi-VN')} {expectedReturnDate.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
                     </div>
                     <div className={`text-sm ${isOverdue ? "text-red-500 font-medium" : "text-orange-500"}`}>
-                      {isOverdue ? `Quá hạn ${timeDisplay}` : `Còn ${timeDisplay}`}
+                      {isOverdue 
+                      ? `Quá hạn ${daysDiff > 0 ? `${daysDiff} ngày ` : ""}${hoursDiff % 24} giờ` 
+                      : `Còn ${daysDiff > 0 ? `${daysDiff} ngày ` : ""}${hoursDiff % 24} giờ`}
                     </div>
                     {isOverdue && (
                       <div className="text-xs text-red-400 mt-1">
@@ -600,7 +611,7 @@ const VehicleReturnForm: React.FC<VehicleReturnFormProps> = ({
           <Form.Item
             label="Số km cuối cùng"
             name="odo_km"
-            tooltip="Ghi nhận số km trên đồng hồ xe khi trả"
+            tooltip="Ghi nhận số km trên đồng hồ xe khi trả (Trên 50.000 km chuyển về trạng thái bảo trì)"
             rules={[{ required: true, message: 'Vui lòng nhập số km cuối cùng' }]}
           >
             <InputNumber
@@ -615,7 +626,7 @@ const VehicleReturnForm: React.FC<VehicleReturnFormProps> = ({
           <Form.Item
             label="Mức pin cuối cùng"
             name="soc"
-            tooltip="Mức pin hiện tại của xe khi trả (0-100%)"
+            tooltip="Mức pin hiện tại của xe khi trả (Dưới 20% chuyển về trạng thái bảo trì)"
             rules={[{ required: true, message: 'Vui lòng nhập mức pin cuối cùng' }]}
           >
             <InputNumber
@@ -629,10 +640,10 @@ const VehicleReturnForm: React.FC<VehicleReturnFormProps> = ({
         </div>
 
         {/* Extra Fees Section */}
-        <Form.Item label="Phí phát sinh">
+        <Form.Item label="Phí phát sinh (Giảm 30% tiền sửa chữa thiệt hại nếu có bảo hiểm xe)">
           <Card size="small" className="mb-4">
             <div className="flex justify-between items-center mb-3">
-              <Text strong>Danh sách phí phát sinh</Text>
+              <Text strong>Danh sách phí phát sinh (Nếu có)</Text>
               <Button 
                 type="dashed" 
                 icon={<PlusOutlined />} 

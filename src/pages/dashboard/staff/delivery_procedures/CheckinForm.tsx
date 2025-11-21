@@ -504,7 +504,7 @@ const CheckinForm: React.FC<CheckinFormProps> = ({
             <InputNumber
               placeholder={`VD: ${rental.vehicle_id.odo_km}`}
               style={{ width: '100%' }}
-              min={0}
+              min={rental.vehicle_id.odo_km}
               max={999999}
               addonAfter="km"
             />
@@ -518,7 +518,7 @@ const CheckinForm: React.FC<CheckinFormProps> = ({
             <InputNumber
               placeholder="VD: 85"
               style={{ width: '100%' }}
-              min={0}
+              min={rental.vehicle_id.batteryLevel}
               max={100}
               addonAfter="%"
             />

@@ -190,17 +190,17 @@ const HowItWorks: React.FC = () => {
               <Col xs={24} sm={12} md={6} className="text-center">
                 <SolutionOutlined style={{ fontSize: 44, color: "#1677ff", marginBottom: 14 }} />
                 <Title level={4}>Giấy phép lái xe</Title>
-                <Text type="secondary">Ít nhất 1 năm kinh nghiệm lái xe.</Text>
+                <Text type="secondary">Sở hữu giấy phép lái xe hợp lệ.</Text>
               </Col>
               <Col xs={24} sm={12} md={6} className="text-center">
                 <UserOutlined style={{ fontSize: 44, color: "#1677ff", marginBottom: 14 }} />
                 <Title level={4}>Độ tuổi</Title>
-                <Text type="secondary">Từ 21 tuổi trở lên tại thời điểm thuê xe.</Text>
+                <Text type="secondary">Từ 18 tuổi trở lên tại thời điểm thuê xe.</Text>
               </Col>
               <Col xs={24} sm={12} md={6} className="text-center">
                 <CreditCardOutlined style={{ fontSize: 44, color: "#1677ff", marginBottom: 14 }} />
                 <Title level={4}>Thanh toán</Title>
-                <Text type="secondary">Thẻ tín dụng/ghi nợ, chuyển khoản ngân hàng hoặc ví điện tử.</Text>
+                <Text type="secondary">Tiền mặt, chuyển khoản ngân hàng.</Text>
               </Col>
             </Row>
           </Card>
@@ -219,9 +219,7 @@ const HowItWorks: React.FC = () => {
                   <ul className="list-disc ml-5 text-gray-600">
                     <li>Đa dạng xe điện: xe đô thị, crossover, sedan đường dài.</li>
                     <li>Giá cả minh bạch, bao gồm tất cả — không phí ẩn.</li>
-                    <li>Sạc miễn phí tại các trạm đối tác (theo gói chọn).</li>
-                    <li>Xác nhận đặt xe tức thì & thay đổi linh hoạt.</li>
-                    <li>Hỗ trợ khách hàng 24/7 & cứu hộ trên đường.</li>
+                    <li>Xác nhận đặt xe tức thì.</li>
                   </ul>
                 </Space>
               </Card>

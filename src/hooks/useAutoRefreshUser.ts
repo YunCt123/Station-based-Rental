@@ -1,5 +1,5 @@
 import { useEffect, useCallback } from 'react';
-import { message } from 'antd';
+// import { message } from 'antd';
 import { userService } from '../services/userService';
 import { getCurrentUser, type User } from '../utils/auth';
 
@@ -57,9 +57,9 @@ export const useAutoRefreshUser = (onUserUpdate?: (user: User) => void) => {
           handleUserUpdate(mappedUser);
           
           // Show success message only if status changed to APPROVED
-          if (currentUser.verificationStatus !== 'APPROVED' && freshUserData.verificationStatus === 'APPROVED') {
-            message.success('🎉 Your account has been verified! You can now make bookings.');
-          }
+          // if (currentUser.verificationStatus !== 'APPROVED' && freshUserData.verificationStatus === 'APPROVED') {
+          //   message.success('🎉 Your account has been verified! You can now make bookings.');
+          // }
           
           return mappedUser;
         } catch (error) {

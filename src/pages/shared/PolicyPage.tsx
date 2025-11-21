@@ -232,17 +232,15 @@ const PolicyPage = () => {
                   <div className="bg-blue-50 p-4 rounded-lg">
                     <h4 className="font-medium mb-2">Thời Gian Thuê</h4>
                     <ul className="text-sm text-gray-700 space-y-1">
-                      <li>• Tối thiểu: 1 giờ</li>
+                      <li>• Tối thiểu: 2 giờ</li>
                       <li>• Tối đa: 30 ngày</li>
-                      <li>• Có thể gia hạn trong quá trình sử dụng</li>
                     </ul>
                   </div>
                   <div className="bg-green-50 p-4 rounded-lg">
                     <h4 className="font-medium mb-2">Đặt Xe Trước</h4>
                     <ul className="text-sm text-gray-700 space-y-1">
                       <li>• Đặt trước tối thiểu 30 phút</li>
-                      <li>• Đặt trước tối đa 7 ngày</li>
-                      <li>• Miễn phí hủy trong 24h</li>
+                      <li>• Đặt trước tối đa 1 ngày</li>
                     </ul>
                   </div>
                 </div>
@@ -297,13 +295,8 @@ const PolicyPage = () => {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="bg-blue-50 p-4 rounded-lg text-center">
                     <CreditCard className="h-8 w-8 mx-auto mb-2 text-blue-600" />
-                    <h4 className="font-medium">Thẻ Tín Dụng/Ghi Nợ</h4>
+                    <h4 className="font-medium">Tiền mặt</h4>
                     <p className="text-sm text-gray-600">Visa, Mastercard, JCB</p>
-                  </div>
-                  <div className="bg-green-50 p-4 rounded-lg text-center">
-                    <Phone className="h-8 w-8 mx-auto mb-2 text-green-600" />
-                    <h4 className="font-medium">Ví Điện Tử</h4>
-                    <p className="text-sm text-gray-600">MoMo, ZaloPay, VNPay</p>
                   </div>
                   <div className="bg-purple-50 p-4 rounded-lg text-center">
                     <FileText className="h-8 w-8 mx-auto mb-2 text-purple-600" />
@@ -335,17 +328,17 @@ const PolicyPage = () => {
                       <tr className="bg-gray-50">
                         <td className="border border-gray-300 p-3 font-medium">Phí Bảo Hiểm</td>
                         <td className="border border-gray-300 p-3">Bảo hiểm trong quá trình thuê</td>
-                        <td className="border border-gray-300 p-3 text-blue-600 font-medium">5% giá thuê</td>
+                        <td className="border border-gray-300 p-3 text-blue-600 font-medium">10% giá thuê</td>
                       </tr>
                       <tr>
                         <td className="border border-gray-300 p-3 font-medium">Tiền Cọc</td>
                         <td className="border border-gray-300 p-3">Đặt cọc bảo đảm</td>
-                        <td className="border border-gray-300 p-3 text-orange-600 font-medium">2.000.000đ - 5.000.000đ</td>
+                        <td className="border border-gray-300 p-3 text-orange-600 font-medium">20% giá trị thuê đã bao gồm thuế</td>
                       </tr>
                       <tr className="bg-gray-50">
                         <td className="border border-gray-300 p-3 font-medium">Phí Trễ Hạn</td>
                         <td className="border border-gray-300 p-3">Phạt khi trả xe muộn</td>
-                        <td className="border border-gray-300 p-3 text-red-600 font-medium">100.000đ/giờ</td>
+                        <td className="border border-gray-300 p-3 text-red-600 font-medium">50.000đ/giờ và 500.000đ/ngày</td>
                       </tr>
                     </tbody>
                   </table>
@@ -354,33 +347,39 @@ const PolicyPage = () => {
 
               <Separator />
 
-              <div>
+                <div>
                 <h3 className="text-lg font-semibold mb-3">Chính Sách Hoàn Tiền</h3>
+                <div className="bg-yellow-50 p-4 rounded-lg border-l-4 border-yellow-400 mb-6">
+                  <p className="text-sm text-yellow-700">
+                  Lưu ý: Chính sách hoàn tiền hiện chưa chính thức áp dụng. 
+                  Quý khách chưa thể hủy xe sau khi đã đặt. Vui lòng kiểm tra lại sau khi có thông báo mới.
+                  </p>
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="bg-green-50 p-4 rounded-lg">
-                    <h4 className="font-medium text-green-700 mb-2 flex items-center">
-                      <CheckCircle className="h-4 w-4 mr-2" />
-                      Được Hoàn Tiền 100%
-                    </h4>
-                    <ul className="text-sm text-gray-700 space-y-1">
-                      <li>• Hủy trước 24h</li>
-                      <li>• Lỗi từ phía hệ thống</li>
-                      <li>• Xe bị hư hỏng không thể sử dụng</li>
-                    </ul>
+                  <div className="bg-green-50 p-4 rounded-lg opacity-50">
+                  <h4 className="font-medium text-green-700 mb-2 flex items-center">
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  Được Hoàn Tiền 100%
+                  </h4>
+                  <ul className="text-sm text-gray-700 space-y-1">
+                  <li>• Hủy trước 24h</li>
+                  <li>• Lỗi từ phía hệ thống</li>
+                  <li>• Xe bị hư hỏng không thể sử dụng</li>
+                  </ul>
                   </div>
-                  <div className="bg-red-50 p-4 rounded-lg">
-                    <h4 className="font-medium text-red-700 mb-2 flex items-center">
-                      <XCircle className="h-4 w-4 mr-2" />
-                      Không Được Hoàn Tiền
-                    </h4>
-                    <ul className="text-sm text-gray-700 space-y-1">
-                      <li>• Hủy trong vòng 24h</li>
-                      <li>• Không đến nhận xe</li>
-                      <li>• Vi phạm điều khoản sử dụng</li>
-                    </ul>
+                  <div className="bg-red-50 p-4 rounded-lg opacity-50">
+                  <h4 className="font-medium text-red-700 mb-2 flex items-center">
+                  <XCircle className="h-4 w-4 mr-2" />
+                  Không Được Hoàn Tiền
+                  </h4>
+                  <ul className="text-sm text-gray-700 space-y-1">
+                  <li>• Hủy trong vòng 24h</li>
+                  <li>• Không đến nhận xe</li>
+                  <li>• Vi phạm điều khoản sử dụng</li>
+                  </ul>
                   </div>
                 </div>
-              </div>
+                </div>
             </CardContent>
           </Card>
         </section>
@@ -510,10 +509,8 @@ const PolicyPage = () => {
                     <div className="bg-green-50 p-4 rounded-lg">
                       <h4 className="font-medium text-green-700 mb-2">Trước Khi Lái Xe</h4>
                       <ul className="text-sm text-gray-700 space-y-1">
-                        <li>• Kiểm tra mũ bảo hiểm</li>
                         <li>• Kiểm tra phanh và còi</li>
                         <li>• Kiểm tra đèn và tín hiệu</li>
-                        <li>• Điều chỉnh gương chiếu hậu</li>
                       </ul>
                     </div>
                   </div>
@@ -521,7 +518,6 @@ const PolicyPage = () => {
                     <div className="bg-blue-50 p-4 rounded-lg">
                       <h4 className="font-medium text-blue-700 mb-2">Trong Quá Trình Lái</h4>
                       <ul className="text-sm text-gray-700 space-y-1">
-                        <li>• Luôn đội mũ bảo hiểm</li>
                         <li>• Tuân thủ tốc độ quy định</li>
                         <li>• Không sử dụng điện thoại</li>
                         <li>• Giữ khoảng cách an toàn</li>

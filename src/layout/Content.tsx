@@ -193,7 +193,7 @@ const Content: React.FC = () => {
           </div>
         )}
 
-        <div className="mt-16 bg-white rounded-2xl p-8 shadow-lg">
+        {/* <div className="mt-16 bg-white rounded-2xl p-8 shadow-lg">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
             <div>
               <div className="text-3xl font-bold text-blue-600 mb-2">
@@ -214,7 +214,7 @@ const Content: React.FC = () => {
               <div className="text-gray-600">Hài Lòng Khách Hàng</div>
             </div>
           </div>
-        </div>
+        </div> */}
       </div>
     </div>
   );

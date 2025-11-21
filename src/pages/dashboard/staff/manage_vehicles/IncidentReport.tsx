@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   ExclamationTriangleIcon,
-  PlusIcon,
+
   ClockIcon,
   CheckCircleIcon,
   MagnifyingGlassIcon,
@@ -322,13 +322,13 @@ const IncidentReport: React.FC = () => {
               Quản lý và theo dõi các sự cố của xe tại các điểm
             </p>
           </div>
-          <button
+          {/* <button
             onClick={() => setShowReportForm(true)}
             className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
           >
             <PlusIcon className="w-5 h-5" />
             Báo cáo sự cố
-          </button>
+          </button> */}
         </div>
       </div>
 

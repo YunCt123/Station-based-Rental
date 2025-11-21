@@ -283,7 +283,7 @@ export const stationService = {
     searchOptions: NearbySearchOptions
   ): Promise<Station[]> {
     try {
-      const { lng, lat, radiusKm = 10 } = searchOptions;
+      const { lng, lat, radiusKm = 30 } = searchOptions;
       
       const params = new URLSearchParams({
         lng: String(lng),
@@ -295,7 +295,32 @@ export const stationService = {
     
       const response = await api.get<ApiResponse<BackendStation[]>>(url);
       
-      const stations = response.data.data.map(mapBackendStationToFrontend);
+      console.log('🔍 Nearby stations raw data:', response.data.data);
+      
+      const stations = await Promise.all(
+        response.data.data.map(async (backendStation) => {
+          const mappedStation = mapBackendStationToFrontend(backendStation);
+          
+          try {
+            // Lấy số xe thực sự có sẵn từ API vehicle
+            const vehiclesResponse = await api.get<ApiResponse<BackendVehicle[]>>(
+              `/vehicles/stations/${mappedStation.id}/available`
+            );
+            const actualAvailableVehicles = vehiclesResponse.data.data?.length || 0;
+            
+            // Cập nhật số xe có sẵn thực tế
+            mappedStation.availableVehicles = actualAvailableVehicles;
+            
+            console.log(`🚗 Station ${mappedStation.name}: ${actualAvailableVehicles} xe có sẵn`);
+            
+          } catch (error) {
+            console.warn(`⚠️ Không thể lấy xe cho trạm ${mappedStation.name}:`, error);
+            // Giữ giá trị mặc định từ metrics
+          }
+          
+          return mappedStation;
+        })
+      );
       
       // Calculate distance for each station (approximate)
       stations.forEach(station => {

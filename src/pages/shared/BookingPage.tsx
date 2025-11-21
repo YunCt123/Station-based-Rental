@@ -210,7 +210,7 @@ const BookingPage: React.FC = () => {
         const now = dayjs();
         const tomorrow = now.add(1, "day");
         const dayAfterTomorrow = tomorrow.add(1, "day");
-        const pickupTime = dayjs("09:00:00", "HH:mm:ss");
+        const pickupTime = dayjs("09:00:00", "HH:mm:ss"); // 9 AM is within 7h-22h range
         
         const initialFormData = {
           rental_type: "daily",
@@ -452,8 +452,8 @@ const BookingPage: React.FC = () => {
                     stationId: stationId ?? "default-station-id",
                     rental_type: "daily",
                     rental_period: [dayjs().add(1, "day"), dayjs().add(2, "day")], // Ngày mai đến ngày kia
-                    rental_start_time: dayjs("09:00:00", "HH:mm:ss"),
-                    rental_end_time: dayjs("18:00:00", "HH:mm:ss"),
+                    rental_start_time: dayjs("09:00:00", "HH:mm:ss"), // 9 AM within 7h-22h range
+                    rental_end_time: dayjs("18:00:00", "HH:mm:ss"), // 6 PM within 7h-22h range
                   }}
                   onValuesChange={(changedValues) => {
                     const current = form.getFieldsValue();
@@ -478,8 +478,18 @@ const BookingPage: React.FC = () => {
                       const rentalType = changedValues.rental_type;
                       
                       if (rentalType === "hourly") {
-                        const startTime = now.hour() < 22 ? now.add(1, 'hour').startOf('hour') : now.startOf('day').add(8, 'hour');
-                        const endTime = startTime.add(4, 'hour');
+                        // For hourly rental: ensure start time is within allowed range (7h-20h) and at least 30 min from now
+                        const minStartTime = now.add(30, 'minute');
+                        let startTime = minStartTime.hour() < 7 ? now.hour(7).minute(0) : 
+                                       minStartTime.hour() >= 20 ? now.hour(19).minute(0) :
+                                       minStartTime.startOf('hour');
+                        
+                        // If it's too late today (after 19h), set for tomorrow morning
+                        if (startTime.hour() >= 20 || now.hour() >= 20) {
+                          startTime = now.add(1, 'day').hour(7).minute(0);
+                        }
+                        
+                        const endTime = startTime.add(4, 'hour'); // 4 hour default
                         
                         form.setFieldsValue({
                           rental_start_time: startTime,
@@ -498,7 +508,7 @@ const BookingPage: React.FC = () => {
                         
                         form.setFieldsValue({
                           rental_period: [startDate, endDate],
-                          rental_start_time: dayjs("09:00:00", "HH:mm:ss"),
+                          rental_start_time: dayjs("09:00:00", "HH:mm:ss"), // 9 AM within allowed range
                         });
                         
                         setTimeout(() => {

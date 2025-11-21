@@ -137,17 +137,7 @@ const EmployeeManagement: React.FC = () => {
                   </div>
                 </div>
                 {/* placeholder cards to match layout - optional */}
-                  <div className="bg-white rounded-lg shadow p-6 flex items-center justify-between">
-                    <div>
-                      <div className="text-sm text-gray-500">Số nhân viên hoạt động</div>
-                      <div className="mt-2 text-2xl font-semibold text-gray-900">{list.filter(emp => emp.status === 'active').length}</div>
-                      {/* <div className="text-sm text-green-500 mt-1">+0% so với tháng trước</div> */}
-                    </div>
-                    <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
-                      <UserOutlined className="text-blue-600 text-lg" />
-                    </div>
-                  </div>
-
+                  
               </div>
 
 

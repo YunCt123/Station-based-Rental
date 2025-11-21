@@ -25,7 +25,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "@/contexts/TranslationContext";
 import { register as registerApi } from "@/services/authService";
 import { isAuthenticated, getCurrentUser, getDefaultRouteForRole } from "@/utils/auth";
-import GoogleAuthButton from "@/components/auth/GoogleAuthButton";
+// import GoogleAuthButton from "@/components/auth/GoogleAuthButton";
 
 interface User {
   id: string;
@@ -348,7 +348,7 @@ const Register = ({ onRegister: _onRegister }: RegisterProps) => {
             <Separator />
 
             {/* Social Registration */}
-            <div className="space-y-3">
+            {/* <div className="space-y-3">
               <GoogleAuthButton 
                 isRegistration={true}
                 additionalInfo={{
@@ -373,7 +373,7 @@ const Register = ({ onRegister: _onRegister }: RegisterProps) => {
                   navigate(redirectPath);
                 }}
               />
-            </div>
+            </div> */}
 
             {/* Sign In Link */}
             <div className="text-center text-sm">
